@@ -1,82 +1,142 @@
-// app/api/chat/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-const AUTO_REPLIES = [
-  {
-    keywords: ['harga', 'tarif', 'biaya', 'sewa', 'berapa'],
-    reply: 'Harga sewa mobil kami mulai dari Rp 300.000 per hari untuk city car, hingga Rp 1.100.000 untuk microbus. Harga sudah termasuk asuransi, namun BBM belum termasuk. Silakan cek halaman Armada untuk detail lengkap.',
-  },
-  {
-    keywords: ['syarat', 'dokumen', 'ktp', 'sim', 'persyaratan'],
-    reply: 'Untuk sewa lepas kunci: KTP, SIM A yang masih valid, dan deposit jaminan. Untuk sewa dengan driver: cukup KTP saja. Proses verifikasi sangat mudah dan cepat!',
-  },
-  {
-    keywords: ['driver', 'sopir', 'pengemudi'],
-    reply: 'Kami menyediakan layanan sewa dengan driver profesional yang ramah dan berpengalaman. Durasi 12 jam per hari (08.00-20.00 WIB). Driver paham rute wisata di Jogja dan sekitarnya.',
-  },
-  {
-    keywords: ['lepas kunci', 'tanpa driver', 'sendiri'],
-    reply: 'Layanan lepas kunci memungkinkan Anda berkendara sendiri dengan bebas. Durasi sewa 24 jam penuh. Mobil diserahkan dalam kondisi full tank dan harus dikembalikan full tank juga.',
-  },
-  {
-    keywords: ['booking', 'pesan', 'reservasi'],
-    reply: 'Anda bisa booking langsung melalui halaman Booking di website kami, atau hubungi kami via WhatsApp di +62 812-3456-7890 untuk respon lebih cepat.',
-  },
-  {
-    keywords: ['alamat', 'lokasi', 'kantor', 'dimana'],
-    reply: 'Kantor kami berlokasi di Jl. Kaliurang KM 5.5, Sleman, Yogyakarta 55281. Kami juga menyediakan layanan antar-jemput ke bandara, stasiun, atau hotel Anda.',
-  },
-  {
-    keywords: ['jam', 'buka', 'operasional', 'tutup'],
-    reply: 'Kami buka setiap hari dari jam 08.00 - 21.00 WIB. Untuk kebutuhan darurat di luar jam operasional, Anda bisa hubungi kami via WhatsApp.',
-  },
-  {
-    keywords: ['bbm', 'bensin', 'bahan bakar'],
-    reply: 'BBM tidak termasuk dalam harga sewa. Mobil diserahkan dalam kondisi full tank dan harus dikembalikan dalam kondisi full tank.',
-  },
-  {
-    keywords: ['asuransi', 'jaminan', 'kerusakan'],
-    reply: 'Semua mobil kami sudah tercover asuransi all risk. Namun untuk sewa lepas kunci, diperlukan deposit jaminan yang akan dikembalikan setelah mobil diserahkan dalam kondisi baik.',
-  },
-  {
-    keywords: ['terima kasih', 'thanks', 'makasih'],
-    reply: 'Sama-sama! Senang bisa membantu Anda. Jangan ragu untuk menghubungi kami jika ada pertanyaan lain.',
-  },
-];
-
-const DEFAULT_REPLY = 'Terima kasih atas pertanyaan Anda. Untuk informasi lebih detail, silakan hubungi customer service kami di +62 812-3456-7890 (WhatsApp) atau email ke info@rentalmobiljogja.com';
-
-export async function POST(request: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { message } = await request.json();
-
-    if (!message || typeof message !== 'string') {
+    const session = await getServerSession(authOptions);
+    
+    if (!session) {
       return NextResponse.json(
-        { error: 'Invalid message' },
+        { error: "Silakan login terlebih dahulu" },
+        { status: 401 }
+      );
+    }
+
+    // Cari atau buat chat session
+    let chat = await prisma.chat.findFirst({
+      where: {
+        userId: session.user.id,
+        status: "ACTIVE"
+      },
+      include: {
+        messages: {
+          include: {
+            sender: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        }
+      }
+    });
+
+    // Jika belum ada chat, buat baru
+    if (!chat) {
+      chat = await prisma.chat.create({
+        data: {
+          userId: session.user.id,
+          status: "ACTIVE"
+        },
+        include: {
+          messages: {
+            include: {
+              sender: true
+            }
+          }
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      chat
+    });
+
+  } catch (error) {
+    console.error("Get chat error:", error);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan saat mengambil chat" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: "Silakan login terlebih dahulu" },
+        { status: 401 }
+      );
+    }
+
+    const { message } = await req.json();
+
+    if (!message) {
+      return NextResponse.json(
+        { error: "Pesan tidak boleh kosong" },
         { status: 400 }
       );
     }
 
-    const lowerMessage = message.toLowerCase();
-
-    // Find matching auto-reply
-    let reply = DEFAULT_REPLY;
-    for (const autoReply of AUTO_REPLIES) {
-      if (autoReply.keywords.some((keyword) => lowerMessage.includes(keyword))) {
-        reply = autoReply.reply;
-        break;
+    // Cari atau buat chat session
+    let chat = await prisma.chat.findFirst({
+      where: {
+        userId: session.user.id,
+        status: "ACTIVE"
       }
+    });
+
+    if (!chat) {
+      chat = await prisma.chat.create({
+        data: {
+          userId: session.user.id,
+          status: "ACTIVE"
+        }
+      });
     }
 
-    // Log chat to console (in production, you might want to log to a file or database)
-    console.log(`[CHAT] User: ${message}`);
-    console.log(`[CHAT] Bot: ${reply}`);
+    // Create message
+    const chatMessage = await prisma.chatMessage.create({
+      data: {
+        chatId: chat.id,
+        senderId: session.user.id,
+        message
+      },
+      include: {
+        sender: true
+      }
+    });
 
-    return NextResponse.json({ reply });
+    // Buat notifikasi untuk admin
+    const adminUsers = await prisma.user.findMany({
+      where: { role: "ADMIN" }
+    });
+
+    for (const admin of adminUsers) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: "Pesan Chat Baru",
+          message: `User ${session.user.name || session.user.email} mengirim pesan di chat: ${message.substring(0, 50)}...`,
+          type: "CHAT_MESSAGE"
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: chatMessage
+    });
+
   } catch (error) {
-    console.error('Chat API error:', error);
+    console.error("Send message error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Terjadi kesalahan saat mengirim pesan" },
       { status: 500 }
     );
   }
