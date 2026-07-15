@@ -6,10 +6,37 @@ import { motion } from 'framer-motion';
 import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 
 export default function Home() {
+  const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const buildBookingUrl = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    return `/booking?${params.toString()}`;
+  };
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (selectedCategory && selectedCategory !== 'all') {
+      params.append('category', selectedCategory);
+    }
+    if (startDate) {
+      params.append('startDate', startDate);
+    }
+    if (endDate) {
+      params.append('endDate', endDate);
+    }
+    router.push(`/armada?${params.toString()}`);
+  };
+
   return (
     <main className="relative min-h-screen bg-white overflow-x-hidden">
 
@@ -78,6 +105,20 @@ export default function Home() {
                       </label>
                       <input
                         type="date"
+                        value={startDate}
+                        min={todayStr}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          // Enforce end date to be at least 1 day after start date if it's currently invalid
+                          if (e.target.value) {
+                            const newStart = new Date(e.target.value);
+                            const minEnd = new Date(newStart.getTime() + 24 * 60 * 60 * 1000);
+                            const minEndStr = minEnd.toISOString().split('T')[0];
+                            if (!endDate || endDate <= e.target.value) {
+                              setEndDate(minEndStr);
+                            }
+                          }
+                        }}
                         className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
@@ -87,14 +128,22 @@ export default function Home() {
                       </label>
                       <input
                         type="date"
+                        value={endDate}
+                        min={startDate ? (() => {
+                          const start = new Date(startDate);
+                          const nextDay = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+                          return nextDay.toISOString().split('T')[0];
+                        })() : todayStr}
+                        onChange={(e) => setEndDate(e.target.value)}
                         className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Search Button */}
-                  <Link
-                    href="/armada"
+                  <button
+                    type="button"
+                    onClick={handleSearch}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300 group"
                   >
                     Cari Armada
