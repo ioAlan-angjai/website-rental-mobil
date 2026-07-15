@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Car, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get('callbackUrl') || '';
   const { data: session } = useSession();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -42,12 +44,16 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Email atau password salah. Silakan coba lagi.');
       } else {
-        // Fetch session untuk dapat role, lalu redirect
+        // Fetch session to get role, then redirect
         const res = await fetch('/api/auth/session');
         const sessionData = await res.json();
         const role = sessionData?.user?.role;
 
-        if (role === 'ADMIN') {
+        // If there's a callbackUrl and it's not the admin page, respect it
+        // This allows anyone (including admin) to complete booking before going to dashboard
+        if (callbackUrl && !callbackUrl.startsWith('/admin') && !callbackUrl.startsWith('/login')) {
+          router.push(callbackUrl);
+        } else if (role === 'ADMIN') {
           router.push('/admin');
         } else {
           router.push('/account');
@@ -233,5 +239,17 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

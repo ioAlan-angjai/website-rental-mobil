@@ -5,31 +5,14 @@ import { Navbar } from '@/components/landing/Navbar';
 import { motion } from 'framer-motion';
 import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 
 export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  const buildSearchUrl = () => {
-    const params = new URLSearchParams();
-    if (selectedCategory !== 'all') {
-      params.set('category', selectedCategory);
-    }
-    if (startDate) {
-      params.set('start', startDate);
-    }
-    if (endDate) {
-      params.set('end', endDate);
-    }
-    const queryString = params.toString();
-    return queryString ? `/armada?${queryString}` : '/armada';
-  };
-
   return (
     <main className="relative min-h-screen bg-white overflow-x-hidden">
-      
+
       <Navbar />
 
       {/* Hero Section - Split Layout Monochrome */}
@@ -38,9 +21,9 @@ export default function Home() {
         <BackgroundOrnaments />
 
         <div className="max-w-7xl mx-auto w-full relative z-20">
-          
+
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            
+
             {/* LEFT COLUMN - Text & Search Form */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -66,14 +49,14 @@ export default function Home() {
                 <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wide mb-5">
                   Cari Armada Tersedia
                 </h3>
-                
+
                 <div className="space-y-4">
                   {/* Car Type Dropdown */}
                   <div>
                     <label className="block text-sm font-medium text-zinc-700 mb-2">
                       Jenis Mobil
                     </label>
-                    <select 
+                    <select
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
                       className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
@@ -93,36 +76,30 @@ export default function Home() {
                       <label className="block text-sm font-medium text-zinc-700 mb-2">
                         Mulai Sewa
                       </label>
-                      <input 
-                        type="date" 
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
+                      <input
+                        type="date"
+                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-2">
                         Selesai Sewa
                       </label>
-                      <input 
-                        type="date" 
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        min={startDate || new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
+                      <input
+                        type="date"
+                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Search Button */}
                   <Link
-                    href={buildSearchUrl()}
+                    href="/armada"
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300 group"
                   >
                     Cari Armada
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -138,7 +115,7 @@ export default function Home() {
               <div className="relative group/mockup">
                 {/* Floating Card - Available Car */}
                 <div className="bg-white rounded-3xl shadow-xl shadow-zinc-900/5 hover:shadow-2xl hover:shadow-zinc-950/15 p-8 border border-zinc-150 max-w-md transform hover:-translate-y-3 transition-all duration-500 ease-out">
-                  
+
                   {/* Status Badge */}
                   <div className="flex items-center justify-between mb-6">
                     <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-semibold rounded-full border border-emerald-250">
@@ -188,7 +165,7 @@ export default function Home() {
 
                   {/* Booking Button */}
                   <Link
-                    href="/booking"
+                    href={buildBookingUrl()}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300"
                   >
                     Booking Sekarang
@@ -235,7 +212,7 @@ export default function Home() {
 
           {/* Bento Grid - 3 Column Cards */}
           <div className="grid md:grid-cols-3 gap-6">
-            
+
             {/* Card 1: Economy */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -245,16 +222,16 @@ export default function Home() {
               className="group relative bg-zinc-50 rounded-2xl p-8 border border-zinc-200 hover:border-zinc-900 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-900/5 transition-all duration-500 flex flex-col justify-between"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/0 to-zinc-950/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
+
               <div className="relative">
                 <div className="w-14 h-14 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                   <Car className="w-7 h-7 text-white" />
                 </div>
-                
+
                 <h3 className="text-2xl font-bold text-zinc-900 mb-3">
                   Ekonomis & Hemat
                 </h3>
-                
+
                 <p className="text-zinc-600 mb-6 leading-relaxed">
                   Mobil city car dan compact yang irit BBM, cocok untuk perjalanan dalam kota dengan budget terbatas.
                 </p>
@@ -286,16 +263,16 @@ export default function Home() {
               className="group relative bg-zinc-50 rounded-2xl p-8 border border-zinc-200 hover:border-zinc-900 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-900/5 transition-all duration-500 flex flex-col justify-between"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/0 to-zinc-950/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
+
               <div className="relative">
                 <div className="w-14 h-14 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                   <Shield className="w-7 h-7 text-white" />
                 </div>
-                
+
                 <h3 className="text-2xl font-bold text-zinc-900 mb-3">
                   Kenyamanan Maksimal
                 </h3>
-                
+
                 <p className="text-zinc-600 mb-6 leading-relaxed">
                   Sedan dan MPV dengan interior nyaman, ideal untuk perjalanan jauh atau rombongan keluarga.
                 </p>
@@ -327,16 +304,16 @@ export default function Home() {
               className="group relative bg-zinc-50 rounded-2xl p-8 border border-zinc-200 hover:border-zinc-900 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-900/5 transition-all duration-500 flex flex-col justify-between"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/0 to-zinc-950/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
+
               <div className="relative">
                 <div className="w-14 h-14 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                   <Sparkles className="w-7 h-7 text-white" />
                 </div>
-                
+
                 <h3 className="text-2xl font-bold text-zinc-900 mb-3">
                   Premium & Mewah
                 </h3>
-                
+
                 <p className="text-zinc-600 mb-6 leading-relaxed">
                   SUV dan mobil premium untuk kebutuhan bisnis, acara spesial, atau perjalanan dengan gaya.
                 </p>
@@ -383,7 +360,7 @@ export default function Home() {
 
           {/* Testimonial Grid */}
           <div className="grid md:grid-cols-3 gap-8">
-            
+
             {/* Testimonial 1 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -397,7 +374,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              
+
               <p className="text-gray-700 mb-6 leading-relaxed">
                 "Pelayanan sangat memuaskan! Mobilnya bersih dan terawat. Proses booking juga cepat, cocok banget buat mahasiswa yang butuh mobilitas tinggi."
               </p>
@@ -426,7 +403,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              
+
               <p className="text-gray-700 mb-6 leading-relaxed">
                 "Harga terjangkau dan ada diskon mahasiswa! Puas banget sama pelayanannya. Ownernya baik dan responsif. Recommended!"
               </p>
@@ -455,7 +432,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              
+
               <p className="text-gray-700 mb-6 leading-relaxed">
                 "Pertama kali rental mobil dan pengalamannya sangat smooth. Mobilnya nyaman untuk trip ke Dieng. Worth it banget!"
               </p>
@@ -508,7 +485,7 @@ export default function Home() {
               Booking mobil impian Anda sekarang dan nikmati pengalaman rental yang berbeda
             </p>
             <Link
-              href="/booking"
+              href={buildBookingUrl()}
               className="inline-flex items-center gap-2 px-10 py-5 bg-white hover:bg-zinc-100 text-zinc-900 text-lg font-semibold rounded-xl transition-all"
             >
               Mulai Booking

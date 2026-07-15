@@ -134,9 +134,20 @@ export function Navbar() {
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md"
                   >
                     <LayoutDashboard size={14} />
-                    {user?.role === 'ADMIN' ? 'Dashboard Admin' : 'Dashboard Saya'}
+                    {user?.role === 'ADMIN' ? 'Dashboard Admin' : 'Profil Saya'}
                   </Link>
                 </DropdownMenuItem>
+                {user?.role !== 'ADMIN' && (
+                  <DropdownMenuItem className="p-0">
+                    <Link
+                      href="/riwayat-booking"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md"
+                    >
+                      <CalendarDays size={14} />
+                      Riwayat Booking
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="p-0">
                   <button
                     onClick={() => signOut({ callbackUrl: '/' })}
@@ -249,16 +260,28 @@ export function Navbar() {
                     </Button>
                   </Link>
                 </SheetClose>
-                {session ? (
+                 {session ? (
                   <>
-                    <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
-                      <Link href={user?.role === 'ADMIN' ? '/admin' : '/account'} className="w-full">
-                        <Button className="w-full bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 rounded-xl py-5 font-bold flex items-center justify-center gap-2">
-                          <LayoutDashboard size={16} />
-                          {user?.role === 'ADMIN' ? 'Dashboard Admin' : 'Dashboard Saya'}
-                        </Button>
-                      </Link>
-                    </SheetClose>
+                    <div className="flex gap-2">
+                      <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer flex-1">
+                        <Link href={user?.role === 'ADMIN' ? '/admin' : '/account'} className="w-full">
+                          <Button className="w-full bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 rounded-xl py-5 font-bold flex items-center justify-center gap-2 text-xs">
+                            <LayoutDashboard size={14} />
+                            {user?.role === 'ADMIN' ? 'Admin' : 'Profil'}
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      {user?.role !== 'ADMIN' && (
+                        <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer flex-1">
+                          <Link href="/riwayat-booking" className="w-full">
+                            <Button className="w-full bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 rounded-xl py-5 font-bold flex items-center justify-center gap-2 text-xs">
+                              <CalendarDays size={14} />
+                              Riwayat
+                            </Button>
+                          </Link>
+                        </SheetClose>
+                      )}
+                    </div>
                     <button
                       onClick={() => signOut({ callbackUrl: '/' })}
                       className="w-full py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2"

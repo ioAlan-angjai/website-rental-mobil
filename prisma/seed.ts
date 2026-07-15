@@ -6,11 +6,22 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // Clear existing data to prevent duplicate records and unique constraint errors
+  // Penambahan code agar tidak terjadi error ketika melakukan seeding ulang di device lain
+  await prisma.payment.deleteMany({});
+  await prisma.booking.deleteMany({});
+  await prisma.bankAccount.deleteMany({});
+  await prisma.car.deleteMany({});
+  await prisma.setting.deleteMany({});
+
   // 1. Create Admin User
   const adminPassword = await hash('adminpassword123', 12);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@rentalmobil.com' },
-    update: {},
+    update: {
+      password: adminPassword,
+      role: 'ADMIN',
+    },
     create: {
       email: 'admin@rentalmobil.com',
       name: 'Admin RentalMobil',
@@ -25,7 +36,10 @@ async function main() {
   const userPassword = await hash('user123', 12);
   const demoUser = await prisma.user.upsert({
     where: { email: 'user@example.com' },
-    update: {},
+    update: {
+      password: userPassword,
+      role: 'USER',
+    },
     create: {
       email: 'user@example.com',
       name: 'Demo User',

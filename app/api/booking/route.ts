@@ -3,12 +3,53 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+// GET: Ambil semua booking milik user yang sedang login
+export async function GET(_req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || !(session.user as any).id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id;
+
+    const bookings = await prisma.booking.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        car: {
+          select: {
+            id: true,
+            name: true,
+            brand: true,
+            category: true,
+            images: true,
+            pricePerDay: true,
+          },
+        },
+        payments: {
+          select: { id: true, amount: true, type: true, status: true },
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true, data: bookings });
+  } catch (error) {
+    console.error("Get bookings error:", error);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan saat mengambil data booking" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST: Buat booking baru
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await req.json();
-    
-    // Extract data
+
     const {
       carId,
       startDate,
@@ -34,8 +75,7 @@ export async function POST(req: NextRequest) {
     // Parse dates
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
-    // Validasi tanggal
+
     if (start >= end) {
       return NextResponse.json(
         { error: "Tanggal mulai harus sebelum tanggal selesai" },
@@ -43,20 +83,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (start < new Date()) {
-      return NextResponse.json(
-        { error: "Tanggal mulai tidak boleh di masa lalu" },
-        { status: 400 }
-      );
-    }
-
     // Hitung durasi (dalam hari)
-    const duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const duration = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-    // Get car details
-    const car = await prisma.car.findUnique({
-      where: { id: carId }
-    });
+    // Get car details dari database
+    const car = await prisma.car.findUnique({ where: { id: carId } });
 
     if (!car) {
       return NextResponse.json(
@@ -72,17 +105,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cek ketersediaan mobil pada rentang tanggal tersebut
+    // Cek ketersediaan pada rentang tanggal
     const existingBookings = await prisma.booking.findMany({
       where: {
         carId,
-        status: {
-          in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS"]
-        },
-        OR: [
-          { startDate: { lte: end }, endDate: { gte: start } }
-        ]
-      }
+        status: { in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS"] },
+        OR: [{ startDate: { lte: end }, endDate: { gte: start } }],
+      },
     });
 
     if (existingBookings.length > 0) {
@@ -92,13 +121,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculate pricing
+    // Hitung harga
     const basePrice = car.pricePerDay * duration;
-    const discountAmount = 0; // Bisa diimplementasikan nanti
-    const dpAmount = Math.floor(basePrice * 0.5); // 50% DP
+    const discountAmount = 0;
+    const dpAmount = Math.floor(basePrice * 0.5);
     const totalPrice = basePrice - discountAmount;
 
-    // Prepare booking data
+    // Siapkan data booking
     const bookingData: any = {
       car: { connect: { id: carId } },
       startDate: start,
@@ -114,33 +143,25 @@ export async function POST(req: NextRequest) {
       dpPaid: false,
       fullPaid: false,
       status: "PENDING",
-      paymentMethod: paymentMethod ? paymentMethod as string : null,
+      paymentMethod: paymentMethod ? (paymentMethod as string) : null,
       notes,
       guestName,
       guestEmail,
       guestPhone,
     };
 
-    // Add userId jika user login
+    // Hubungkan ke user jika sedang login
     if (session?.user && (session.user as any).id) {
       bookingData.user = { connect: { id: (session.user as any).id } };
     }
 
-    // Create booking
+    // Buat booking
     const booking = await prisma.booking.create({
       data: bookingData,
-      include: {
-        car: true
-      }
+      include: { car: true },
     });
 
-    // Update car status
-    await prisma.car.update({
-      where: { id: carId },
-      data: { status: "BOOKED" }
-    });
-
-    // Create initial payment record untuk DP
+    // Buat payment record untuk DP jika ada paymentMethod
     if (paymentMethod) {
       await prisma.payment.create({
         data: {
@@ -149,7 +170,7 @@ export async function POST(req: NextRequest) {
           type: "DP",
           method: paymentMethod,
           status: "PENDING",
-        }
+        },
       });
     }
 
@@ -160,14 +181,22 @@ export async function POST(req: NextRequest) {
         paymentRequired: true,
         dpAmount,
         bankAccounts: {
-          BCA: { number: process.env.BANK_BCA_NUMBER, name: process.env.BANK_BCA_NAME },
-          BNI: { number: process.env.BANK_BNI_NUMBER, name: process.env.BANK_BNI_NAME },
-          MANDIRI: { number: process.env.BANK_MANDIRI_NUMBER, name: process.env.BANK_MANDIRI_NAME },
-        }
+          BCA: {
+            number: process.env.BANK_BCA_NUMBER,
+            name: process.env.BANK_BCA_NAME,
+          },
+          BNI: {
+            number: process.env.BANK_BNI_NUMBER,
+            name: process.env.BANK_BNI_NAME,
+          },
+          MANDIRI: {
+            number: process.env.BANK_MANDIRI_NUMBER,
+            name: process.env.BANK_MANDIRI_NAME,
+          },
+        },
       },
       { status: 201 }
     );
-
   } catch (error) {
     console.error("Booking error:", error);
     return NextResponse.json(

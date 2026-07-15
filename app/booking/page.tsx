@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Suspense, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useSession } from 'next-auth/react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
@@ -9,18 +10,18 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { mockCarsJogja } from '@/lib/mock-data-jogja';
 import {
   CalendarIcon, Clock, MapPin, User, Mail, Phone, Car,
   ChevronRight, ChevronLeft, CheckCircle2, CreditCard,
-  Upload, ImageIcon, X, Building2, Copy, Check,
+  Upload, ImageIcon, X, Building2, Copy, Check, AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 
 // Bank info (in real app: from env/API)
 const BANK_ACCOUNTS = [
@@ -77,22 +78,58 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export default function BookingPage() {
+// Form booking
+function BookingForm() {
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const user = session?.user as any;
+
+  // Read pre-fill values from URL query params
+  const carIdParam = searchParams?.get('carId') || '';
+  const startDateParam = searchParams?.get('startDate') || '';
+  const endDateParam = searchParams?.get('endDate') || '';
+
+  // Today at midnight for date validation
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const parseDate = (dateStr: string): Date | undefined => {
+    if (!dateStr) return undefined;
+    try { return parseISO(dateStr); } catch { return undefined; }
+  };
+
+  // Fetch cars from database
+  const [dbCars, setDbCars] = useState<any[]>([]);
+  const [loadingCars, setLoadingCars] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/cars?status=AVAILABLE')
+      .then(r => r.json())
+      .then(res => {
+        if (res.data) setDbCars(res.data);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingCars(false));
+  }, []);
+
   const [step, setStep] = useState(1);
-  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [date, setDate] = useState<Date | undefined>(parseDate(startDateParam));
+  const [endDate, setEndDate] = useState<Date | undefined>(parseDate(endDateParam));
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
+    name: user?.name || '',
+    phone: user?.phone || '',
+    email: user?.email || '',
     duration: '1',
     serviceType: '',
-    carId: '',
+    carId: carIdParam,
     pickupLocation: '',
   });
   const [selectedBank, setSelectedBank] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -101,7 +138,7 @@ export default function BookingPage() {
   const nextStep = () => { if (step < 4) setStep(step + 1); };
   const prevStep = () => { if (step > 1) setStep(step - 1); };
 
-  const selectedCarDetails = mockCarsJogja.find(c => c.id === formData.carId);
+  const selectedCarDetails = dbCars.find(c => c.id === formData.carId);
   const totalPrice = selectedCarDetails ? selectedCarDetails.pricePerDay * parseInt(formData.duration) : 0;
   const dpAmount = Math.floor(totalPrice * 0.5);
 
@@ -128,9 +165,41 @@ export default function BookingPage() {
     setUploadedPreview(null);
   };
 
-  const handleSubmit = () => {
-    // In real app: POST to /api/booking with FormData including proof image
-    setBookingSuccess(true);
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const payload: any = {
+        carId: formData.carId,
+        startDate: date?.toISOString(),
+        endDate: endDate?.toISOString(),
+        serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
+        pickupLocation: formData.pickupLocation || null,
+        paymentMethod: selectedBank || null,
+        guestName: formData.name,
+        guestEmail: formData.email || null,
+        guestPhone: formData.phone,
+      };
+
+      const res = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(data.error || 'Terjadi kesalahan saat membuat booking.');
+        return;
+      }
+
+      setBookingSuccess(true);
+    } catch {
+      setSubmitError('Gagal terhubung ke server. Silakan coba lagi.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const stepLabels = ['Identitas', 'Layanan & Unit', 'Konfirmasi', 'Pembayaran'];
@@ -200,7 +269,7 @@ export default function BookingPage() {
                 <CheckCircle2 size={48} className="text-green-500" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-zinc-900 mb-2">Booking Terkirim! 🎉</h2>
+            <h2 className="text-2xl font-bold text-zinc-900 mb-2">Booking Terkirim!</h2>
             <p className="text-zinc-500 mb-1 text-sm">
               Pesanan Anda untuk <strong>{selectedCarDetails?.name}</strong> telah kami terima.
             </p>
@@ -225,7 +294,7 @@ export default function BookingPage() {
             <CardHeader className="bg-zinc-50 border-b border-zinc-200 p-8">
               <CardTitle className="text-2xl font-bold text-zinc-900 font-serif">
                 {step === 1 && 'Data Diri Penyewa'}
-                {step === 2 && 'Detail Sewa & Armada'}
+                {step === 2 && 'konfirmasi Detail Sewa & Armada'}
                 {step === 3 && 'Review & Konfirmasi Booking'}
                 {step === 4 && 'Pembayaran DP'}
               </CardTitle>
@@ -313,9 +382,12 @@ export default function BookingPage() {
                         <select
                           name="carId" value={formData.carId} onChange={handleInputChange}
                           className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
+                          disabled={loadingCars}
                         >
-                          <option value="">Pilih mobil yang Anda inginkan</option>
-                          {mockCarsJogja.map((car) => (
+                          <option value="">
+                            {loadingCars ? 'Memuat daftar mobil...' : 'Pilih mobil yang Anda inginkan'}
+                          </option>
+                          {dbCars.map((car) => (
                             <option key={car.id} value={car.id}>
                               {car.name} - Rp {car.pricePerDay.toLocaleString('id-ID')}/hari
                             </option>
@@ -334,12 +406,17 @@ export default function BookingPage() {
                               !date && 'text-zinc-400'
                             )}>
                               <CalendarIcon className="mr-2 h-4 w-4 text-zinc-900" />
-                              {date ? format(date, 'PPP', { locale: localeId }) : <span>Pilih tanggal</span>}
+                              {date ? format(date, 'PPP', { locale: localeId }) : <span>Pilih tanggal mulai</span>}
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0 bg-white border border-zinc-200" align="start">
                               <Calendar
-                                mode="single" selected={date} onSelect={setDate}
-                                disabled={(d) => d < new Date()}
+                                mode="single" selected={date}
+                                onSelect={(d) => {
+                                  setDate(d);
+                                  // Reset end date if it's before new start date
+                                  if (endDate && d && endDate < d) setEndDate(undefined);
+                                }}
+                                disabled={(d) => d < todayMidnight}
                                 className="rounded-xl"
                               />
                             </PopoverContent>
@@ -348,20 +425,25 @@ export default function BookingPage() {
 
                         <div className="space-y-2">
                           <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                            <Clock size={14} /> Durasi Sewa <span className="text-red-500">*</span>
+                            <CalendarIcon size={14} /> Tanggal Selesai <span className="text-red-500">*</span>
                           </label>
-                          <select
-                            name="duration" value={formData.duration} onChange={handleInputChange}
-                            className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
-                          >
-                            <option value="1">1 Hari</option>
-                            <option value="2">2 Hari</option>
-                            <option value="3">3 Hari</option>
-                            <option value="5">5 Hari</option>
-                            <option value="7">1 Minggu</option>
-                            <option value="14">2 Minggu</option>
-                            <option value="30">1 Bulan</option>
-                          </select>
+                          <Popover>
+                            <PopoverTrigger className={cn(
+                              'w-full justify-start text-left font-normal h-12 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 hover:bg-zinc-100 px-4 flex items-center',
+                              !endDate && 'text-zinc-400'
+                            )}>
+                              <CalendarIcon className="mr-2 h-4 w-4 text-zinc-900" />
+                              {endDate ? format(endDate, 'PPP', { locale: localeId }) : <span>Pilih tanggal selesai</span>}
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-white border border-zinc-200" align="start">
+                              <Calendar
+                                mode="single" selected={endDate}
+                                onSelect={setEndDate}
+                                disabled={(d) => d < (date ?? todayMidnight)}
+                                className="rounded-xl"
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
 
@@ -400,6 +482,10 @@ export default function BookingPage() {
                           <div className="text-zinc-500">Tanggal Mulai:</div>
                           <div className="font-bold text-zinc-900 text-right">
                             {date ? format(date, 'PPP', { locale: localeId }) : '-'}
+                          </div>
+                          <div className="text-zinc-500">Tanggal Selesai:</div>
+                          <div className="font-bold text-zinc-900 text-right">
+                            {endDate ? format(endDate, 'PPP', { locale: localeId }) : '-'}
                           </div>
                           <div className="text-zinc-500">Durasi:</div>
                           <div className="font-bold text-zinc-900 text-right">{formData.duration} Hari</div>
@@ -606,6 +692,14 @@ export default function BookingPage() {
                     </div>
                   )}
 
+                  {/* Error from submit */}
+                  {submitError && (
+                    <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                      <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                      <p className="text-sm text-red-700 font-medium">{submitError}</p>
+                    </div>
+                  )}
+
                   {/* ─── Navigation Buttons ─── */}
                   <div className="flex justify-between items-center pt-6 border-t border-zinc-100">
                     {step > 1 ? (
@@ -625,7 +719,7 @@ export default function BookingPage() {
                         type="button" onClick={nextStep}
                         disabled={
                           (step === 1 && (!formData.name || !formData.phone)) ||
-                          (step === 2 && (!formData.serviceType || !formData.carId || !date))
+                      (step === 2 && (!formData.serviceType || !formData.carId || !date || !endDate))
                         }
                         className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl flex items-center gap-2 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -637,11 +731,14 @@ export default function BookingPage() {
                         type="button"
                         id="btn-kirim-booking"
                         onClick={handleSubmit}
-                        disabled={!selectedBank || !uploadedFile}
+                        disabled={!selectedBank || submitting}
                         className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl ml-auto flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <CheckCircle2 size={16} />
-                        Kirim Booking
+                        {submitting ? (
+                          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Memproses...</>
+                        ) : (
+                          <><CheckCircle2 size={16} /> Kirim Booking</>
+                        )}
                       </Button>
                     )}
                   </div>
@@ -655,5 +752,17 @@ export default function BookingPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <BookingForm />
+    </Suspense>
   );
 }
