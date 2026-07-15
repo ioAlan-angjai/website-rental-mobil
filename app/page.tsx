@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { motion } from 'framer-motion';
 import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight } from 'lucide-react';
@@ -7,6 +8,25 @@ import Link from 'next/link';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 
 export default function Home() {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const buildSearchUrl = () => {
+    const params = new URLSearchParams();
+    if (selectedCategory !== 'all') {
+      params.set('category', selectedCategory);
+    }
+    if (startDate) {
+      params.set('start', startDate);
+    }
+    if (endDate) {
+      params.set('end', endDate);
+    }
+    const queryString = params.toString();
+    return queryString ? `/armada?${queryString}` : '/armada';
+  };
+
   return (
     <main className="relative min-h-screen bg-white overflow-x-hidden">
       
@@ -53,12 +73,17 @@ export default function Home() {
                     <label className="block text-sm font-medium text-zinc-700 mb-2">
                       Jenis Mobil
                     </label>
-                    <select className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all">
-                      <option>Semua Kategori</option>
-                      <option>Ekonomi</option>
-                      <option>SUV</option>
-                      <option>MPV</option>
-                      <option>Luxury</option>
+                    <select 
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
+                    >
+                      <option value="all">Semua Kategori</option>
+                      <option value="hatchback">Hatchback / City Car</option>
+                      <option value="suv">SUV</option>
+                      <option value="mpv">MPV / Minivan</option>
+                      <option value="sedan">Sedan</option>
+                      <option value="elf">ELF / Bus Mini</option>
                     </select>
                   </div>
 
@@ -70,7 +95,10 @@ export default function Home() {
                       </label>
                       <input 
                         type="date" 
-                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
                       />
                     </div>
                     <div>
@@ -79,14 +107,17 @@ export default function Home() {
                       </label>
                       <input 
                         type="date" 
-                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        min={startDate || new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
                       />
                     </div>
                   </div>
 
                   {/* Search Button */}
                   <Link
-                    href="/armada"
+                    href={buildSearchUrl()}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300 group"
                   >
                     Cari Armada
