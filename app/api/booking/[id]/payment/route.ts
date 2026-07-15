@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { PaymentMethod } from "@prisma/client";
 
 export async function POST(
   req: NextRequest,
@@ -76,7 +75,7 @@ export async function POST(
         where: { id: existingPayment.id },
         data: {
           proofImage,
-          method: paymentMethod as PaymentMethod,
+          method: paymentMethod,
           uploadedAt: new Date(),
           status: "PENDING"
         }
@@ -88,7 +87,7 @@ export async function POST(
           bookingId,
           amount: booking.dpAmount,
           type: "DP",
-          method: paymentMethod as PaymentMethod,
+          method: paymentMethod,
           proofImage,
           uploadedAt: new Date(),
           status: "PENDING"
@@ -101,7 +100,7 @@ export async function POST(
       where: { id: bookingId },
       data: {
         status: "WAITING_DP",
-        paymentMethod: paymentMethod as PaymentMethod,
+        paymentMethod: paymentMethod,
         paymentProof: proofImage
       }
     });

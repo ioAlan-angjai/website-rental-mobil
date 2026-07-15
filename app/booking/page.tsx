@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
@@ -9,13 +10,72 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { mockCarsJogja } from '@/lib/mock-data-jogja';
-import { CalendarIcon, Clock, MapPin, User, Mail, Phone, Car, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import {
+  CalendarIcon, Clock, MapPin, User, Mail, Phone, Car,
+  ChevronRight, ChevronLeft, CheckCircle2, CreditCard,
+  Upload, ImageIcon, X, Building2, Copy, Check,
+} from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Bank info (in real app: from env/API)
+const BANK_ACCOUNTS = [
+  {
+    id: 'BCA',
+    name: 'BCA',
+    fullName: 'Bank Central Asia',
+    number: '1234567890',
+    accountName: 'PT RentalMobil Jogja',
+    color: 'bg-blue-600',
+    logo: '🏦',
+  },
+  {
+    id: 'BNI',
+    name: 'BNI',
+    fullName: 'Bank Negara Indonesia',
+    number: '0987654321',
+    accountName: 'PT RentalMobil Jogja',
+    color: 'bg-orange-600',
+    logo: '🏛️',
+  },
+  {
+    id: 'MANDIRI',
+    name: 'Mandiri',
+    fullName: 'Bank Mandiri',
+    number: '1122334455',
+    accountName: 'PT RentalMobil Jogja',
+    color: 'bg-yellow-600',
+    logo: '🏢',
+  },
+];
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-400 hover:text-zinc-700"
+      aria-label="Salin nomor rekening"
+    >
+      {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+    </button>
+  );
+}
 
 export default function BookingPage() {
   const [step, setStep] = useState(1);
@@ -29,23 +89,51 @@ export default function BookingPage() {
     carId: '',
     pickupLocation: '',
   });
+  const [selectedBank, setSelectedBank] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const nextStep = () => {
-    if (step < 3) setStep(step + 1);
-  };
-
-  const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-  };
+  const nextStep = () => { if (step < 4) setStep(step + 1); };
+  const prevStep = () => { if (step > 1) setStep(step - 1); };
 
   const selectedCarDetails = mockCarsJogja.find(c => c.id === formData.carId);
+  const totalPrice = selectedCarDetails ? selectedCarDetails.pricePerDay * parseInt(formData.duration) : 0;
+  const dpAmount = Math.floor(totalPrice * 0.5);
+
+  // Dropzone for upload
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setUploadedFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setUploadedPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp'] },
+    maxFiles: 1,
+    maxSize: 5 * 1024 * 1024,
+  });
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setUploadedPreview(null);
+  };
+
+  const handleSubmit = () => {
+    // In real app: POST to /api/booking with FormData including proof image
+    setBookingSuccess(true);
+  };
+
+  const stepLabels = ['Identitas', 'Layanan & Unit', 'Konfirmasi', 'Pembayaran'];
 
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden">
@@ -60,7 +148,6 @@ export default function BookingPage() {
             <span>/</span>
             <span className="text-zinc-950 font-bold">Booking</span>
           </div>
-
           <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-zinc-900">
             Form Booking
           </h1>
@@ -72,350 +159,498 @@ export default function BookingPage() {
 
       {/* Form Section */}
       <section className="py-16 px-4 max-w-4xl mx-auto">
-        
-        {/* Step Indicator Progress Bar */}
-        <div className="mb-10 max-w-md mx-auto">
+
+        {/* Step Indicator */}
+        <div className="mb-10 max-w-lg mx-auto">
           <div className="flex justify-between items-center relative">
-            
-            {/* Line Behind */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-zinc-200 -translate-y-1/2 z-0" />
-            <div 
-              className="absolute top-1/2 left-0 h-1 bg-zinc-900 -translate-y-1/2 z-0 transition-all duration-300"
-              style={{ width: `${((step - 1) / 2) * 100}%` }}
+            <div className="absolute top-5 left-0 right-0 h-1 bg-zinc-200 z-0" />
+            <div
+              className="absolute top-5 left-0 h-1 bg-zinc-900 z-0 transition-all duration-500"
+              style={{ width: `${((step - 1) / 3) * 100}%` }}
             />
-
-            {/* Step 1 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300",
-                step >= 1 ? "bg-zinc-900 border-zinc-900 text-white" : "bg-white border-zinc-200 text-zinc-400"
-              )}>
-                1
+            {stepLabels.map((label, index) => (
+              <div key={label} className="relative z-10 flex flex-col items-center">
+                <div className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300',
+                  step > index + 1
+                    ? 'bg-zinc-900 border-zinc-900 text-white'
+                    : step === index + 1
+                    ? 'bg-zinc-900 border-zinc-900 text-white ring-4 ring-zinc-900/10'
+                    : 'bg-white border-zinc-200 text-zinc-400'
+                )}>
+                  {step > index + 1 ? <CheckCircle2 size={18} /> : index + 1}
+                </div>
+                <span className="text-[11px] font-bold text-zinc-900 mt-2 bg-slate-50 px-1 text-center whitespace-nowrap">
+                  {label}
+                </span>
               </div>
-              <span className="text-[11px] font-bold text-zinc-900 mt-2 bg-slate-50 px-2">Identitas</span>
-            </div>
-
-            {/* Step 2 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300",
-                step >= 2 ? "bg-zinc-900 border-zinc-900 text-white" : "bg-white border-zinc-200 text-zinc-400"
-              )}>
-                2
-              </div>
-              <span className="text-[11px] font-bold text-zinc-900 mt-2 bg-slate-50 px-2">Layanan & Unit</span>
-            </div>
-
-            {/* Step 3 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300",
-                step >= 3 ? "bg-zinc-900 border-zinc-900 text-white" : "bg-white border-zinc-200 text-zinc-400"
-              )}>
-                3
-              </div>
-              <span className="text-[11px] font-bold text-zinc-900 mt-2 bg-slate-50 px-2">Konfirmasi</span>
-            </div>
-
+            ))}
           </div>
         </div>
 
-        <Card className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm relative z-10">
-          <CardHeader className="bg-zinc-50 border-b border-zinc-200 p-8">
-            <CardTitle className="text-2xl font-bold text-zinc-900 font-serif">
-              {step === 1 && "Data Diri Penyewa"}
-              {step === 2 && "Detail Sewa & Armada"}
-              {step === 3 && "Review & Konfirmasi Booking"}
-            </CardTitle>
-            <p className="text-sm text-zinc-500 mt-2">
-              {step === 1 && "Harap isi informasi kontak valid untuk proses verifikasi."}
-              {step === 2 && "Pilih jenis layanan sewa dan unit armada yang Anda inginkan."}
-              {step === 3 && "Periksa kembali data pesanan Anda sebelum mengirim permintaan booking."}
+        {/* Success State */}
+        {bookingSuccess ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-zinc-200 rounded-3xl shadow-sm p-12 text-center relative z-10"
+          >
+            <div className="flex justify-center mb-6">
+              <div className="p-5 bg-green-50 rounded-full">
+                <CheckCircle2 size={48} className="text-green-500" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-zinc-900 mb-2">Booking Terkirim! 🎉</h2>
+            <p className="text-zinc-500 mb-1 text-sm">
+              Pesanan Anda untuk <strong>{selectedCarDetails?.name}</strong> telah kami terima.
             </p>
-          </CardHeader>
+            <p className="text-zinc-400 text-sm mb-8">
+              Tim kami akan menghubungi Anda via WhatsApp dalam 1×24 jam untuk konfirmasi.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/">
+                <Button className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl">
+                  Kembali ke Beranda
+                </Button>
+              </Link>
+              <Link href="/armada">
+                <Button className="bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold px-8 h-12 rounded-xl">
+                  Lihat Armada Lain
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        ) : (
+          <Card className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm relative z-10">
+            <CardHeader className="bg-zinc-50 border-b border-zinc-200 p-8">
+              <CardTitle className="text-2xl font-bold text-zinc-900 font-serif">
+                {step === 1 && 'Data Diri Penyewa'}
+                {step === 2 && 'Detail Sewa & Armada'}
+                {step === 3 && 'Review & Konfirmasi Booking'}
+                {step === 4 && 'Pembayaran DP'}
+              </CardTitle>
+              <p className="text-sm text-zinc-500 mt-2">
+                {step === 1 && 'Harap isi informasi kontak valid untuk proses verifikasi.'}
+                {step === 2 && 'Pilih jenis layanan sewa dan unit armada yang Anda inginkan.'}
+                {step === 3 && 'Periksa kembali data pesanan Anda sebelum melanjutkan ke pembayaran.'}
+                {step === 4 && 'Transfer DP 50% ke salah satu rekening di bawah, lalu upload bukti transfer.'}
+              </p>
+            </CardHeader>
 
-          <CardContent className="p-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                
-                {/* STEP 1: Identitas */}
-                {step === 1 && (
-                  <div className="space-y-6">
-                    {/* Nama Lengkap */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                        <User size={14} className="text-zinc-900" />
-                        Nama Lengkap
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        type="text"
-                        name="name"
-                        placeholder="Contoh: Ahmad Fauzi"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-450 rounded-xl h-12"
-                      />
-                    </div>
+            <CardContent className="p-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-6"
+                >
 
-                    {/* Grid 2 Kolom */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      {/* Nomor Telepon */}
+                  {/* ─── STEP 1: Identitas ─── */}
+                  {step === 1 && (
+                    <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                          <Phone size={14} className="text-zinc-900" />
-                          Nomor Telepon (WhatsApp)
-                          <span className="text-red-500">*</span>
+                          <User size={14} /> Nama Lengkap <span className="text-red-500">*</span>
                         </label>
                         <Input
-                          type="tel"
-                          name="phone"
-                          placeholder="Contoh: 08123456789"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-450 rounded-xl h-12"
+                          type="text" name="name"
+                          placeholder="Contoh: Ahmad Fauzi"
+                          value={formData.name} onChange={handleInputChange}
+                          className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400 rounded-xl h-12"
                         />
                       </div>
-
-                      {/* Email */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                          <Mail size={14} className="text-zinc-900" />
-                          Email
-                        </label>
-                        <Input
-                          type="email"
-                          name="email"
-                          placeholder="email@example.com"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-450 rounded-xl h-12"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                            <Phone size={14} /> Nomor WhatsApp <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="tel" name="phone"
+                            placeholder="08123456789"
+                            value={formData.phone} onChange={handleInputChange}
+                            className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400 rounded-xl h-12"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                            <Mail size={14} /> Email
+                          </label>
+                          <Input
+                            type="email" name="email"
+                            placeholder="email@example.com"
+                            value={formData.email} onChange={handleInputChange}
+                            className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400 rounded-xl h-12"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* STEP 2: Layanan & Unit */}
-                {step === 2 && (
-                  <div className="space-y-6">
-                    {/* Jenis Layanan */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                        <Car size={14} className="text-zinc-900" />
-                        Jenis Layanan
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="serviceType"
-                        value={formData.serviceType}
-                        onChange={handleInputChange}
-                        className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
-                      >
-                        <option value="">Pilih jenis layanan</option>
-                        <option value="lepas-kunci">Sewa Lepas Kunci</option>
-                        <option value="dengan-driver">Sewa Dengan Driver</option>
-                      </select>
-                    </div>
-
-                    {/* Pilih Mobil */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                        <Car size={14} className="text-zinc-900" />
-                        Pilih Unit Mobil
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="carId"
-                        value={formData.carId}
-                        onChange={handleInputChange}
-                        className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
-                      >
-                        <option value="">Pilih mobil yang Anda inginkan</option>
-                        {mockCarsJogja.map((car) => (
-                          <option key={car.id} value={car.id}>
-                            {car.name} - Rp {car.pricePerDay.toLocaleString('id-ID')}/hari
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Grid Tanggal & Durasi */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      {/* Tanggal Mulai */}
+                  {/* ─── STEP 2: Layanan & Unit ─── */}
+                  {step === 2 && (
+                    <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                          <CalendarIcon size={14} className="text-zinc-900" />
-                          Tanggal Mulai Sewa
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger
-                            className={cn(
-                              'w-full justify-start text-left font-normal h-12 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 hover:bg-zinc-100 px-4 flex items-center',
-                              !date && 'text-zinc-400'
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4 text-zinc-900" />
-                            {date ? format(date, 'PPP', { locale: localeId }) : <span>Pilih tanggal</span>}
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-white border border-zinc-200" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={date}
-                              onSelect={setDate}
-                              disabled={(date) => date < new Date()}
-                              className="rounded-xl"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      {/* Durasi */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                          <Clock size={14} className="text-zinc-900" />
-                          Durasi Sewa
-                          <span className="text-red-500">*</span>
+                          <Car size={14} /> Jenis Layanan <span className="text-red-500">*</span>
                         </label>
                         <select
-                          name="duration"
-                          value={formData.duration}
-                          onChange={handleInputChange}
+                          name="serviceType" value={formData.serviceType} onChange={handleInputChange}
                           className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
                         >
-                          <option value="1">1 Hari</option>
-                          <option value="2">2 Hari</option>
-                          <option value="3">3 Hari</option>
-                          <option value="5">5 Hari</option>
-                          <option value="7">1 Minggu</option>
-                          <option value="14">2 Minggu</option>
-                          <option value="30">1 Bulan</option>
+                          <option value="">Pilih jenis layanan</option>
+                          <option value="lepas-kunci">Sewa Lepas Kunci</option>
+                          <option value="dengan-driver">Sewa Dengan Driver</option>
                         </select>
                       </div>
-                    </div>
 
-                    {/* Lokasi Penjemputan */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                        <MapPin size={14} className="text-zinc-900" />
-                        Lokasi Penjemputan / Pengantaran
-                      </label>
-                      <Input
-                        type="text"
-                        name="pickupLocation"
-                        placeholder="Contoh: Bandara YIA / Stasiun Tugu / Hotel"
-                        value={formData.pickupLocation}
-                        onChange={handleInputChange}
-                        className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-450 rounded-xl h-12"
-                      />
-                    </div>
-                  </div>
-                )}
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                          <Car size={14} /> Pilih Unit Mobil <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="carId" value={formData.carId} onChange={handleInputChange}
+                          className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
+                        >
+                          <option value="">Pilih mobil yang Anda inginkan</option>
+                          {mockCarsJogja.map((car) => (
+                            <option key={car.id} value={car.id}>
+                              {car.name} - Rp {car.pricePerDay.toLocaleString('id-ID')}/hari
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                {/* STEP 3: Konfirmasi */}
-                {step === 3 && (
-                  <div className="space-y-6">
-                    <div className="bg-zinc-50 rounded-2xl p-6 border border-zinc-200 space-y-4">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-500 pb-2 border-b border-zinc-200">
-                        Resume Pesanan
-                      </h4>
-                      
-                      <div className="grid grid-cols-2 gap-y-3 text-sm">
-                        <div className="text-zinc-500">Nama Penyewa:</div>
-                        <div className="font-bold text-zinc-900 text-right">{formData.name || "-"}</div>
-
-                        <div className="text-zinc-500">WhatsApp:</div>
-                        <div className="font-bold text-zinc-900 text-right">{formData.phone || "-"}</div>
-
-                        <div className="text-zinc-500">Email:</div>
-                        <div className="font-bold text-zinc-900 text-right">{formData.email || "-"}</div>
-
-                        <div className="text-zinc-500">Layanan:</div>
-                        <div className="font-bold text-zinc-900 capitalize text-right">{formData.serviceType || "-"}</div>
-
-                        <div className="text-zinc-500">Unit Mobil:</div>
-                        <div className="font-bold text-zinc-900 text-right">{selectedCarDetails?.name || "-"}</div>
-
-                        <div className="text-zinc-500">Tanggal Mulai:</div>
-                        <div className="font-bold text-zinc-900 text-right">
-                          {date ? format(date, 'PPP', { locale: localeId }) : "-"}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                            <CalendarIcon size={14} /> Tanggal Mulai <span className="text-red-500">*</span>
+                          </label>
+                          <Popover>
+                            <PopoverTrigger className={cn(
+                              'w-full justify-start text-left font-normal h-12 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 hover:bg-zinc-100 px-4 flex items-center',
+                              !date && 'text-zinc-400'
+                            )}>
+                              <CalendarIcon className="mr-2 h-4 w-4 text-zinc-900" />
+                              {date ? format(date, 'PPP', { locale: localeId }) : <span>Pilih tanggal</span>}
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-white border border-zinc-200" align="start">
+                              <Calendar
+                                mode="single" selected={date} onSelect={setDate}
+                                disabled={(d) => d < new Date()}
+                                className="rounded-xl"
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
 
-                        <div className="text-zinc-500">Durasi:</div>
-                        <div className="font-bold text-zinc-900 text-right">{formData.duration} Hari</div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                            <Clock size={14} /> Durasi Sewa <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="duration" value={formData.duration} onChange={handleInputChange}
+                            className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl focus:border-zinc-900 focus:outline-none"
+                          >
+                            <option value="1">1 Hari</option>
+                            <option value="2">2 Hari</option>
+                            <option value="3">3 Hari</option>
+                            <option value="5">5 Hari</option>
+                            <option value="7">1 Minggu</option>
+                            <option value="14">2 Minggu</option>
+                            <option value="30">1 Bulan</option>
+                          </select>
+                        </div>
+                      </div>
 
-                        <div className="text-zinc-500">Lokasi:</div>
-                        <div className="font-bold text-zinc-900 text-right">{formData.pickupLocation || "Ambil di Kantor"}</div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                          <MapPin size={14} /> Lokasi Penjemputan / Pengantaran
+                        </label>
+                        <Input
+                          type="text" name="pickupLocation"
+                          placeholder="Contoh: Bandara YIA / Stasiun Tugu / Hotel"
+                          value={formData.pickupLocation} onChange={handleInputChange}
+                          className="bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400 rounded-xl h-12"
+                        />
                       </div>
                     </div>
+                  )}
 
-                    {/* Total Price Estimasi */}
-                    {selectedCarDetails && (
+                  {/* ─── STEP 3: Konfirmasi ─── */}
+                  {step === 3 && (
+                    <div className="space-y-6">
+                      <div className="bg-zinc-50 rounded-2xl p-6 border border-zinc-200 space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-500 pb-2 border-b border-zinc-200">
+                          Resume Pesanan
+                        </h4>
+                        <div className="grid grid-cols-2 gap-y-3 text-sm">
+                          <div className="text-zinc-500">Nama Penyewa:</div>
+                          <div className="font-bold text-zinc-900 text-right">{formData.name || '-'}</div>
+                          <div className="text-zinc-500">WhatsApp:</div>
+                          <div className="font-bold text-zinc-900 text-right">{formData.phone || '-'}</div>
+                          <div className="text-zinc-500">Email:</div>
+                          <div className="font-bold text-zinc-900 text-right">{formData.email || '-'}</div>
+                          <div className="text-zinc-500">Layanan:</div>
+                          <div className="font-bold text-zinc-900 capitalize text-right">{formData.serviceType || '-'}</div>
+                          <div className="text-zinc-500">Unit Mobil:</div>
+                          <div className="font-bold text-zinc-900 text-right">{selectedCarDetails?.name || '-'}</div>
+                          <div className="text-zinc-500">Tanggal Mulai:</div>
+                          <div className="font-bold text-zinc-900 text-right">
+                            {date ? format(date, 'PPP', { locale: localeId }) : '-'}
+                          </div>
+                          <div className="text-zinc-500">Durasi:</div>
+                          <div className="font-bold text-zinc-900 text-right">{formData.duration} Hari</div>
+                          <div className="text-zinc-500">Lokasi:</div>
+                          <div className="font-bold text-zinc-900 text-right">{formData.pickupLocation || 'Ambil di Kantor'}</div>
+                        </div>
+                      </div>
+
+                      {selectedCarDetails && (
+                        <div className="space-y-3">
+                          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 flex justify-between items-center">
+                            <div>
+                              <p className="text-xs text-zinc-500 uppercase tracking-wide">Total Sewa</p>
+                              <p className="text-xl font-bold text-zinc-900">
+                                Rp {totalPrice.toLocaleString('id-ID')}
+                              </p>
+                            </div>
+                            <CreditCard className="w-7 h-7 text-zinc-400" />
+                          </div>
+                          <div className="bg-zinc-900 text-white rounded-2xl p-5 flex justify-between items-center">
+                            <div>
+                              <p className="text-xs text-zinc-400 uppercase tracking-wide">DP yang Harus Dibayar (50%)</p>
+                              <p className="text-2xl font-bold">
+                                Rp {dpAmount.toLocaleString('id-ID')}
+                              </p>
+                            </div>
+                            <CheckCircle2 className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-4 rounded-2xl bg-zinc-100 border border-zinc-200">
+                        <p className="text-xs text-zinc-700 leading-relaxed">
+                          <span className="font-bold">Catatan:</span> Dengan melanjutkan, Anda menyetujui syarat & ketentuan rental mobil kami. Langkah berikutnya adalah pembayaran DP 50%.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── STEP 4: Pembayaran ─── */}
+                  {step === 4 && (
+                    <div className="space-y-8">
+
+                      {/* DP Amount Banner */}
                       <div className="bg-zinc-900 text-white rounded-2xl p-6 flex justify-between items-center">
                         <div>
-                          <p className="text-xs text-zinc-400 uppercase tracking-wide">Estimasi Total</p>
-                          <p className="text-2xl font-bold">
-                            Rp {(selectedCarDetails.pricePerDay * parseInt(formData.duration)).toLocaleString('id-ID')}
-                          </p>
+                          <p className="text-xs text-zinc-400 uppercase tracking-wider mb-1">Jumlah DP yang Harus Dibayar</p>
+                          <p className="text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
+                          <p className="text-xs text-zinc-400 mt-1">50% dari total Rp {totalPrice.toLocaleString('id-ID')}</p>
                         </div>
-                        <CheckCircle2 className="w-8 h-8 text-white" />
+                        <div className="text-right">
+                          <p className="text-xs text-zinc-400">Unit</p>
+                          <p className="font-bold text-sm">{selectedCarDetails?.name}</p>
+                          <p className="text-xs text-zinc-400">{formData.duration} hari</p>
+                        </div>
                       </div>
+
+                      {/* Pilih Bank */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Building2 size={16} className="text-zinc-700" />
+                          <h3 className="text-sm font-bold text-zinc-900">
+                            1. Pilih Rekening Tujuan Transfer
+                          </h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                          {BANK_ACCOUNTS.map((bank) => (
+                            <motion.button
+                              key={bank.id}
+                              type="button"
+                              id={`bank-${bank.id.toLowerCase()}`}
+                              onClick={() => setSelectedBank(bank.id)}
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.99 }}
+                              className={cn(
+                                'w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 flex items-center gap-4',
+                                selectedBank === bank.id
+                                  ? 'border-zinc-900 bg-zinc-50 shadow-md shadow-zinc-900/5'
+                                  : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50'
+                              )}
+                            >
+                              {/* Bank icon / color strip */}
+                              <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0', bank.color)}>
+                                {bank.logo}
+                              </div>
+
+                              {/* Bank info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-zinc-900">{bank.fullName}</span>
+                                  {selectedBank === bank.id && (
+                                    <span className="text-xs bg-zinc-900 text-white px-2 py-0.5 rounded-full font-bold">Dipilih</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="font-mono text-lg font-bold text-zinc-900 tracking-widest">
+                                    {bank.number}
+                                  </span>
+                                  <CopyButton text={bank.number} />
+                                </div>
+                                <p className="text-xs text-zinc-500">a.n. {bank.accountName}</p>
+                              </div>
+
+                              {/* Radio indicator */}
+                              <div className={cn(
+                                'w-5 h-5 rounded-full border-2 shrink-0 transition-all duration-200 flex items-center justify-center',
+                                selectedBank === bank.id
+                                  ? 'border-zinc-900 bg-zinc-900'
+                                  : 'border-zinc-300 bg-white'
+                              )}>
+                                {selectedBank === bank.id && (
+                                  <div className="w-2 h-2 rounded-full bg-white" />
+                                )}
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Upload Bukti Transfer */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Upload size={16} className="text-zinc-700" />
+                          <h3 className="text-sm font-bold text-zinc-900">
+                            2. Upload Bukti Transfer
+                          </h3>
+                        </div>
+
+                        {!uploadedPreview ? (
+                          <div
+                            {...getRootProps()}
+                            id="upload-bukti-transfer"
+                            className={cn(
+                              'border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200',
+                              isDragActive
+                                ? 'border-zinc-900 bg-zinc-50'
+                                : 'border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50'
+                            )}
+                          >
+                            <input {...getInputProps()} />
+                            <div className="flex flex-col items-center gap-3">
+                              <div className={cn(
+                                'p-4 rounded-full transition-all duration-200',
+                                isDragActive ? 'bg-zinc-200' : 'bg-zinc-100'
+                              )}>
+                                <ImageIcon size={28} className="text-zinc-500" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-zinc-900 text-sm">
+                                  {isDragActive ? 'Lepaskan file di sini' : 'Drag & drop atau klik untuk memilih'}
+                                </p>
+                                <p className="text-xs text-zinc-500 mt-1">
+                                  Format: JPG, PNG, WEBP • Maksimal 5 MB
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-6 h-10 rounded-xl text-sm mt-1"
+                              >
+                                Pilih File
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.97 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative rounded-2xl overflow-hidden border-2 border-green-200 bg-green-50"
+                          >
+                            {/* Preview */}
+                            <img
+                              src={uploadedPreview}
+                              alt="Preview bukti transfer"
+                              className="w-full max-h-72 object-contain"
+                            />
+                            {/* Overlay info bar */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 size={16} className="text-green-400" />
+                                <span className="text-white text-xs font-medium truncate max-w-48">
+                                  {uploadedFile?.name}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={removeFile}
+                                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                                aria-label="Hapus file"
+                              >
+                                <X size={14} className="text-white" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="p-4 rounded-2xl bg-zinc-100 border border-zinc-200">
+                        <p className="text-xs text-zinc-700 leading-relaxed">
+                          <span className="font-bold">⚠️ Penting:</span> Pastikan jumlah transfer sesuai dengan nominal DP di atas. Tim admin akan memverifikasi bukti transfer Anda dalam 1×24 jam.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Navigation Buttons ─── */}
+                  <div className="flex justify-between items-center pt-6 border-t border-zinc-100">
+                    {step > 1 ? (
+                      <Button
+                        type="button" onClick={prevStep}
+                        className="bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold px-6 h-12 rounded-xl flex items-center gap-2"
+                      >
+                        <ChevronLeft size={16} />
+                        Kembali
+                      </Button>
+                    ) : (
+                      <div />
                     )}
 
-                    <div className="p-4 rounded-2xl bg-zinc-100 border border-zinc-200">
-                      <p className="text-xs text-zinc-700 leading-relaxed">
-                        <span className="font-bold">Catatan Verifikasi:</span> Dengan mengirim pesanan ini, Anda menyetujui syarat & ketentuan rental mobil kami. Tim admin kami akan segera menghubungi Anda melalui WhatsApp untuk verifikasi identitas (KTP/SIM A) dan pembayaran deposit.
-                      </p>
-                    </div>
+                    {step < 4 ? (
+                      <Button
+                        type="button" onClick={nextStep}
+                        disabled={
+                          (step === 1 && (!formData.name || !formData.phone)) ||
+                          (step === 2 && (!formData.serviceType || !formData.carId || !date))
+                        }
+                        className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl flex items-center gap-2 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Lanjut
+                        <ChevronRight size={16} />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        id="btn-kirim-booking"
+                        onClick={handleSubmit}
+                        disabled={!selectedBank || !uploadedFile}
+                        className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl ml-auto flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle2 size={16} />
+                        Kirim Booking
+                      </Button>
+                    )}
                   </div>
-                )}
 
-                {/* Form Nav Buttons */}
-                <div className="flex justify-between items-center pt-6 border-t border-zinc-100">
-                  {step > 1 ? (
-                    <Button 
-                      type="button" 
-                      onClick={prevStep}
-                      className="bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold px-6 h-12 rounded-xl flex items-center gap-2"
-                    >
-                      <ChevronLeft size={16} />
-                      Kembali
-                    </Button>
-                  ) : (
-                    <div />
-                  )}
-
-                  {step < 3 ? (
-                    <Button 
-                      type="button" 
-                      onClick={nextStep}
-                      disabled={step === 1 && (!formData.name || !formData.phone)}
-                      className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl flex items-center gap-2 ml-auto"
-                    >
-                      Lanjut
-                      <ChevronRight size={16} />
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-10 h-12 rounded-xl ml-auto"
-                    >
-                      Kirim Reservasi via WA
-                    </Button>
-                  )}
-                </div>
-
-              </motion.div>
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+                </motion.div>
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       <Footer />

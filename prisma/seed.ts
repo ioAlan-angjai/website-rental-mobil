@@ -1,4 +1,4 @@
-import { PrismaClient, CarStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,7 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // 1. Create Admin User
-  const adminPassword = await hash('admin123', 12);
+  const adminPassword = await hash('adminpassword123', 12);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@rentalmobil.com' },
     update: {},
@@ -61,9 +61,9 @@ async function main() {
       fuelType: 'Bensin',
       seats: 7,
       pricePerDay: 300000,
-      images: ['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800'],
-      features: ['AC', 'Audio', 'Power Steering'],
-      status: CarStatus.AVAILABLE,
+      images: JSON.stringify(['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800']),
+      features: JSON.stringify(['AC', 'Audio', 'Power Steering']),
+      status: 'AVAILABLE',
       description: 'MPV nyaman untuk keluarga dengan kapasitas 7 penumpang',
     },
     {
@@ -75,9 +75,9 @@ async function main() {
       fuelType: 'Bensin',
       seats: 5,
       pricePerDay: 250000,
-      images: ['https://images.unsplash.com/photo-1542362567-b07e54358753?w=800'],
-      features: ['AC', 'Audio', 'Power Window'],
-      status: CarStatus.AVAILABLE,
+      images: JSON.stringify(['https://images.unsplash.com/photo-1542362567-b07e54358753?w=800']),
+      features: JSON.stringify(['AC', 'Audio', 'Power Window']),
+      status: 'AVAILABLE',
       description: 'Mobil city car irit dan lincah untuk dalam kota',
     },
     {
@@ -89,9 +89,9 @@ async function main() {
       fuelType: 'Solar',
       seats: 7,
       pricePerDay: 450000,
-      images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800'],
-      features: ['AC', 'Audio', 'GPS', 'Leather Seats'],
-      status: CarStatus.AVAILABLE,
+      images: JSON.stringify(['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800']),
+      features: JSON.stringify(['AC', 'Audio', 'GPS', 'Leather Seats']),
+      status: 'AVAILABLE',
       description: 'MPV premium dengan mesin diesel yang tangguh',
     },
     {
@@ -103,9 +103,9 @@ async function main() {
       fuelType: 'Solar',
       seats: 7,
       pricePerDay: 600000,
-      images: ['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800'],
-      features: ['AC', 'Audio', 'GPS', '4WD', 'Leather Seats'],
-      status: CarStatus.AVAILABLE,
+      images: JSON.stringify(['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800']),
+      features: JSON.stringify(['AC', 'Audio', 'GPS', '4WD', 'Leather Seats']),
+      status: 'AVAILABLE',
       description: 'SUV tangguh untuk perjalanan off-road dan touring',
     },
     {
@@ -117,9 +117,9 @@ async function main() {
       fuelType: 'Bensin',
       seats: 7,
       pricePerDay: 550000,
-      images: ['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800'],
-      features: ['AC', 'Audio', 'GPS', 'Sunroof'],
-      status: CarStatus.AVAILABLE,
+      images: JSON.stringify(['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800']),
+      features: JSON.stringify(['AC', 'Audio', 'GPS', 'Sunroof']),
+      status: 'AVAILABLE',
       description: 'SUV urban yang nyaman dan elegan',
     },
     {
@@ -131,9 +131,9 @@ async function main() {
       fuelType: 'Solar',
       seats: 7,
       pricePerDay: 650000,
-      images: ['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800'],
-      features: ['AC', 'Audio', 'GPS', '4WD', 'Leather Seats', 'Sunroof'],
-      status: CarStatus.AVAILABLE,
+      images: JSON.stringify(['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800']),
+      features: JSON.stringify(['AC', 'Audio', 'GPS', '4WD', 'Leather Seats', 'Sunroof']),
+      status: 'AVAILABLE',
       description: 'SUV premium dengan performa tangguh',
     },
   ];

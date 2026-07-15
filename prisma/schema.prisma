@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -20,8 +20,8 @@ model User {
   password      String?
   phone         String?
   image         String?
-  role          Role      @default(USER)
-  
+  role          String    @default("USER") // USER | ADMIN
+
   // Relations
   accounts      Account[]
   sessions      Session[]
@@ -29,7 +29,7 @@ model User {
   chats         Chat[]
   chatMessages  ChatMessage[]
   notifications Notification[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -42,12 +42,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -75,247 +75,187 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
 // ==================== VEHICLE MANAGEMENT ====================
 
 model Car {
-  id              String        @id @default(cuid())
-  name            String
-  brand           String
-  category        String        // SUV, MPV, Sedan, Hatchback, ELF
-  year            Int
-  transmission    String        // Manual, Otomatis
-  fuelType        String        // Bensin, Solar, Listrik
-  seats           Int
-  pricePerDay     Int
-  images          String[]      // Array of image URLs
-  features        String[]      // AC, Audio, GPS, etc
-  status          CarStatus     @default(AVAILABLE)
-  description     String?       @db.Text
-  
+  id           String   @id @default(cuid())
+  name         String
+  brand        String
+  category     String   // SUV, MPV, Sedan, Hatchback, ELF
+  year         Int
+  transmission String   // Manual, Otomatis
+  fuelType     String   // Bensin, Solar, Listrik
+  seats        Int
+  pricePerDay  Int
+  images       String   // JSON array stored as string
+  features     String   // JSON array stored as string
+  status       String   @default("AVAILABLE") // AVAILABLE | BOOKED | MAINTENANCE
+  description  String?
+
   // Relations
-  bookings        Booking[]
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("cars")
-}
-
-enum CarStatus {
-  AVAILABLE
-  BOOKED
-  MAINTENANCE
 }
 
 // ==================== BOOKING SYSTEM ====================
 
 model Booking {
-  id                String        @id @default(cuid())
-  userId            String?
-  carId             String
-  
+  id     String  @id @default(cuid())
+  userId String?
+  carId  String
+
   // Booking Details
-  startDate         DateTime
-  endDate           DateTime
-  duration          Int           // in days
-  serviceType       ServiceType
-  
+  startDate   DateTime
+  endDate     DateTime
+  duration    Int      // in days
+  serviceType String   // LEPAS_KUNCI | DENGAN_DRIVER
+
   // Pickup & Return
-  pickupLocation    String?
-  returnLocation    String?
-  
+  pickupLocation String?
+  returnLocation String?
+
   // Pricing
-  basePrice         Int           // pricePerDay * duration
-  discountAmount    Int           @default(0)
-  penaltyAmount     Int           @default(0)
-  totalPrice        Int           // basePrice - discount + penalty
-  dpAmount          Int           // 50% DP
-  dpPaid            Boolean       @default(false)
-  fullPaid          Boolean       @default(false)
-  
+  basePrice     Int
+  discountAmount Int @default(0)
+  penaltyAmount  Int @default(0)
+  totalPrice     Int
+  dpAmount       Int
+  dpPaid         Boolean @default(false)
+  fullPaid       Boolean @default(false)
+
   // Status
-  status            BookingStatus @default(PENDING)
-  
+  status String @default("PENDING")
+  // PENDING | WAITING_DP | DP_CONFIRMED | IN_PROGRESS | WAITING_PAYMENT | COMPLETED | CANCELLED | REJECTED
+
   // Payment Details
-  paymentMethod     PaymentMethod?
-  paymentProof      String?       // URL to uploaded proof
+  paymentMethod     String?  // QRIS | BCA_TRANSFER | BNI_TRANSFER | MANDIRI_TRANSFER
+  paymentProof      String?  // URL to uploaded proof
   paymentVerifiedAt DateTime?
   paymentVerifiedBy String?
-  
+
   // Guest booking (tanpa login)
-  guestName         String?
-  guestEmail        String?
-  guestPhone        String?
-  
+  guestName  String?
+  guestEmail String?
+  guestPhone String?
+
   // Admin notes
-  notes             String?       @db.Text
-  
+  notes String?
+
   // Relations
-  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  car               Car           @relation(fields: [carId], references: [id])
-  payments          Payment[]
-  
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  car      Car       @relation(fields: [carId], references: [id])
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("bookings")
-}
-
-enum ServiceType {
-  LEPAS_KUNCI
-  DENGAN_DRIVER
-}
-
-enum BookingStatus {
-  PENDING           // Menunggu pembayaran DP
-  WAITING_DP        // DP sudah upload, menunggu verifikasi
-  DP_CONFIRMED      // DP dikonfirmasi, menunggu tanggal mulai
-  IN_PROGRESS       // Sedang berlangsung
-  WAITING_PAYMENT   // Menunggu pelunasan
-  COMPLETED         // Selesai
-  CANCELLED         // Dibatalkan
-  REJECTED          // Ditolak admin
-}
-
-enum PaymentMethod {
-  QRIS
-  BCA_TRANSFER
-  BNI_TRANSFER
-  MANDIRI_TRANSFER
 }
 
 // ==================== PAYMENT TRACKING ====================
 
 model Payment {
-  id              String        @id @default(cuid())
-  bookingId       String
-  
-  amount          Int
-  type            PaymentType
-  
+  id        String @id @default(cuid())
+  bookingId String
+
+  amount Int
+  type   String // DP | FULL_PAYMENT | PENALTY
+
   // Payment method details
-  method          PaymentMethod
-  bankName        String?
-  accountNumber   String?
-  accountName     String?
-  
+  method        String  // QRIS | BCA_TRANSFER | BNI_TRANSFER | MANDIRI_TRANSFER
+  bankName      String?
+  accountNumber String?
+  accountName   String?
+
   // Proof
-  proofImage      String?       // URL to uploaded proof
-  uploadedAt      DateTime?
-  
+  proofImage String?
+  uploadedAt DateTime?
+
   // Verification
-  status          PaymentStatus @default(PENDING)
-  verifiedAt      DateTime?
-  verifiedBy      String?
-  rejectReason    String?
-  
+  status     String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  verifiedAt DateTime?
+  verifiedBy String?
+  rejectReason String?
+
   // Relations
-  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("payments")
-}
-
-enum PaymentType {
-  DP              // Down Payment 50%
-  FULL_PAYMENT    // Pelunasan
-  PENALTY         // Denda keterlambatan
-}
-
-enum PaymentStatus {
-  PENDING
-  VERIFIED
-  REJECTED
 }
 
 // ==================== LIVE CHAT ====================
 
 model Chat {
-  id            String        @id @default(cuid())
-  userId        String
-  
-  status        ChatStatus    @default(ACTIVE)
-  
+  id     String @id @default(cuid())
+  userId String
+
+  status String @default("ACTIVE") // ACTIVE | CLOSED
+
   // Relations
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages      ChatMessage[]
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("chats")
 }
 
 model ChatMessage {
-  id          String      @id @default(cuid())
-  chatId      String
-  senderId    String
-  
-  message     String      @db.Text
-  isRead      Boolean     @default(false)
-  
+  id       String @id @default(cuid())
+  chatId   String
+  senderId String
+
+  message String
+  isRead  Boolean @default(false)
+
   // Relations
-  chat        Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime    @default(now())
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 
   @@map("chat_messages")
-}
-
-enum ChatStatus {
-  ACTIVE
-  CLOSED
 }
 
 // ==================== NOTIFICATIONS ====================
 
 model Notification {
-  id          String            @id @default(cuid())
-  userId      String
-  
-  title       String
-  message     String            @db.Text
-  type        NotificationType
-  
-  isRead      Boolean           @default(false)
-  
+  id     String @id @default(cuid())
+  userId String
+
+  title   String
+  message String
+  type    String // BOOKING_CREATED | PAYMENT_RECEIVED | PAYMENT_VERIFIED | etc.
+
+  isRead Boolean @default(false)
+
   // Relations
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime          @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 
   @@map("notifications")
 }
 
-enum NotificationType {
-  BOOKING_CREATED
-  PAYMENT_RECEIVED
-  PAYMENT_VERIFIED
-  BOOKING_CONFIRMED
-  BOOKING_REJECTED
-  BOOKING_COMPLETED
-  CHAT_MESSAGE
-}
-
-// ==================== BANK ACCOUNTS (Admin Setup) ====================
+// ==================== BANK ACCOUNTS ====================
 
 model BankAccount {
-  id            String    @id @default(cuid())
-  bankName      String    // BCA, BNI, Mandiri
+  id            String  @id @default(cuid())
+  bankName      String  // BCA, BNI, Mandiri
   accountNumber String
   accountName   String
-  isActive      Boolean   @default(true)
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("bank_accounts")
 }
@@ -323,11 +263,11 @@ model BankAccount {
 // ==================== SETTINGS ====================
 
 model Setting {
-  id        String    @id @default(cuid())
-  key       String    @unique
-  value     String    @db.Text
-  
-  updatedAt DateTime  @updatedAt
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  updatedAt DateTime @updatedAt
 
   @@map("settings")
 }

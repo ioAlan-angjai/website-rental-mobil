@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { Providers } from '@/components/Providers';
 import dynamic from 'next/dynamic';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
@@ -55,15 +55,10 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           {children}
           <LiveChat />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

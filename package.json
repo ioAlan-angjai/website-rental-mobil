@@ -65,5 +65,8 @@
   },
   "optionalDependencies": {
     "tailwindcss-animate": "^1.0.7"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

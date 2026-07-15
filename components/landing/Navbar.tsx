@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, Car, ChevronDown, CalendarDays } from 'lucide-react';
+import { Menu, Car, ChevronDown, CalendarDays, LogIn, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 import {
   Sheet,
   SheetContent,
@@ -40,6 +41,8 @@ const categories = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const user = session?.user as any;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -113,8 +116,47 @@ export function Navbar() {
           })}
         </div>
 
-        {/* Action Buttons & Theme Toggle */}
+        {/* Desktop Action Buttons */}
         <div className="hidden md:flex items-center gap-3">
+          {session ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 rounded-lg hover:bg-zinc-100 transition-all duration-200 bg-transparent border-0 cursor-pointer">
+                <div className="w-7 h-7 bg-zinc-900 rounded-lg flex items-center justify-center">
+                  <User size={14} className="text-white" />
+                </div>
+                <span className="max-w-[120px] truncate">{user?.name || 'Akun'}</span>
+                <ChevronDown size={14} className="text-zinc-400" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-white border-zinc-200 min-w-[180px]">
+                <DropdownMenuItem className="p-0">
+                  <Link
+                    href={user?.role === 'ADMIN' ? '/admin' : '/account'}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md"
+                  >
+                    <LayoutDashboard size={14} />
+                    {user?.role === 'ADMIN' ? 'Dashboard Admin' : 'Dashboard Saya'}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="p-0">
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer rounded-md bg-transparent border-0 text-left"
+                  >
+                    <LogOut size={14} />
+                    Keluar
+                  </button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 transition-all duration-200"
+            >
+              <LogIn size={15} />
+              Masuk
+            </Link>
+          )}
           <Link href="/booking">
             <Button className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all duration-200 flex items-center gap-2">
               <CalendarDays size={16} />
@@ -198,7 +240,7 @@ export function Navbar() {
                 })}
               </div>
 
-              {/* Action Buttons in Sheet */}
+              {/* Mobile Action Buttons in Sheet */}
               <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-zinc-200 bg-white flex flex-col gap-3">
                 <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
                   <Link href="/booking" className="w-full">
@@ -207,6 +249,34 @@ export function Navbar() {
                     </Button>
                   </Link>
                 </SheetClose>
+                {session ? (
+                  <>
+                    <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
+                      <Link href={user?.role === 'ADMIN' ? '/admin' : '/account'} className="w-full">
+                        <Button className="w-full bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 rounded-xl py-5 font-bold flex items-center justify-center gap-2">
+                          <LayoutDashboard size={16} />
+                          {user?.role === 'ADMIN' ? 'Dashboard Admin' : 'Dashboard Saya'}
+                        </Button>
+                      </Link>
+                    </SheetClose>
+                    <button
+                      onClick={() => signOut({ callbackUrl: '/' })}
+                      className="w-full py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      Keluar
+                    </button>
+                  </>
+                ) : (
+                  <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
+                    <Link href="/login" className="w-full">
+                      <Button className="w-full bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 rounded-xl py-5 font-bold flex items-center justify-center gap-2">
+                        <LogIn size={16} />
+                        Masuk / Daftar
+                      </Button>
+                    </Link>
+                  </SheetClose>
+                )}
               </div>
             </SheetContent>
           </Sheet>
