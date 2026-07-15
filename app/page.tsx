@@ -4,9 +4,35 @@ import { Navbar } from '@/components/landing/Navbar';
 import { motion } from 'framer-motion';
 import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 
 export default function Home() {
+  const router = useRouter();
+
+  // Today's date in YYYY-MM-DD (for min attribute on date inputs)
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Handler pencarian armada berdasarkana tanggal booking dan selesai
+  const handleSearchArmada = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    router.push(`/armada${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const buildBookingUrl = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    return `/booking${params.toString() ? `?${params.toString()}` : ''}`;
+  };
+
   return (
     <main className="relative min-h-screen bg-white overflow-x-hidden">
       
@@ -69,7 +95,14 @@ export default function Home() {
                         Mulai Sewa
                       </label>
                       <input 
-                        type="date" 
+                        type="date"
+                        min={todayStr}
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          // Reset end date if it's before new start date
+                          if (endDate && e.target.value > endDate) setEndDate('');
+                        }}
                         className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
@@ -78,20 +111,23 @@ export default function Home() {
                         Selesai Sewa
                       </label>
                       <input 
-                        type="date" 
+                        type="date"
+                        min={startDate || todayStr}
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
                         className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Search Button */}
-                  <Link
-                    href="/armada"
+                  <button
+                    onClick={handleSearchArmada}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300 group"
                   >
                     Cari Armada
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -157,7 +193,7 @@ export default function Home() {
 
                   {/* Booking Button */}
                   <Link
-                    href="/booking"
+                    href={buildBookingUrl()}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300"
                   >
                     Booking Sekarang
@@ -477,7 +513,7 @@ export default function Home() {
               Booking mobil impian Anda sekarang dan nikmati pengalaman rental yang berbeda
             </p>
             <Link
-              href="/booking"
+              href={buildBookingUrl()}
               className="inline-flex items-center gap-2 px-10 py-5 bg-white hover:bg-zinc-100 text-zinc-900 text-lg font-semibold rounded-xl transition-all"
             >
               Mulai Booking

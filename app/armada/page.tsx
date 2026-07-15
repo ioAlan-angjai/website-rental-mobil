@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { mockCarsJogja } from '@/lib/mock-data-jogja';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { 
-  Users, Zap, Fuel, Search, SlidersHorizontal, ArrowUpDown, CheckCircle2 
+  Users, Zap, Fuel, Search, SlidersHorizontal, ArrowUpDown, CheckCircle2, CalendarDays
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -20,6 +20,46 @@ import { motion } from 'framer-motion';
 function ArmadaContent() {
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams?.get('category') || 'all';
+
+  // Date params passed from landing page search form
+  const startDateParam = searchParams?.get('startDate') || '';
+  const endDateParam = searchParams?.get('endDate') || '';
+
+  // Build the booking URL for a specific car, forwarding dates if available
+  const buildBookingUrl = (carId: string) => {
+    const params = new URLSearchParams();
+    params.set('carId', carId);
+    if (startDateParam) params.set('startDate', startDateParam);
+    if (endDateParam) params.set('endDate', endDateParam);
+    return `/booking?${params.toString()}`;
+  };
+
+  const [dbCars, setDbCars] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/cars?status=all')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) {
+          const parsed = res.data.map((car: any) => {
+            let imgs = [];
+            try {
+              imgs = typeof car.images === 'string' ? JSON.parse(car.images) : car.images;
+            } catch {
+              imgs = [car.images];
+            }
+            return {
+              ...car,
+              images: imgs,
+            };
+          });
+          setDbCars(parsed);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryFromUrl);
@@ -36,20 +76,19 @@ function ArmadaContent() {
   };
 
   const processedCars = useMemo(() => {
-    let result = [...mockCarsJogja];
+    let result = [...dbCars];
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (car) =>
           car.name.toLowerCase().includes(q) ||
-          car.brand.toLowerCase().includes(q) ||
-          car.model.toLowerCase().includes(q)
+          car.brand.toLowerCase().includes(q)
       );
     }
 
     if (selectedCategory !== 'all') {
-      result = result.filter((car) => car.category === selectedCategory);
+      result = result.filter((car) => car.category.toLowerCase() === selectedCategory.toLowerCase());
     }
 
     if (selectedTransmission !== 'all') {
@@ -65,7 +104,7 @@ function ArmadaContent() {
     }
 
     return result;
-  }, [searchQuery, selectedCategory, selectedTransmission, sortBy]);
+  }, [dbCars, searchQuery, selectedCategory, selectedTransmission, sortBy]);
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -99,6 +138,16 @@ function ArmadaContent() {
           <p className="text-zinc-600 max-w-xl mx-auto text-sm md:text-base leading-relaxed">
             Temukan mobil yang sesuai dengan kebutuhan perjalanan Anda di Yogyakarta
           </p>
+
+          {/* Date context banner */}
+          {(startDateParam || endDateParam) && (
+            <div className="inline-flex items-center gap-2 bg-zinc-900 text-white text-xs font-semibold px-4 py-2 rounded-full">
+              <CalendarDays size={13} />
+              {startDateParam && <span>Mulai: {startDateParam}</span>}
+              {startDateParam && endDateParam && <span>→</span>}
+              {endDateParam && <span>Selesai: {endDateParam}</span>}
+            </div>
+          )}
         </div>
       </section>
 
@@ -223,7 +272,12 @@ function ArmadaContent() {
             </div>
 
             {/* Grid */}
-            {processedCars.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-20 text-zinc-500 gap-3 bg-white rounded-3xl border border-zinc-205 shadow-sm">
+                <div className="animate-spin h-6 w-6 border-2 border-zinc-900 border-t-transparent rounded-full" />
+                <span className="text-sm font-semibold">Memuat armada...</span>
+              </div>
+            ) : processedCars.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {processedCars.map((car, idx) => (
                   <motion.div
@@ -283,7 +337,7 @@ function ArmadaContent() {
                             {formatCurrency(car.pricePerDay)}
                           </p>
                         </div>
-                        <Link href="/booking">
+                        <Link href={buildBookingUrl(car.id)}>
                           <Button className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-lg text-xs py-4 transition-all duration-200">
                             Booking
                           </Button>
