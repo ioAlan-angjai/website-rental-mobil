@@ -19,7 +19,7 @@ export function ChatMessage({ sender, text, timestamp }: MessageProps) {
       {/* Avatar */}
       <Avatar className={cn(
         'w-8 h-8 shrink-0',
-        isBot ? 'bg-primary text-primary-foreground' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+        isBot ? 'bg-zinc-800 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
       )}>
         <AvatarFallback className="bg-transparent">
           {isBot ? <Bot size={16} /> : <User size={16} />}
@@ -33,7 +33,7 @@ export function ChatMessage({ sender, text, timestamp }: MessageProps) {
             'px-4 py-2.5 rounded-2xl text-sm leading-relaxed',
             isBot
               ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-none'
-              : 'bg-primary text-primary-foreground rounded-tr-none'
+              : 'bg-zinc-800 text-white rounded-tr-none'
           )}
         >
           {text}

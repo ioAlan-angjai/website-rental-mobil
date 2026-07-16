@@ -139,7 +139,7 @@ export function LiveChat() {
       {!isOpen && (
         <button
           onClick={handleToggle}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50 group"
+          className="fixed bottom-6 right-6 w-16 h-16 bg-zinc-800 hover:bg-zinc-800/90 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50 group"
           aria-label="Buka live chat"
         >
           <MessageSquare size={26} className="group-hover:scale-110 transition-transform" />
@@ -152,7 +152,7 @@ export function LiveChat() {
           )}
 
           {/* Pulse Animation */}
-          <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20"></span>
+          <span className="absolute inset-0 rounded-full bg-zinc.... animate-ping opacity-20"></span>
         </button>
       )}
     </>

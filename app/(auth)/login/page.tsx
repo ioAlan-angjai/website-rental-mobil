@@ -54,7 +54,9 @@ function LoginContent() {
         if (callbackUrl && !callbackUrl.startsWith('/admin') && !callbackUrl.startsWith('/login')) {
           router.push(callbackUrl);
         } else if (role === 'ADMIN') {
-          router.push('/admin');
+          // Redirect admin to hidden owner dashboard using secret token
+          const secret = process.env.NEXT_PUBLIC_OWNER_DASHBOARD_TOKEN || '';
+          router.push(`/owner/${secret}`);
         } else {
           router.push('/account');
         }

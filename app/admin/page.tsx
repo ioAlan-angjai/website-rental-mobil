@@ -32,12 +32,12 @@ const statusLabels: Record<string, string> = {
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'cars'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Real DB Booking states
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
-  
+
   // Verify states
   const [isVerifying, setIsVerifying] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
     const returnTime = new Date(returnDateStr).getTime();
     const endTime = new Date(booking.endDate).getTime();
     const diffTimeMs = returnTime - endTime;
-    
+
     const diffMinutes = Math.floor(diffTimeMs / (1000 * 60));
     if (diffMinutes <= 30) return 0; // grace period (30 mins)
 
@@ -227,11 +227,10 @@ export default function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === tab.id
                     ? 'border-zinc-900 text-zinc-900'
                     : 'border-transparent text-zinc-400 hover:text-zinc-600'
-                }`}
+                  }`}
               >
                 <tab.icon size={16} />
                 {tab.label}
@@ -282,13 +281,10 @@ export default function AdminDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-zinc-50 text-left border-b border-zinc-200">
-                      {/* <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">ID</th> */}
+                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">ID</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Pelanggan</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Mobil</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Tanggal Mulai</th>
-                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Jam Mulai</th>
-                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Tanggal Selesai</th>
-                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Jam Selesai</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Status</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase text-right">Total</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase text-right">Aksi</th>
@@ -297,13 +293,13 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-zinc-100">
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={10} className="py-8 text-center text-zinc-400">
+                        <td colSpan={7} className="py-8 text-center text-zinc-400">
                           Memuat data...
                         </td>
                       </tr>
                     ) : bookings.slice(0, 5).map((booking) => (
                       <tr key={booking.id} className="hover:bg-zinc-50 transition-colors">
-                        {/* <td className="px-6 py-3 font-mono text-xs text-zinc-650">{booking.id}</td> */}
+                        <td className="px-6 py-3 font-mono text-xs text-zinc-650">{booking.id}</td>
                         <td className="px-6 py-3 font-bold text-zinc-900">
                           {booking.guestName || booking.user?.name || 'Guest'}
                         </td>
@@ -312,15 +308,6 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-3 text-zinc-500">
                           {new Date(booking.startDate).toLocaleDateString('id-ID')}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.startDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.endDate).toLocaleDateString('id-ID')}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.endDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="px-6 py-3">
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusColors[booking.status]}`}>
@@ -335,7 +322,7 @@ export default function AdminDashboard() {
                             onClick={() => setSelectedBooking(booking)}
                             className="p-1.5 hover:bg-zinc-100 rounded-lg transition-colors"
                           >
-                            <Eye size={14} className="text-zinc-550" />
+                            <Eye size={14} className="text-zinc-500" />
                           </button>
                         </td>
                       </tr>
@@ -374,9 +361,6 @@ export default function AdminDashboard() {
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Pelanggan</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Mobil</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Tanggal Mulai</th>
-                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Jam Mulai</th>
-                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Tanggal Selesai</th>
-                      <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Jam Selesai</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase">Status</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase text-right">Total</th>
                       <th className="px-6 py-3 text-xs font-bold text-zinc-500 uppercase text-right">Aksi</th>
@@ -385,7 +369,7 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-zinc-100">
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={10} className="py-12 text-center">
+                        <td colSpan={7} className="py-12 text-center">
                           <div className="animate-spin h-6 w-6 border-2 border-zinc-900 border-t-transparent rounded-full mx-auto" />
                           <span className="text-xs text-zinc-400 mt-2 block">Memuat data booking...</span>
                         </td>
@@ -401,15 +385,6 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-3 text-zinc-500">
                           {new Date(booking.startDate).toLocaleDateString('id-ID')}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.startDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.endDate).toLocaleDateString('id-ID')}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.endDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="px-6 py-3">
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusColors[booking.status]}`}>
@@ -490,7 +465,7 @@ export default function AdminDashboard() {
                   <h4 className="font-bold text-zinc-900 border-b pb-1">Detail Sewa</h4>
                   <p><span className="text-zinc-500 font-medium">Mobil:</span> {selectedBooking.car.brand} {selectedBooking.car.name}</p>
                   <p><span className="text-zinc-500 font-medium">Layanan:</span> {selectedBooking.serviceType === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Dengan Driver'}</p>
-                  <p><span className="text-zinc-500 font-medium">Waktu Sewa:</span> {new Date(selectedBooking.startDate).toLocaleDateString('id-ID')} pukul {new Date(selectedBooking.startDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} s.d. {new Date(selectedBooking.endDate).toLocaleDateString('id-ID')} pukul {new Date(selectedBooking.endDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p><span className="text-zinc-500 font-medium">Tanggal:</span> {new Date(selectedBooking.startDate).toLocaleDateString('id-ID')} s.d. {new Date(selectedBooking.endDate).toLocaleDateString('id-ID')}</p>
                   <p><span className="text-zinc-500 font-medium">Durasi:</span> {selectedBooking.duration} Hari</p>
                   {selectedBooking.pickupLocation && <p><span className="text-zinc-500 font-medium">Lokasi:</span> {selectedBooking.pickupLocation}</p>}
                 </div>
@@ -593,7 +568,7 @@ export default function AdminDashboard() {
               {showReturnForm && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 p-5 bg-zinc-50 rounded-2xl border border-zinc-200">
                   <h4 className="text-sm font-bold text-zinc-950 border-b pb-1">Form Pengembalian & Pelunasan</h4>
-                  
+
                   {/* Return Date Input */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-zinc-700">
