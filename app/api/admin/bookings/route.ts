@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+
+import { updateInProgressBookings } from "@/lib/booking-utils";
+
+export const dynamic = 'force-dynamic';
 
 // GET: Ambil semua booking untuk dashboard admin
 export async function GET(_req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Auto update bookings to IN_PROGRESS if pickup time has reached/passed
+    await updateInProgressBookings();
 
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: "desc" },

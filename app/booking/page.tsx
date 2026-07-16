@@ -123,6 +123,8 @@ function BookingForm() {
     serviceType: '',
     carId: carIdParam,
     pickupLocation: '',
+    pickupTime: '09:00',
+    returnTime: '18:00',
   });
   const [selectedBank, setSelectedBank] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -131,24 +133,60 @@ function BookingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Calculate duration whenever date or endDate changes
+  // Calculate duration whenever date, endDate, pickupTime or returnTime changes
   useEffect(() => {
     if (date && endDate) {
-      const diffTime = endDate.getTime() - date.getTime();
+      const startDateTime = new Date(date);
+      const [pickupHours, pickupMinutes] = (formData.pickupTime || '09:00').split(':');
+      startDateTime.setHours(parseInt(pickupHours), parseInt(pickupMinutes), 0, 0);
+
+      const endDateTime = new Date(endDate);
+      const [returnHours, returnMinutes] = (formData.returnTime || '18:00').split(':');
+      endDateTime.setHours(parseInt(returnHours), parseInt(returnMinutes), 0, 0);
+
+      const diffTime = endDateTime.getTime() - startDateTime.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const calculatedDuration = diffDays <= 0 ? 1 : diffDays;
       setFormData(prev => ({ ...prev, duration: calculatedDuration.toString() }));
     } else {
       setFormData(prev => ({ ...prev, duration: '1' }));
     }
-  }, [date, endDate]);
+  }, [date, endDate, formData.pickupTime, formData.returnTime]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (submitError) setSubmitError('');
   };
 
-  const nextStep = () => { if (step < 4) setStep(step + 1); };
-  const prevStep = () => { if (step > 1) setStep(step - 1); };
+  // Clear submitError when dates change
+  useEffect(() => {
+    if (submitError) setSubmitError('');
+  }, [date, endDate]);
+
+  const nextStep = () => {
+    if (step === 2) {
+      if (date && endDate) {
+        const startDateTime = new Date(date);
+        const [pickupHours, pickupMinutes] = (formData.pickupTime || '09:00').split(':');
+        startDateTime.setHours(parseInt(pickupHours), parseInt(pickupMinutes), 0, 0);
+
+        const endDateTime = new Date(endDate);
+        const [returnHours, returnMinutes] = (formData.returnTime || '18:00').split(':');
+        endDateTime.setHours(parseInt(returnHours), parseInt(returnMinutes), 0, 0);
+
+        if (startDateTime >= endDateTime) {
+          setSubmitError('Waktu pengembalian harus setelah waktu pengambilan.');
+          return;
+        }
+      }
+      setSubmitError('');
+    }
+    if (step < 4) setStep(step + 1);
+  };
+  const prevStep = () => {
+    if (submitError) setSubmitError('');
+    if (step > 1) setStep(step - 1);
+  };
 
   const selectedCarDetails = dbCars.find(c => c.id === formData.carId);
   const totalPrice = selectedCarDetails ? selectedCarDetails.pricePerDay * parseInt(formData.duration) : 0;
@@ -183,10 +221,24 @@ function BookingForm() {
     try {
       const apiPaymentMethod = selectedBank ? `${selectedBank}_TRANSFER` : null;
 
+      let startDateTime: Date | null = null;
+      if (date) {
+        startDateTime = new Date(date);
+        const [hours, minutes] = (formData.pickupTime || '09:00').split(':');
+        startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+
+      let endDateTime: Date | null = null;
+      if (endDate) {
+        endDateTime = new Date(endDate);
+        const [hours, minutes] = (formData.returnTime || '18:00').split(':');
+        endDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+
       const payload: any = {
         carId: formData.carId,
-        startDate: date?.toISOString(),
-        endDate: endDate?.toISOString(),
+        startDate: startDateTime?.toISOString(),
+        endDate: endDateTime?.toISOString(),
         serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
         pickupLocation: formData.pickupLocation || null,
         paymentMethod: apiPaymentMethod,
@@ -447,8 +499,8 @@ function BookingForm() {
                                 mode="single" selected={date}
                                 onSelect={(d) => {
                                   setDate(d);
-                                  // Reset end date if it's before or equal to new start date
-                                  if (endDate && d && endDate <= d) setEndDate(undefined);
+                                  // Reset end date if it's before new start date
+                                  if (endDate && d && endDate < d) setEndDate(undefined);
                                 }}
                                 disabled={(d) => d < todayMidnight}
                                 className="rounded-xl"
@@ -473,11 +525,35 @@ function BookingForm() {
                               <Calendar
                                 mode="single" selected={endDate}
                                 onSelect={setEndDate}
-                                disabled={(d) => d <= (date ?? todayMidnight)}
+                                disabled={(d) => d < (date ?? todayMidnight)}
                                 className="rounded-xl"
                               />
                             </PopoverContent>
                           </Popover>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                            <Clock size={14} /> Jam Pengambilan <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="time" name="pickupTime"
+                            value={formData.pickupTime} onChange={handleInputChange}
+                            className="bg-zinc-50 border-zinc-200 text-zinc-900 rounded-xl h-12"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                            <Clock size={14} /> Jam Pengembalian <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="time" name="returnTime"
+                            value={formData.returnTime} onChange={handleInputChange}
+                            className="bg-zinc-50 border-zinc-200 text-zinc-900 rounded-xl h-12"
+                          />
                         </div>
                       </div>
 
@@ -514,12 +590,12 @@ function BookingForm() {
                           <div className="text-zinc-500">Unit Mobil:</div>
                           <div className="font-bold text-zinc-900 text-right">{selectedCarDetails?.name || '-'}</div>
                           <div className="text-zinc-500">Tanggal Mulai:</div>
-                          <div className="font-bold text-zinc-900 text-right">
-                            {date ? format(date, 'PPP', { locale: localeId }) : '-'}
+                          <div className="font-bold text-zinc-900 text-right font-sans">
+                            {date ? `${format(date, 'PPP', { locale: localeId })} pukul ${formData.pickupTime}` : '-'}
                           </div>
                           <div className="text-zinc-500">Tanggal Selesai:</div>
-                          <div className="font-bold text-zinc-900 text-right">
-                            {endDate ? format(endDate, 'PPP', { locale: localeId }) : '-'}
+                          <div className="font-bold text-zinc-900 text-right font-sans">
+                            {endDate ? `${format(endDate, 'PPP', { locale: localeId })} pukul ${formData.returnTime}` : '-'}
                           </div>
                           <div className="text-zinc-500">Durasi:</div>
                           <div className="font-bold text-zinc-900 text-right">{formData.duration} Hari</div>
