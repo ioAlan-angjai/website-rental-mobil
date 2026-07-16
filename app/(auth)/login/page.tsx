@@ -215,7 +215,7 @@ function LoginContent() {
             </div>
 
             {/* Register link */}
-            <p className="text-center text-sm text-zinc-500">
+            {/* <p className="text-center text-sm text-zinc-500">
               Belum punya akun?{' '}
               <Link
                 href="/register"
@@ -224,7 +224,7 @@ function LoginContent() {
               >
                 Daftar sekarang
               </Link>
-            </p>
+            </p> */}
           </form>
         </div>
 

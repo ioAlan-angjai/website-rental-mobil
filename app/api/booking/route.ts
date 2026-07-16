@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+import { updateInProgressBookings } from "@/lib/booking-utils";
+
 // GET: Ambil semua booking milik user yang sedang login
 export async function GET(_req: NextRequest) {
   try {
@@ -11,6 +13,9 @@ export async function GET(_req: NextRequest) {
     if (!session?.user || !(session.user as any).id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Auto update bookings to IN_PROGRESS if pickup time has reached/passed
+    await updateInProgressBookings();
 
     const userId = (session.user as any).id;
 

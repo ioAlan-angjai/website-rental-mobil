@@ -150,13 +150,13 @@ export default function Home() {
                 <div className="bg-white rounded-3xl shadow-xl shadow-zinc-900/5 hover:shadow-2xl hover:shadow-zinc-950/15 p-8 border border-zinc-150 max-w-md transform hover:-translate-y-3 transition-all duration-500 ease-out">
 
                   {/* Status Badge */}
-                  <div className="flex items-center justify-between mb-6">
+                  {/* <div className="flex items-center justify-between mb-6">
                     <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-semibold rounded-full border border-emerald-250">
                       <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                       Available Now
                     </span>
                     <Sparkles className="w-5 h-5 text-zinc-400 group-hover/mockup:text-zinc-900 transition-colors duration-300" />
-                  </div>
+                  </div> */}
 
                   {/* Car Image Placeholder */}
                   <div className="bg-gradient-to-br from-zinc-100 to-zinc-200 rounded-2xl h-48 mb-6 flex items-center justify-center overflow-hidden relative">
@@ -207,7 +207,7 @@ export default function Home() {
                 </div>
 
                 {/* Small Floating Badge */}
-                <motion.div
+                {/* <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
@@ -217,7 +217,7 @@ export default function Home() {
                     Ready to Rent
                   </div>
                   <div className="text-2xl font-bold">15+ Units</div>
-                </motion.div>
+                </motion.div> */}
               </div>
             </motion.div>
 

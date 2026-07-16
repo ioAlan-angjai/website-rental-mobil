@@ -18,10 +18,10 @@ export function LiveChat() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  // Load chat history from localStorage on mount
+  // Load chat history from sessionStorage on mount
   useEffect(() => {
     setMounted(true);
-    const savedMessages = localStorage.getItem('rental-chat-history');
+    const savedMessages = sessionStorage.getItem('rental-chat-history');
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages);
@@ -35,10 +35,10 @@ export function LiveChat() {
     }
   }, []);
 
-  // Save messages to localStorage whenever they change
+  // Save messages to sessionStorage whenever they change
   useEffect(() => {
     if (mounted && messages.length > 0) {
-      localStorage.setItem('rental-chat-history', JSON.stringify(messages));
+      sessionStorage.setItem('rental-chat-history', JSON.stringify(messages));
     }
   }, [messages, mounted]);
 
