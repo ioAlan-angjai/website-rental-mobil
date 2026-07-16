@@ -6,10 +6,34 @@ import { motion } from 'framer-motion';
 import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 
 export default function Home() {
+  const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const handleSearchArmada = () => {
+    const params = new URLSearchParams();
+    if (selectedCategory && selectedCategory !== 'all') {
+      params.set('category', selectedCategory);
+    }
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    router.push(`/armada${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const buildBookingUrl = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    return `/booking${params.toString() ? `?${params.toString()}` : ''}`;
+  };
+
   return (
     <main className="relative min-h-screen bg-white overflow-x-hidden">
 
@@ -78,6 +102,12 @@ export default function Home() {
                       </label>
                       <input
                         type="date"
+                        min={todayStr}
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          if (endDate && e.target.value > endDate) setEndDate('');
+                        }}
                         className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
@@ -87,14 +117,17 @@ export default function Home() {
                       </label>
                       <input
                         type="date"
+                        min={startDate || todayStr}
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
                         className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Search Button */}
-                  <Link
-                    href="/armada"
+                  <button
+                    onClick={handleSearchArmada}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300 group"
                   >
                     Cari Armada
