@@ -131,6 +131,18 @@ function BookingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
+  // Calculate duration whenever date or endDate changes
+  useEffect(() => {
+    if (date && endDate) {
+      const diffTime = endDate.getTime() - date.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const calculatedDuration = diffDays <= 0 ? 1 : diffDays;
+      setFormData(prev => ({ ...prev, duration: calculatedDuration.toString() }));
+    } else {
+      setFormData(prev => ({ ...prev, duration: '1' }));
+    }
+  }, [date, endDate]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -169,13 +181,15 @@ function BookingForm() {
     setSubmitting(true);
     setSubmitError('');
     try {
+      const apiPaymentMethod = selectedBank ? `${selectedBank}_TRANSFER` : null;
+
       const payload: any = {
         carId: formData.carId,
         startDate: date?.toISOString(),
         endDate: endDate?.toISOString(),
         serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
         pickupLocation: formData.pickupLocation || null,
-        paymentMethod: selectedBank || null,
+        paymentMethod: apiPaymentMethod,
         guestName: formData.name,
         guestEmail: formData.email || null,
         guestPhone: formData.phone,
@@ -192,6 +206,26 @@ function BookingForm() {
       if (!res.ok) {
         setSubmitError(data.error || 'Terjadi kesalahan saat membuat booking.');
         return;
+      }
+
+      // Upload proof image if uploadedPreview exists and booking was created
+      if (uploadedPreview && data.booking && data.booking.id) {
+        const formDataPayload = new FormData();
+        formDataPayload.append('proofImage', uploadedPreview);
+        if (apiPaymentMethod) {
+          formDataPayload.append('paymentMethod', apiPaymentMethod);
+        }
+
+        const paymentRes = await fetch(`/api/booking/${data.booking.id}/payment`, {
+          method: 'POST',
+          body: formDataPayload,
+        });
+
+        const paymentData = await paymentRes.json();
+        if (!paymentRes.ok) {
+          setSubmitError(paymentData.error || 'Booking berhasil dibuat, tetapi gagal mengupload bukti pembayaran.');
+          return;
+        }
       }
 
       setBookingSuccess(true);
@@ -413,8 +447,8 @@ function BookingForm() {
                                 mode="single" selected={date}
                                 onSelect={(d) => {
                                   setDate(d);
-                                  // Reset end date if it's before new start date
-                                  if (endDate && d && endDate < d) setEndDate(undefined);
+                                  // Reset end date if it's before or equal to new start date
+                                  if (endDate && d && endDate <= d) setEndDate(undefined);
                                 }}
                                 disabled={(d) => d < todayMidnight}
                                 className="rounded-xl"
@@ -439,7 +473,7 @@ function BookingForm() {
                               <Calendar
                                 mode="single" selected={endDate}
                                 onSelect={setEndDate}
-                                disabled={(d) => d < (date ?? todayMidnight)}
+                                disabled={(d) => d <= (date ?? todayMidnight)}
                                 className="rounded-xl"
                               />
                             </PopoverContent>
