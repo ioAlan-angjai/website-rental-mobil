@@ -52,7 +52,7 @@ export async function POST(
     }
 
     const returnTime = new Date(actualReturnDate);
-    const endTime = new Date(booking.endDate);
+    const endTime = new Date(booking.endDateTime);
 
     // Hitung denda (jika telat)
     let penaltyAmount = 0;
@@ -71,20 +71,25 @@ export async function POST(
       }
     }
 
-    const remainingAmount = booking.totalPrice - booking.dpAmount;
-    const totalPaymentRequired = remainingAmount + penaltyAmount;
+    const finalTotal = booking.totalPrice + penaltyAmount;
+    const alreadyPaid = booking.dpAmount;
+    const remainingAmount = Math.max(0, finalTotal - alreadyPaid);
+
+    const isFullyPaidNow = remainingAmount === 0;
 
     // Database transaction
     const [updatedBooking] = await prisma.$transaction([
-      // 1. Update Booking status to COMPLETED, fullPaid to true, save penalty
+      // 1. Update Booking: simpan penalty + total akhir, tentukan status
       prisma.booking.update({
         where: { id: bookingId },
         data: {
-          status: "COMPLETED",
-          fullPaid: true,
           penaltyAmount: penaltyAmount,
-          totalPrice: booking.totalPrice + penaltyAmount,
-          notes: penaltyAmount > 0 ? `Telat pengembalian. Denda Rp ${penaltyAmount.toLocaleString('id-ID')}` : booking.notes,
+          totalPrice: finalTotal,
+          status: isFullyPaidNow ? "COMPLETED" : "WAITING_PAYMENT",
+          fullPaid: isFullyPaidNow,
+          notes: penaltyAmount > 0
+            ? `Telat pengembalian. Denda Rp ${penaltyAmount.toLocaleString('id-ID')}`
+            : booking.notes,
         }
       }),
 
@@ -94,39 +99,56 @@ export async function POST(
         data: { status: "AVAILABLE" }
       }),
 
-      // 3. Create payment record for pelunasan + denda
+      // 3. Create payment record untuk pelunasan (+ denda jika ada)
+      // Jika lunas saat itu (cash), langsung VERIFIED. Jika masih ada sisa, PENDING (menunggu user bayar).
       prisma.payment.create({
         data: {
           bookingId,
-          amount: totalPaymentRequired,
+          amount: remainingAmount,
           type: "FULL_PAYMENT",
           method: paymentMethod,
-          status: "VERIFIED", // Langsung terverifikasi karena diinput oleh admin
-          verifiedAt: new Date(),
-          verifiedBy: session.user?.email || "admin",
-          rejectReason: penaltyAmount > 0 ? `Termasuk denda keterlambatan Rp ${penaltyAmount.toLocaleString('id-ID')}` : null,
+          status: isFullyPaidNow ? "VERIFIED" : "PENDING",
+          verifiedAt: isFullyPaidNow ? new Date() : null,
+          verifiedBy: isFullyPaidNow ? (session.user?.email || "admin") : null,
+          rejectReason: penaltyAmount > 0 && !isFullyPaidNow
+            ? `Termasuk denda keterlambatan Rp ${penaltyAmount.toLocaleString('id-ID')}`
+            : null,
         }
       })
     ]);
 
-    // Create notification untuk user jika booking terhubung ke user
+    // Notifikasi ke user
     if (booking.userId) {
-      await prisma.notification.create({
-        data: {
-          userId: booking.userId,
-          title: "Rental Selesai & Lunas",
-          message: `Mobil ${booking.car.name} telah dikembalikan. Pelunasan telah diverifikasi oleh admin. Terima kasih!`,
-          type: "RENTAL_COMPLETED"
-        }
-      });
+      if (isFullyPaidNow) {
+        await prisma.notification.create({
+          data: {
+            userId: booking.userId,
+            title: "Rental Selesai & Lunas",
+            message: `Mobil ${booking.car.name} telah dikembalikan. Pelunasan telah lunas. Terima kasih!`,
+            type: "RENTAL_COMPLETED"
+          }
+        });
+      } else {
+        await prisma.notification.create({
+          data: {
+            userId: booking.userId,
+            title: "Tagihan Pelunasan Tersedia",
+            message: `Mobil ${booking.car.name} telah dikembalikan. Sisa pembayaran pelunasan sebesar Rp ${remainingAmount.toLocaleString('id-ID')}${penaltyAmount > 0 ? ` (termasuk denda Rp ${penaltyAmount.toLocaleString('id-ID')})` : ''}. Silakan lakukan pelunasan.`,
+            type: "SETTLEMENT_DUE"
+          }
+        });
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: "Mobil berhasil dikembalikan dan pembayaran telah lunas.",
+      message: isFullyPaidNow
+        ? "Mobil berhasil dikembalikan dan pembayaran lunas."
+        : "Mobil dikembalikan. Menunggu pelunasan dari penyewa.",
       booking: updatedBooking,
       penaltyAmount,
-      totalPaymentRequired
+      remainingAmount,
+      finalTotal
     });
 
   } catch (error) {

@@ -18,8 +18,8 @@ export async function GET(
             }
           },
           select: {
-            startDate: true,
-            endDate: true,
+            startDateTime: true,
+            endDateTime: true,
           }
         }
       }

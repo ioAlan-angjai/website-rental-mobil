@@ -109,10 +109,10 @@ model Booking {
   carId  String
 
   // Booking Details
-  startDate   DateTime
-  endDate     DateTime
-  duration    Int      // in days
-  serviceType String   // LEPAS_KUNCI | DENGAN_DRIVER
+  startDateTime DateTime
+  endDateTime   DateTime
+  durationMinutes Int    // total durasi dalam menit (presisi, hindari float)
+  serviceType  String   // LEPAS_KUNCI | DENGAN_DRIVER
 
   // Pickup & Return
   pickupLocation String?

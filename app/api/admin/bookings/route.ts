@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-import { updateInProgressBookings } from "@/lib/booking-utils";
+import { updateInProgressBookings, processNearExpiryBookings, processExpiryBookings } from "@/lib/booking-utils";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +15,10 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Auto update bookings to IN_PROGRESS if pickup time has reached/passed
+    // Auto update bookings: start, near-expiry, expiry
     await updateInProgressBookings();
+    await processNearExpiryBookings();
+    await processExpiryBookings();
 
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: "desc" },

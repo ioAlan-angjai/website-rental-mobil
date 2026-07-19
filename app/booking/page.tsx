@@ -17,9 +17,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { formatDuration } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
+import { BcaLogo } from '@/components/ui/bca-logo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 
@@ -29,17 +31,17 @@ const BANK_ACCOUNTS = [
     id: 'BCA',
     name: 'BCA',
     fullName: 'Bank Central Asia',
-    number: '1234567890',
-    accountName: 'PT RentalMobil Jogja',
-    color: 'bg-blue-600',
-    logo: '🏦',
+    number: process.env.NEXT_PUBLIC_BANK_BCA_NUMBER || '1234567890',
+    accountName: process.env.NEXT_PUBLIC_BANK_BCA_NAME || 'PT RentalMobil Jogja',
+    color: 'bg-transparent',
+    logo: <BcaLogo />,
   },
   {
     id: 'BNI',
     name: 'BNI',
     fullName: 'Bank Negara Indonesia',
-    number: '0987654321',
-    accountName: 'PT RentalMobil Jogja',
+    number: process.env.NEXT_PUBLIC_BANK_BNI_NUMBER || '0987654321',
+    accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT RentalMobil Jogja',
     color: 'bg-orange-600',
     logo: '🏛️',
   },
@@ -47,8 +49,8 @@ const BANK_ACCOUNTS = [
     id: 'MANDIRI',
     name: 'Mandiri',
     fullName: 'Bank Mandiri',
-    number: '1122334455',
-    accountName: 'PT RentalMobil Jogja',
+    number: process.env.NEXT_PUBLIC_BANK_MANDIRI_NUMBER || '1122334455',
+    accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT RentalMobil Jogja',
     color: 'bg-yellow-600',
     logo: '🏢',
   },
@@ -145,11 +147,11 @@ function BookingForm() {
       endDateTime.setHours(parseInt(returnHours), parseInt(returnMinutes), 0, 0);
 
       const diffTime = endDateTime.getTime() - startDateTime.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const calculatedDuration = diffDays <= 0 ? 1 : diffDays;
+      const diffMinutes = Math.round(diffTime / (1000 * 60));
+      const calculatedDuration = diffMinutes <= 0 ? 60 : diffMinutes;
       setFormData(prev => ({ ...prev, duration: calculatedDuration.toString() }));
     } else {
-      setFormData(prev => ({ ...prev, duration: '1' }));
+      setFormData(prev => ({ ...prev, duration: '60' }));
     }
   }, [date, endDate, formData.pickupTime, formData.returnTime]);
 
@@ -189,7 +191,9 @@ function BookingForm() {
   };
 
   const selectedCarDetails = dbCars.find(c => c.id === formData.carId);
-  const totalPrice = selectedCarDetails ? selectedCarDetails.pricePerDay * parseInt(formData.duration) : 0;
+  const totalPrice = selectedCarDetails
+    ? Math.round((selectedCarDetails.pricePerDay / 24) * (parseInt(formData.duration) / 60))
+    : 0;
   const dpAmount = Math.floor(totalPrice * 0.5);
 
   // Dropzone for upload
@@ -598,7 +602,7 @@ function BookingForm() {
                             {endDate ? `${format(endDate, 'PPP', { locale: localeId })} pukul ${formData.returnTime}` : '-'}
                           </div>
                           <div className="text-zinc-500">Durasi:</div>
-                          <div className="font-bold text-zinc-900 text-right">{formData.duration} Hari</div>
+                          <div className="font-bold text-zinc-900 text-right">{formatDuration(parseInt(formData.duration))}</div>
                           <div className="text-zinc-500">Lokasi:</div>
                           <div className="font-bold text-zinc-900 text-right">{formData.pickupLocation || 'Ambil di Kantor'}</div>
                         </div>
@@ -649,7 +653,7 @@ function BookingForm() {
                         <div className="text-right">
                           <p className="text-xs text-zinc-400">Unit</p>
                           <p className="font-bold text-sm">{selectedCarDetails?.name}</p>
-                          <p className="text-xs text-zinc-400">{formData.duration} hari</p>
+                          <p className="text-xs text-zinc-400">{formatDuration(parseInt(formData.duration))}</p>
                         </div>
                       </div>
 

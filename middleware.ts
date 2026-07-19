@@ -15,10 +15,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect account, riwayat-booking, and register routes to home since user auth is disabled
-  const disabledRoutes = ['/account', '/riwayat-booking', '/register'];
-  if (disabledRoutes.some((route) => pathname.startsWith(route) || pathname === route)) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // Protect user routes: must be logged in (any role)
+  const protectedUserRoutes = ['/account', '/riwayat-booking'];
+  if (protectedUserRoutes.some((route) => pathname.startsWith(route) || pathname === route)) {
+    if (!token) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   // If already logged in as ADMIN and trying to go to login, redirect to admin dashboard

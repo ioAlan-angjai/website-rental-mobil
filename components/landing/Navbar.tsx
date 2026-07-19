@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { UserNotifications } from '@/components/landing/UserNotifications';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -149,6 +150,27 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          {session && (
+            <UserNotifications />
+          )}
+          {!session && (
+            <>
+              <Link href="/login">
+                <Button
+                  variant="ghost"
+                  className="text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 font-semibold rounded-xl text-sm"
+                >
+                  <LogIn size={16} />
+                  Login
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm">
+                  Daftar
+                </Button>
+              </Link>
+            </>
+          )}
           <Link href="/booking">
             <Button className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all duration-200 flex items-center gap-2">
               <CalendarDays size={16} />
@@ -234,6 +256,30 @@ export function Navbar() {
 
               {/* Mobile Action Buttons in Sheet */}
               <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-zinc-200 bg-white flex flex-col gap-3">
+                {session && (
+                  <div className="flex justify-center">
+                    <UserNotifications />
+                  </div>
+                )}
+                {!session && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
+                      <Link href="/login" className="w-full">
+                        <Button className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-xl py-5 font-bold flex items-center justify-center gap-2">
+                          <LogIn size={16} />
+                          Login
+                        </Button>
+                      </Link>
+                    </SheetClose>
+                    <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
+                      <Link href="/register" className="w-full">
+                        <Button className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl py-5 font-bold flex items-center justify-center gap-2">
+                          Daftar
+                        </Button>
+                      </Link>
+                    </SheetClose>
+                  </div>
+                )}
                 <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
                   <Link href="/booking" className="w-full">
                     <Button className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl py-5 font-bold">

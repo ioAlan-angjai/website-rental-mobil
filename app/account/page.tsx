@@ -14,6 +14,7 @@ import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { formatDuration } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
   PENDING:       'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -280,18 +281,18 @@ export default function AccountPage() {
                           <div>
                             <span className="text-zinc-400">Mulai Sewa</span>
                             <p className="font-semibold text-zinc-900">
-                              {format(parseISO(booking.startDate), 'd MMM yyyy', { locale: localeId })}
+                              {format(parseISO(booking.startDateTime), 'd MMM yyyy', { locale: localeId })}
                             </p>
                           </div>
                           <div>
                             <span className="text-zinc-400">Selesai Sewa</span>
                             <p className="font-semibold text-zinc-900">
-                              {format(parseISO(booking.endDate), 'd MMM yyyy', { locale: localeId })}
+                              {format(parseISO(booking.endDateTime), 'd MMM yyyy', { locale: localeId })}
                             </p>
                           </div>
                           <div>
                             <span className="text-zinc-400">Durasi</span>
-                            <p className="font-semibold text-zinc-900">{booking.duration} hari</p>
+                            <p className="font-semibold text-zinc-900">{formatDuration(booking.durationMinutes)}</p>
                           </div>
                           <div>
                             <span className="text-zinc-400">Metode Bayar</span>

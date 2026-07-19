@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
+import { formatDuration } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-250',
@@ -197,7 +198,7 @@ export default function AdminDashboard() {
   const calculatePenaltyPreview = (booking: any, returnDateStr: string) => {
     if (!booking || !returnDateStr) return 0;
     const returnTime = new Date(returnDateStr).getTime();
-    const endTime = new Date(booking.endDate).getTime();
+    const endTime = new Date(booking.endDateTime).getTime();
     const diffTimeMs = returnTime - endTime;
 
     const diffMinutes = Math.floor(diffTimeMs / (1000 * 60));
@@ -307,7 +308,7 @@ export default function AdminDashboard() {
                           {booking.car.brand} {booking.car.name}
                         </td>
                         <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.startDate).toLocaleDateString('id-ID')}
+                          {new Date(booking.startDateTime).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-6 py-3">
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusColors[booking.status]}`}>
@@ -384,7 +385,7 @@ export default function AdminDashboard() {
                           {booking.car.brand} {booking.car.name}
                         </td>
                         <td className="px-6 py-3 text-zinc-500">
-                          {new Date(booking.startDate).toLocaleDateString('id-ID')}
+                          {new Date(booking.startDateTime).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-6 py-3">
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusColors[booking.status]}`}>
@@ -465,8 +466,8 @@ export default function AdminDashboard() {
                   <h4 className="font-bold text-zinc-900 border-b pb-1">Detail Sewa</h4>
                   <p><span className="text-zinc-500 font-medium">Mobil:</span> {selectedBooking.car.brand} {selectedBooking.car.name}</p>
                   <p><span className="text-zinc-500 font-medium">Layanan:</span> {selectedBooking.serviceType === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Dengan Driver'}</p>
-                  <p><span className="text-zinc-500 font-medium">Tanggal:</span> {new Date(selectedBooking.startDate).toLocaleDateString('id-ID')} s.d. {new Date(selectedBooking.endDate).toLocaleDateString('id-ID')}</p>
-                  <p><span className="text-zinc-500 font-medium">Durasi:</span> {selectedBooking.duration} Hari</p>
+                  <p><span className="text-zinc-500 font-medium">Tanggal:</span> {new Date(selectedBooking.startDateTime).toLocaleDateString('id-ID')} s.d. {new Date(selectedBooking.endDateTime).toLocaleDateString('id-ID')}</p>
+                  <p><span className="text-zinc-500 font-medium">Durasi:</span> {formatDuration(selectedBooking.durationMinutes)}</p>
                   {selectedBooking.pickupLocation && <p><span className="text-zinc-500 font-medium">Lokasi:</span> {selectedBooking.pickupLocation}</p>}
                 </div>
               </div>

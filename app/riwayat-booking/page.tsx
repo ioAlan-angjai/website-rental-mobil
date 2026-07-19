@@ -15,6 +15,7 @@ import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { formatDuration } from '@/lib/utils';
 
 const statusColors: Record<string, { bg: string; text: string; border: string; icon: any }> = {
   PENDING: {
@@ -349,12 +350,12 @@ export default function RiwayatBookingPage() {
                             <div>
                               <span className="font-bold text-zinc-900">Durasi Sewa</span>
                               <p className="mt-0.5">
-                                {format(parseISO(booking.startDate), 'd MMMM yyyy', { locale: localeId })}
+                                {format(parseISO(booking.startDateTime), 'd MMMM yyyy', { locale: localeId })}
                                 <span className="mx-1.5 text-zinc-400">s/d</span>
-                                {format(parseISO(booking.endDate), 'd MMMM yyyy', { locale: localeId })}
-                                <span className="ml-2 font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded-full">
-                                  {booking.duration} hari
-                                </span>
+                                {format(parseISO(booking.endDateTime), 'd MMMM yyyy', { locale: localeId })}
+                                                                <span className="ml-2 font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded-full">
+                                                                  {formatDuration(booking.durationMinutes)}
+                                                                </span>
                               </p>
                             </div>
                           </div>
@@ -395,7 +396,7 @@ export default function RiwayatBookingPage() {
 
                         <div className="space-y-2.5 text-xs">
                           <div className="flex justify-between text-zinc-500">
-                            <span>Sewa Mobil ({booking.duration} hari)</span>
+                            <span>Sewa Mobil ({formatDuration(booking.durationMinutes)})</span>
                             <span>{formatIDR(booking.basePrice)}</span>
                           </div>
                           {booking.discountAmount > 0 && (

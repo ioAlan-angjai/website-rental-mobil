@@ -81,17 +81,23 @@ export async function POST(req: NextRequest) {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    if (start >= end) {
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return NextResponse.json(
-        { error: "Tanggal mulai harus sebelum tanggal selesai" },
+        { error: "Format tanggal tidak valid" },
         { status: 400 }
       );
     }
 
-    // Hitung durasi (dalam hari)
-    const duration = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    if (start >= end) {
+      return NextResponse.json(
+        { error: "Waktu pengembalian harus setelah waktu pengambilan" },
+        { status: 400 }
+      );
+    }
+
+    // Hitung durasi dalam menit (presisi, mendukung booking beberapa jam / 1 hari / beberapa hari)
+    const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    const durationHours = durationMinutes / 60;
 
     // Get car details dari database
     const car = await prisma.car.findUnique({ where: { id: carId } });
@@ -110,24 +116,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cek ketersediaan pada rentang tanggal
+    // Cek ketersediaan: overlap interval [start, end) dengan booking aktif
     const existingBookings = await prisma.booking.findMany({
       where: {
         carId,
         status: { in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS"] },
-        OR: [{ startDate: { lte: end }, endDate: { gte: start } }],
+        // Konflik jika existing.start < requested.end AND existing.end > requested.start
+        startDateTime: { lt: end },
+        endDateTime: { gt: start },
       },
     });
 
     if (existingBookings.length > 0) {
       return NextResponse.json(
-        { error: "Mobil sudah dipesan pada tanggal tersebut" },
+        { error: "Mobil sudah dipesan pada waktu tersebut. Silakan pilih waktu lain." },
         { status: 400 }
       );
     }
 
-    // Hitung harga
-    const basePrice = car.pricePerDay * duration;
+    // Hitung harga pro-rata per jam (pricePerDay / 24 * jam)
+    const pricePerHour = car.pricePerDay / 24;
+    const basePrice = Math.round(pricePerHour * durationHours);
     const discountAmount = 0;
     const dpAmount = Math.floor(basePrice * 0.5);
     const totalPrice = basePrice - discountAmount;
@@ -135,9 +144,9 @@ export async function POST(req: NextRequest) {
     // Siapkan data booking
     const bookingData: any = {
       car: { connect: { id: carId } },
-      startDate: start,
-      endDate: end,
-      duration,
+      startDateTime: start,
+      endDateTime: end,
+      durationMinutes,
       serviceType: serviceType as string,
       pickupLocation,
       returnLocation,
@@ -163,7 +172,7 @@ export async function POST(req: NextRequest) {
     // Buat booking
     const booking = await prisma.booking.create({
       data: bookingData,
-      include: { car: true },
+      include: { car: true, user: { select: { name: true, email: true } } },
     });
 
     // Buat payment record untuk DP jika ada paymentMethod
@@ -175,6 +184,39 @@ export async function POST(req: NextRequest) {
           type: "DP",
           method: paymentMethod,
           status: "PENDING",
+        },
+      });
+    }
+
+    // Notifikasi ke ADMIN: booking baru masuk
+    const adminUsers = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+
+    if (adminUsers.length > 0) {
+      const renterName = booking.user?.name || guestName || "Guest";
+      const durasiTeks = durationHours >= 24
+        ? `${Math.floor(durationHours / 24)} hari ${durationHours % 24 ? `${Math.round(durationHours % 24)} jam` : ""}`.trim()
+        : `${durationHours} jam`;
+      await prisma.notification.createMany({
+        data: adminUsers.map((a) => ({
+          userId: a.id,
+          title: "Booking Baru Masuk",
+          message: `${renterName} memesan ${booking.car.name} (${durasiTeks}). Status: menunggu pembayaran DP.`,
+          type: "BOOKING_CREATED_ADMIN",
+        })),
+      });
+    }
+
+    // Notifikasi ke USER: booking berhasil dibuat
+    if (booking.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: booking.userId,
+          title: "Booking Berhasil Dibuat",
+          message: `Booking mobil ${booking.car.name} berhasil dibuat. Silakan lakukan pembayaran DP sebesar Rp ${dpAmount.toLocaleString("id-ID")}.`,
+          type: "BOOKING_CREATED",
         },
       });
     }
