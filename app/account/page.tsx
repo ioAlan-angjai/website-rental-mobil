@@ -53,12 +53,32 @@ function formatIDR(amount: number) {
   }).format(amount);
 }
 
-function getOutstanding(booking: any): number {
-  if (booking.fullPaid) return 0;
+function getPaidAmount(booking: any): number {
+  if (['COMPLETED'].includes(booking.status) || booking.fullPaid) {
+    return booking.totalPrice + (booking.penaltyAmount || 0);
+  }
+
   const verified = booking.payments
     ?.filter((p: any) => p.status === 'VERIFIED')
     .reduce((sum: number, p: any) => sum + p.amount, 0) ?? 0;
-  return Math.max(0, booking.totalPrice - verified);
+
+  if (verified > 0) return verified;
+
+  if (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT'].includes(booking.status)) {
+    return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
+  }
+
+  if (['PENDING', 'WAITING_DP'].includes(booking.status) && booking.paymentProof) {
+    return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
+  }
+
+  return 0;
+}
+
+function getOutstanding(booking: any): number {
+  if (['COMPLETED'].includes(booking.status) || booking.fullPaid) return 0;
+  const paid = getPaidAmount(booking);
+  return Math.max(0, booking.totalPrice - paid);
 }
 
 export default function AccountPage() {
@@ -281,18 +301,18 @@ export default function AccountPage() {
                           <div>
                             <span className="text-zinc-400">Mulai Sewa</span>
                             <p className="font-semibold text-zinc-900">
-                              {format(parseISO(booking.startDateTime), 'd MMM yyyy', { locale: localeId })}
+                              {format(parseISO(booking.startDateTime || booking.startDate), 'd MMM yyyy', { locale: localeId })}
                             </p>
                           </div>
                           <div>
                             <span className="text-zinc-400">Selesai Sewa</span>
                             <p className="font-semibold text-zinc-900">
-                              {format(parseISO(booking.endDateTime), 'd MMM yyyy', { locale: localeId })}
+                              {format(parseISO(booking.endDateTime || booking.endDate), 'd MMM yyyy', { locale: localeId })}
                             </p>
                           </div>
                           <div>
                             <span className="text-zinc-400">Durasi</span>
-                            <p className="font-semibold text-zinc-900">{formatDuration(booking.durationMinutes)}</p>
+                            <p className="font-semibold text-zinc-900">{formatDuration(booking.durationMinutes ?? booking.duration)}</p>
                           </div>
                           <div>
                             <span className="text-zinc-400">Metode Bayar</span>

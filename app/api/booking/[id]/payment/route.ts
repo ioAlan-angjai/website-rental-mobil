@@ -45,8 +45,25 @@ export async function POST(
       );
     }
 
-    // Check ownership (jika user login)
-    if (session?.user && (session.user as any).id && booking.userId !== (session.user as any).id) {
+    // Check ownership (jika user login dan booking memiliki userId terikat)
+    let currentUserId = (session?.user as any)?.id;
+    if (!currentUserId && session?.user?.email) {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true, role: true },
+      });
+      if (dbUser) currentUserId = dbUser.id;
+    }
+
+    const isUserAdmin = (session?.user as any)?.role === "ADMIN";
+
+    if (
+      session?.user &&
+      !isUserAdmin &&
+      booking.userId &&
+      currentUserId &&
+      booking.userId !== currentUserId
+    ) {
       return NextResponse.json(
         { error: "Anda tidak memiliki akses ke booking ini" },
         { status: 403 }

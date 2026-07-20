@@ -109,10 +109,10 @@ model Booking {
   carId  String
 
   // Booking Details
-  startDateTime DateTime
-  endDateTime   DateTime
-  durationMinutes Int    // total durasi dalam menit (presisi, hindari float)
-  serviceType  String   // LEPAS_KUNCI | DENGAN_DRIVER
+  startDateTime   DateTime
+  endDateTime     DateTime
+  durationMinutes Int      // total durasi dalam menit
+  serviceType String   // LEPAS_KUNCI | DENGAN_DRIVER
 
   // Pickup & Return
   pickupLocation String?
@@ -236,6 +236,7 @@ model Notification {
   type    String // BOOKING_CREATED | PAYMENT_RECEIVED | PAYMENT_VERIFIED | etc.
 
   isRead Boolean @default(false)
+  link   String?
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

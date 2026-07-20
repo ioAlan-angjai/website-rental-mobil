@@ -119,29 +119,59 @@ export function Navbar() {
 
         {/* Desktop Action Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          {session && user?.role === 'ADMIN' && (
+          {session && user && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 rounded-lg hover:bg-zinc-100 transition-all duration-200 bg-transparent border-0 cursor-pointer">
-                <div className="w-7 h-7 bg-zinc-900 rounded-lg flex items-center justify-center">
-                  <User size={14} className="text-white" />
+                <div className="w-7 h-7 bg-zinc-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
                 </div>
-                <span className="max-w-[120px] truncate">{user?.name || 'Admin'}</span>
+                <span className="max-w-[120px] truncate font-semibold">{user?.name || 'Pengguna'}</span>
                 <ChevronDown size={14} className="text-zinc-400" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-zinc-200 min-w-[180px]">
+              <DropdownMenuContent className="bg-white border-zinc-200 min-w-[200px] p-1 shadow-lg">
+                <div className="px-3 py-2 border-b border-zinc-100 mb-1">
+                  <p className="text-xs font-bold text-zinc-900 truncate">{user?.name || 'Pengguna'}</p>
+                  <p className="text-[11px] text-zinc-500 truncate">{user?.email}</p>
+                </div>
+
+                {user?.role === 'ADMIN' && (
+                  <DropdownMenuItem className="p-0">
+                    <Link
+                      href="/admin"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md font-medium"
+                    >
+                      <LayoutDashboard size={14} />
+                      Dashboard Admin
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem className="p-0">
                   <Link
-                    href="/admin"
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md"
+                    href="/account"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md font-medium"
                   >
-                    <LayoutDashboard size={14} />
-                    Dashboard Admin
+                    <User size={14} />
+                    Akun Saya
                   </Link>
                 </DropdownMenuItem>
+
+                <DropdownMenuItem className="p-0">
+                  <Link
+                    href="/riwayat-booking"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer rounded-md font-medium"
+                  >
+                    <CalendarDays size={14} />
+                    Riwayat Booking
+                  </Link>
+                </DropdownMenuItem>
+
+                <div className="border-t border-zinc-100 my-1" />
+
                 <DropdownMenuItem className="p-0">
                   <button
                     onClick={() => signOut({ callbackUrl: '/' })}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer rounded-md bg-transparent border-0 text-left"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer rounded-md font-medium bg-transparent border-0 text-left"
                   >
                     <LogOut size={14} />
                     Keluar
@@ -256,9 +286,50 @@ export function Navbar() {
 
               {/* Mobile Action Buttons in Sheet */}
               <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-zinc-200 bg-white flex flex-col gap-3">
-                {session && (
-                  <div className="flex justify-center">
-                    <UserNotifications />
+                {session && user && (
+                  <div className="space-y-2 pb-2 border-b border-zinc-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                          {user?.name ? user.name.charAt(0).toUpperCase() : <User size={16} />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-zinc-900">{user?.name || 'Pengguna'}</p>
+                          <p className="text-xs text-zinc-500">{user?.email}</p>
+                        </div>
+                      </div>
+                      <UserNotifications />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
+                        <Link href="/account" className="w-full">
+                          <Button variant="outline" className="w-full justify-start text-xs font-semibold rounded-xl gap-2">
+                            <User size={14} />
+                            Akun Saya
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer">
+                        <Link href="/riwayat-booking" className="w-full">
+                          <Button variant="outline" className="w-full justify-start text-xs font-semibold rounded-xl gap-2">
+                            <CalendarDays size={14} />
+                            Riwayat
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                    </div>
+
+                    {user?.role === 'ADMIN' && (
+                      <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer block">
+                        <Link href="/admin" className="w-full">
+                          <Button variant="outline" className="w-full justify-start text-xs font-semibold rounded-xl gap-2">
+                            <LayoutDashboard size={14} />
+                            Dashboard Admin
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                    )}
                   </div>
                 )}
                 {!session && (
@@ -287,26 +358,14 @@ export function Navbar() {
                     </Button>
                   </Link>
                 </SheetClose>
-                 {session && user?.role === 'ADMIN' && (
-                  <>
-                    <div className="flex gap-2">
-                      <SheetClose className="p-0 border-0 bg-transparent text-left w-full cursor-pointer flex-1">
-                        <Link href="/admin" className="w-full">
-                          <Button className="w-full bg-transparent border border-zinc-300 text-zinc-700 hover:bg-zinc-100 rounded-xl py-5 font-bold flex items-center justify-center gap-2 text-xs">
-                            <LayoutDashboard size={14} />
-                            Dashboard Admin
-                          </Button>
-                        </Link>
-                      </SheetClose>
-                    </div>
-                    <button
-                      onClick={() => signOut({ callbackUrl: '/' })}
-                      className="w-full py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <LogOut size={16} />
-                      Keluar
-                    </button>
-                  </>
+                {session && (
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="w-full py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors bg-transparent border border-red-200 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={14} />
+                    Keluar
+                  </button>
                 )}
               </div>
             </SheetContent>

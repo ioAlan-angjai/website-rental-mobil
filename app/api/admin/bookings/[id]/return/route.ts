@@ -54,20 +54,15 @@ export async function POST(
     const returnTime = new Date(actualReturnDate);
     const endTime = new Date(booking.endDateTime);
 
-    // Hitung denda (jika telat)
+    // Hitung denda Keterlambatan: 10% dari harga sewa 1 hari per jam (1 jam = 10%, 2 jam = 20%, dst.)
     let penaltyAmount = 0;
     const diffTimeMs = returnTime.getTime() - endTime.getTime();
 
-    // Cek apakah melewati grace period (30 menit)
-    const diffMinutes = Math.floor(diffTimeMs / (1000 * 60));
-    if (diffMinutes > PENALTY_CONFIG.GRACE_PERIOD_MINUTES) {
+    if (diffTimeMs > 0) {
       const diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
-      
-      // Jika melewati threshold jam (misal 6 jam), denda disamakan dengan harga sewa full day
-      if (diffHours >= PENALTY_CONFIG.PENALTY_THRESHOLD_HOURS) {
-        penaltyAmount = booking.car.pricePerDay;
-      } else {
-        penaltyAmount = diffHours * PENALTY_CONFIG.PENALTY_PER_HOUR;
+      if (diffHours > 0) {
+        const penaltyRatePerHour = 0.10; // 10% per jam
+        penaltyAmount = Math.round(diffHours * penaltyRatePerHour * booking.car.pricePerDay);
       }
     }
 
@@ -134,8 +129,9 @@ export async function POST(
             userId: booking.userId,
             title: "Tagihan Pelunasan Tersedia",
             message: `Mobil ${booking.car.name} telah dikembalikan. Sisa pembayaran pelunasan sebesar Rp ${remainingAmount.toLocaleString('id-ID')}${penaltyAmount > 0 ? ` (termasuk denda Rp ${penaltyAmount.toLocaleString('id-ID')})` : ''}. Silakan lakukan pelunasan.`,
-            type: "SETTLEMENT_DUE"
-          }
+            type: "SETTLEMENT_DUE",
+            link: `/pelunasan/${booking.id}`,
+          } as any
         });
       }
     }

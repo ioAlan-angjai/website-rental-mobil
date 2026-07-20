@@ -87,15 +87,37 @@ function formatIDR(amount: number) {
   }).format(amount);
 }
 
-function getOutstanding(booking: any): number {
-  if (booking.fullPaid) return 0;
-  // If DP is not paid, outstanding is the whole totalPrice
-  // If DP is paid, outstanding is totalPrice - dpAmount (or payments already verified)
+// untuk return nominal yang sudah dibayar
+function getPaidAmount(booking: any): number {
+  if (['COMPLETED'].includes(booking.status) || booking.fullPaid) {
+    return booking.totalPrice + (booking.penaltyAmount || 0);
+  }
+
   const verifiedPaymentTotal = booking.payments
     ?.filter((p: any) => p.status === 'VERIFIED')
     .reduce((sum: number, p: any) => sum + p.amount, 0) ?? 0;
-  
-  return Math.max(0, booking.totalPrice - verifiedPaymentTotal);
+
+  if (verifiedPaymentTotal > 0) {
+    return verifiedPaymentTotal;
+  }
+
+  // Jika status DP_CONFIRMED, IN_PROGRESS, atau WAITING_PAYMENT, DP sudah terbayar
+  if (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT'].includes(booking.status)) {
+    return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
+  }
+
+  // Jika status PENDING / WAITING_DP tapi user sudah mengunggah bukti bayar DP
+  if (['PENDING', 'WAITING_DP'].includes(booking.status) && booking.paymentProof) {
+    return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
+  }
+
+  return 0;
+}
+
+function getOutstanding(booking: any): number {
+  if (['COMPLETED'].includes(booking.status) || booking.fullPaid) return 0;
+  const paid = getPaidAmount(booking);
+  return Math.max(0, booking.totalPrice - paid);
 }
 
 export default function RiwayatBookingPage() {
@@ -279,6 +301,7 @@ export default function RiwayatBookingPage() {
 
             {/* Bookings List */}
             {!loading && !error && filteredBookings.map((booking) => {
+              const paidAmount = getPaidAmount(booking);
               const outstanding = getOutstanding(booking);
               const statusCfg = statusColors[booking.status] || {
                 bg: 'bg-zinc-50',
@@ -350,12 +373,12 @@ export default function RiwayatBookingPage() {
                             <div>
                               <span className="font-bold text-zinc-900">Durasi Sewa</span>
                               <p className="mt-0.5">
-                                {format(parseISO(booking.startDateTime), 'd MMMM yyyy', { locale: localeId })}
+                                {format(parseISO(booking.startDateTime || booking.startDate), 'd MMMM yyyy', { locale: localeId })}
                                 <span className="mx-1.5 text-zinc-400">s/d</span>
-                                {format(parseISO(booking.endDateTime), 'd MMMM yyyy', { locale: localeId })}
-                                                                <span className="ml-2 font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded-full">
-                                                                  {formatDuration(booking.durationMinutes)}
-                                                                </span>
+                                {format(parseISO(booking.endDateTime || booking.endDate), 'd MMMM yyyy', { locale: localeId })}
+                                <span className="ml-2 font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded-full">
+                                  {formatDuration(booking.durationMinutes ?? booking.duration)}
+                                </span>
                               </p>
                             </div>
                           </div>
@@ -396,7 +419,7 @@ export default function RiwayatBookingPage() {
 
                         <div className="space-y-2.5 text-xs">
                           <div className="flex justify-between text-zinc-500">
-                            <span>Sewa Mobil ({formatDuration(booking.durationMinutes)})</span>
+                            <span>Sewa Mobil ({formatDuration(booking.durationMinutes ?? booking.duration)})</span>
                             <span>{formatIDR(booking.basePrice)}</span>
                           </div>
                           {booking.discountAmount > 0 && (
@@ -419,17 +442,26 @@ export default function RiwayatBookingPage() {
                             <div className="grid grid-cols-2 gap-2">
                               <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
                                 <span className="text-[10px] text-zinc-400 font-bold uppercase leading-none block">Sudah Terbayar</span>
-                                <span className="text-xs font-black text-zinc-900 mt-1 block">
-                                  {formatIDR(booking.totalPrice - outstanding)}
+                                <span className={`text-xs font-black mt-1 block ${paidAmount > 0 ? 'text-emerald-700' : 'text-zinc-900'}`}>
+                                  {formatIDR(paidAmount)}
                                 </span>
                               </div>
                               <div className={`rounded-xl p-3 border ${outstanding > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`}>
                                 <span className={`text-[10px] font-bold uppercase leading-none block ${outstanding > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
-                                  {outstanding > 0 ? 'Sisa Tagihan' : 'Sisa Tagihan'}
+                                  {outstanding > 0 ? 'Sisa Tagihan' : 'Status Pelunasan'}
                                 </span>
-                                <span className={`text-xs font-black mt-1 block ${outstanding > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
-                                  {outstanding > 0 ? formatIDR(outstanding) : '✓ Lunas'}
-                                </span>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className={`text-xs font-black block ${outstanding > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
+                                    {outstanding > 0 ? formatIDR(outstanding) : '✓ Lunas'}
+                                  </span>
+                                  {outstanding > 0 && ['WAITING_PAYMENT', 'IN_PROGRESS', 'DP_CONFIRMED'].includes(booking.status) && (
+                                    <Link href={`/pelunasan/${booking.id}`}>
+                                      <button className="text-[10px] font-bold bg-rose-600 hover:bg-rose-700 text-white px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0">
+                                        Bayar
+                                      </button>
+                                    </Link>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -438,26 +470,78 @@ export default function RiwayatBookingPage() {
 
                     </div>
 
-                    {/* Dynamic payment instruction banner for pending payment */}
-                    {outstanding > 0 && ['PENDING', 'WAITING_DP'].includes(booking.status) && (
-                      <div className="mt-6 p-4 bg-amber-50/50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* Dynamic payment instruction banner for DP */}
+                    {['PENDING', 'WAITING_DP'].includes(booking.status) && (
+                      booking.paymentProof ? (
+                        <div className="mt-6 p-4 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-center justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <Clock className="text-blue-600 shrink-0 mt-0.5" size={18} />
+                            <div>
+                              <p className="text-xs font-bold text-blue-950">
+                                Bukti Pembayaran DP ({formatIDR(booking.dpAmount)}) Berhasil Diunggah
+                              </p>
+                              <p className="text-[11px] text-blue-700 mt-0.5">
+                                Bukti transfer sedang diverifikasi oleh Tim Admin. Status akan berubah menjadi "DP Terverifikasi" setelah disetujui.
+                              </p>
+                            </div>
+                          </div>
+                          <a
+                            href={booking.paymentProof}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shrink-0 transition-colors"
+                          >
+                            Lihat Bukti
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="mt-6 p-4 bg-amber-50/50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <Landmark className="text-amber-600 shrink-0 mt-0.5" size={18} />
+                            <div>
+                              <p className="text-xs font-bold text-amber-900">
+                                Lakukan transfer sebesar <strong className="text-sm font-black">{formatIDR(booking.dpAmount)}</strong> untuk mengonfirmasi pesanan Anda
+                              </p>
+                              <p className="text-[10px] text-amber-700 mt-0.5">
+                                Metode Pembayaran: Transfer Bank ({booking.paymentMethod || 'BCA'})
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-auto">
+                            <Link href={`/booking?carId=${booking.carId}`}>
+                              <button className="inline-flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer">
+                                Bayar DP Sekarang
+                                <ArrowRight size={12} />
+                              </button>
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    )}
+
+                    {/* Dynamic payment instruction banner for Pelunasan */}
+                    {outstanding > 0 && ['WAITING_PAYMENT', 'IN_PROGRESS', 'DP_CONFIRMED'].includes(booking.status) && (
+                      <div className="mt-6 p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <Landmark className="text-amber-600 shrink-0 mt-0.5" size={18} />
+                          <Landmark className="text-emerald-600 shrink-0 mt-0.5" size={18} />
                           <div>
-                            <p className="text-xs font-bold text-amber-900">
-                              Lakukan transfer sebesar <strong className="text-sm font-black">{formatIDR(booking.dpAmount)}</strong> untuk mengonfirmasi pesanan Anda
+                            <p className="text-xs font-bold text-emerald-950">
+                              Tagihan Pelunasan Tersedia sebesar <strong className="text-sm font-black text-emerald-900">{formatIDR(outstanding)}</strong>
                             </p>
-                            <p className="text-[10px] text-amber-700 mt-0.5">
-                              Metode Pembayaran: Transfer Bank ({booking.paymentMethod || 'BCA'})
+                            <p className="text-[11px] text-emerald-700 mt-0.5">
+                              {booking.penaltyAmount > 0
+                                ? `Termasuk denda keterlambatan Rp ${formatIDR(booking.penaltyAmount)}. Silakan lakukan pelunasan.`
+                                : 'Mobil telah dikembalikan / disewa. Silakan lakukan pelunasan sisa tagihan Anda.'}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                          <Link href={`/booking?carId=${booking.carId}`}>
-                            <button className="inline-flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer">
-                              Bayar DP Sekarang
-                              <ArrowRight size={12} />
+                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                          <Link href={`/pelunasan/${booking.id}`}>
+                            <button className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm">
+                              Bayar Pelunasan Sekarang
+                              <ArrowRight size={14} />
                             </button>
                           </Link>
                         </div>
