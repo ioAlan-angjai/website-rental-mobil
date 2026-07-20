@@ -135,7 +135,17 @@ function BookingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Calculate duration whenever date, endDate, pickupTime or returnTime changes
+  // Auto-fill user identity when session resolves
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || user.name || '',
+        phone: prev.phone || user.phone || '',
+        email: prev.email || user.email || '',
+      }));
+    }
+  }, [user]);
   useEffect(() => {
     if (date && endDate) {
       const startDateTime = new Date(date);
@@ -190,10 +200,22 @@ function BookingForm() {
     if (step > 1) setStep(step - 1);
   };
 
+  // Fetch driver fee from API
+  const [driverFeePerDay, setDriverFeePerDay] = useState(150000);
+  useEffect(() => {
+    fetch('/api/driver-fee')
+      .then(r => r.json())
+      .then(res => {
+        if (res.driverFeePerDay) setDriverFeePerDay(res.driverFeePerDay);
+      })
+      .catch(console.error);
+  }, []);
+
   const selectedCarDetails = dbCars.find(c => c.id === formData.carId);
-  const totalPrice = selectedCarDetails
-    ? Math.round((selectedCarDetails.pricePerDay / 24) * (parseInt(formData.duration) / 60))
-    : 0;
+  const rentalDays = Math.max(1, Math.ceil(parseInt(formData.duration) / (60 * 24)));
+  const effectiveDriverFee = formData.serviceType === 'dengan-driver' ? driverFeePerDay : 0;
+  const dailyRate = selectedCarDetails ? (selectedCarDetails.pricePerDay + effectiveDriverFee) : 0;
+  const totalPrice = rentalDays * dailyRate;
   const dpAmount = Math.floor(totalPrice * 0.5);
 
   // Dropzone for upload
@@ -610,16 +632,29 @@ function BookingForm() {
 
                       {selectedCarDetails && (
                         <div className="space-y-3">
-                          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 flex justify-between items-center">
-                            <div>
-                              <p className="text-xs text-zinc-500 uppercase tracking-wide">Total Sewa</p>
+                          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 space-y-2">
+                            <div className="flex justify-between items-center text-xs text-zinc-500">
+                              <span>Sewa Mobil ({selectedCarDetails.name}):</span>
+                              <span className="font-semibold text-zinc-800">Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} / hari</span>
+                            </div>
+                            {formData.serviceType === 'dengan-driver' && (
+                              <div className="flex justify-between items-center text-xs text-emerald-600 font-medium">
+                                <span>Layanan Driver Tambahan:</span>
+                                <span className="font-semibold">+Rp {driverFeePerDay.toLocaleString('id-ID')} / hari</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-xs text-zinc-500 pt-1 border-t border-zinc-200">
+                              <span>Durasi Total ({rentalDays} Hari):</span>
+                              <span className="font-semibold text-zinc-800">{rentalDays} × Rp {dailyRate.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-zinc-200">
+                              <p className="text-xs text-zinc-500 uppercase tracking-wide font-bold">Total Harga Sewa</p>
                               <p className="text-xl font-bold text-zinc-900">
                                 Rp {totalPrice.toLocaleString('id-ID')}
                               </p>
                             </div>
-                            <CreditCard className="w-7 h-7 text-zinc-400" />
                           </div>
-                          <div className="bg-zinc-900 text-white rounded-2xl p-5 flex justify-between items-center">
+                          <div className="bg-zinc-900 text-white rounded-2xl p-5 flex justify-between items-center shadow-lg">
                             <div>
                               <p className="text-xs text-zinc-400 uppercase tracking-wide">DP yang Harus Dibayar (50%)</p>
                               <p className="text-2xl font-bold">

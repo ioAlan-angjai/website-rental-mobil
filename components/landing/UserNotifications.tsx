@@ -12,11 +12,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { useRouter } from 'next/navigation';
+
 interface NotificationItem {
   id: string;
   title: string;
   message: string;
   type: string;
+  link?: string;
   isRead: boolean;
   createdAt: string;
 }
@@ -34,6 +37,7 @@ const typeIcon: Record<string, string> = {
 };
 
 export function UserNotifications() {
+  const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -71,8 +75,26 @@ export function UserNotifications() {
     }
   };
 
+  const handleItemClick = (item: NotificationItem) => {
+    // Mark read locally
+    if (!item.isRead) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isRead: true } : i)));
+      setUnread((prev) => Math.max(0, prev - 1));
+    }
+
+    setOpen(false);
+
+    if (item.link) {
+      router.push(item.link);
+    } else if (item.type === 'SETTLEMENT_DUE') {
+      router.push('/riwayat-booking');
+    } else {
+      router.push('/riwayat-booking');
+    }
+  };
+
   return (
-    <DropdownMenu onOpenChange={(o) => { setOpen(o); if (o) fetchNotifications(); }}>
+    <DropdownMenu open={open} onOpenChange={(o) => { setOpen(o); if (o) fetchNotifications(); }}>
       <DropdownMenuTrigger
         className="relative p-2.5 rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-100 transition-all duration-200 active:scale-95 bg-transparent cursor-pointer"
         aria-label="Notifikasi"
@@ -94,7 +116,7 @@ export function UserNotifications() {
             <button
               onClick={markAllRead}
               disabled={loading}
-              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
             >
               <CheckCheck size={13} /> Tandai dibaca
             </button>
@@ -110,20 +132,21 @@ export function UserNotifications() {
           items.map((item) => (
             <DropdownMenuItem
               key={item.id}
+              onClick={() => handleItemClick(item)}
               className={cn(
-                'flex gap-3 px-4 py-3 border-b border-zinc-50 cursor-default focus:bg-zinc-50',
-                !item.isRead && 'bg-zinc-50/60'
+                'flex gap-3 px-4 py-3 border-b border-zinc-50 cursor-pointer focus:bg-zinc-100 hover:bg-zinc-50 transition-colors',
+                !item.isRead && 'bg-zinc-50/80 font-medium'
               )}
             >
-              <div className="text-lg shrink-0">{typeIcon[item.type] || '🔔'}</div>
+              <div className="text-lg shrink-0">{typeIcon[item.type] || '💳'}</div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-zinc-900 truncate">{item.title}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold text-zinc-900 truncate">{item.title}</p>
                   {!item.isRead && (
-                    <CircleDot size={10} className="text-blue-500 shrink-0" />
+                    <CircleDot size={8} className="text-blue-500 shrink-0" />
                   )}
                 </div>
-                <p className="text-xs text-zinc-500 mt-0.5 leading-snug">{item.message}</p>
+                <p className="text-[11px] text-zinc-600 mt-0.5 leading-snug">{item.message}</p>
               </div>
             </DropdownMenuItem>
           ))
