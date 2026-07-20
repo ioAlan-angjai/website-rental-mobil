@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, CheckCheck, CircleDot } from 'lucide-react';
+import { Bell, CheckCheck, CircleDot, FileText, CheckCircle2, XCircle, Car, Clock, CreditCard, PartyPopper } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,17 +24,30 @@ interface NotificationItem {
   createdAt: string;
 }
 
-const typeIcon: Record<string, string> = {
-  BOOKING_CREATED: '📝',
-  BOOKING_CREATED_ADMIN: '📝',
-  PAYMENT_VERIFIED: '✅',
-  BOOKING_REJECTED: '❌',
-  RENTAL_STARTED: '🚗',
-  RENTAL_NEAR_EXPIRY: '⏰',
-  RENTAL_EXPIRED: '⏰',
-  SETTLEMENT_DUE: '💳',
-  RENTAL_COMPLETED: '🎉',
-};
+function NotificationIcon({ type }: { type: string }) {
+  const iconClass = "w-4 h-4 shrink-0";
+  switch (type) {
+    case 'BOOKING_CREATED':
+    case 'BOOKING_CREATED_ADMIN':
+      return <FileText className={cn(iconClass, "text-blue-500")} />;
+    case 'PAYMENT_VERIFIED':
+      return <CheckCircle2 className={cn(iconClass, "text-emerald-500")} />;
+    case 'BOOKING_REJECTED':
+      return <XCircle className={cn(iconClass, "text-rose-500")} />;
+    case 'RENTAL_STARTED':
+      return <Car className={cn(iconClass, "text-sky-500")} />;
+    case 'RENTAL_NEAR_EXPIRY':
+    case 'RENTAL_EXPIRED':
+      return <Clock className={cn(iconClass, "text-orange-500")} />;
+    case 'SETTLEMENT_DUE':
+    case 'PAYMENT_RECEIVED':
+      return <CreditCard className={cn(iconClass, "text-amber-500")} />;
+    case 'RENTAL_COMPLETED':
+      return <PartyPopper className={cn(iconClass, "text-indigo-500")} />;
+    default:
+      return <CreditCard className={cn(iconClass, "text-zinc-550")} />;
+  }
+}
 
 export function UserNotifications() {
   const router = useRouter();
@@ -65,7 +78,11 @@ export function UserNotifications() {
   const markAllRead = async () => {
     setLoading(true);
     try {
-      await fetch('/api/notifications', { method: 'PATCH' });
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}), // no id = mark all
+      });
       setItems((prev) => prev.map((i) => ({ ...i, isRead: true })));
       setUnread(0);
     } catch {
@@ -75,11 +92,21 @@ export function UserNotifications() {
     }
   };
 
-  const handleItemClick = (item: NotificationItem) => {
-    // Mark read locally
+  const handleItemClick = async (item: NotificationItem) => {
+    // Mark read locally immediately for snappy UX
     if (!item.isRead) {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isRead: true } : i)));
       setUnread((prev) => Math.max(0, prev - 1));
+      // Persist to DB so it stays read across page navigations
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.id }),
+        });
+      } catch {
+        // silent — local state already updated
+      }
     }
 
     setOpen(false);
@@ -138,7 +165,7 @@ export function UserNotifications() {
                 !item.isRead && 'bg-zinc-50/80 font-medium'
               )}
             >
-              <div className="text-lg shrink-0">{typeIcon[item.type] || '💳'}</div>
+              <NotificationIcon type={item.type} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-bold text-zinc-900 truncate">{item.title}</p>

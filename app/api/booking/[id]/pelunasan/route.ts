@@ -8,6 +8,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+
+    // Wajib login
+    if (!session?.user || !(session.user as any).id) {
+      return NextResponse.json(
+        { error: "Silakan login terlebih dahulu" },
+        { status: 401 }
+      );
+    }
+
     const booking = await prisma.booking.findUnique({
       where: { id: params.id },
       include: {
@@ -20,6 +30,17 @@ export async function GET(
       return NextResponse.json(
         { error: "Pemesanan tidak ditemukan" },
         { status: 404 }
+      );
+    }
+
+    // Cek ownership: hanya pemilik booking atau admin yang bisa akses
+    const currentUserId = (session.user as any).id;
+    const isAdmin = (session.user as any).role === "ADMIN";
+
+    if (!isAdmin && booking.userId && booking.userId !== currentUserId) {
+      return NextResponse.json(
+        { error: "Anda tidak memiliki akses ke pemesanan ini" },
+        { status: 403 }
       );
     }
 
@@ -39,6 +60,15 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
+
+    // Wajib login
+    if (!session?.user || !(session.user as any).id) {
+      return NextResponse.json(
+        { error: "Silakan login terlebih dahulu" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { paymentMethod, paymentProof, notes } = body;
 
@@ -54,6 +84,17 @@ export async function POST(
       return NextResponse.json(
         { error: "Data pemesanan tidak ditemukan" },
         { status: 404 }
+      );
+    }
+
+    // Cek ownership: hanya pemilik booking atau admin yang bisa akses
+    const currentUserId = (session.user as any).id;
+    const isAdmin = (session.user as any).role === "ADMIN";
+
+    if (!isAdmin && booking.userId && booking.userId !== currentUserId) {
+      return NextResponse.json(
+        { error: "Anda tidak memiliki akses ke pemesanan ini" },
+        { status: 403 }
       );
     }
 

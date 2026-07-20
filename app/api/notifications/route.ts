@@ -37,7 +37,12 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const userId = (session.user as any).id;
-    const body = await req.json();
+    let body: { id?: string } = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No body provided — treat as "mark all read"
+    }
     const { id } = body;
 
     if (id) {
