@@ -1,6 +1,6 @@
 'use client';
 
-import { ShieldCheck, History, Award, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, History, Award, CheckCircle2, Building } from 'lucide-react';
 
 const ABOUT_STATS = [
   { value: '5,000+', label: 'Pelanggan Puas', sub: 'Mahasiswa & Umum' },
@@ -21,8 +21,8 @@ export function AboutSection() {
           
           {/* Left Column - Teks Informatif */}
           <div className="space-y-6">
-            <span className="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
-              🏢 Tentang RentalMobil
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
+              <Building className="w-3.5 h-3.5" /> Tentang RentalMobil
             </span>
             
             <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">

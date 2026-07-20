@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   CalendarIcon, Clock, MapPin, User, Mail, Phone, Car,
   ChevronRight, ChevronLeft, CheckCircle2, CreditCard,
-  Upload, ImageIcon, X, Building2, Copy, Check, AlertCircle,
+  Upload, ImageIcon, X, Building2, Copy, Check, AlertCircle, Landmark, AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -43,7 +43,7 @@ const BANK_ACCOUNTS = [
     number: process.env.NEXT_PUBLIC_BANK_BNI_NUMBER || '0987654321',
     accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT RentalMobil Jogja',
     color: 'bg-orange-600',
-    logo: '🏛️',
+    logo: <Landmark className="w-5 h-5 text-white" />,
   },
   {
     id: 'MANDIRI',
@@ -52,7 +52,7 @@ const BANK_ACCOUNTS = [
     number: process.env.NEXT_PUBLIC_BANK_MANDIRI_NUMBER || '1122334455',
     accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT RentalMobil Jogja',
     color: 'bg-yellow-600',
-    logo: '🏢',
+    logo: <Building2 className="w-5 h-5 text-white" />,
   },
 ];
 
@@ -835,7 +835,7 @@ function BookingForm() {
                       {/* Info */}
                       <div className="p-4 rounded-2xl bg-zinc-100 border border-zinc-200">
                         <p className="text-xs text-zinc-700 leading-relaxed">
-                          <span className="font-bold">⚠️ Penting:</span> Pastikan jumlah transfer sesuai dengan nominal DP di atas. Tim admin akan memverifikasi bukti transfer Anda dalam 1×24 jam.
+                          <span className="font-bold inline-flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" /> Penting:</span> Pastikan jumlah transfer sesuai dengan nominal DP di atas. Tim admin akan memverifikasi bukti transfer Anda dalam 1×24 jam.
                         </p>
                       </div>
                     </div>

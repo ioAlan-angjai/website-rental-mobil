@@ -3,7 +3,7 @@
 import { mockCars } from '@/lib/mock-data';
 import { CarCard } from './CarCard';
 import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, LayoutGrid, Leaf, Compass, Gem, Car } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -18,10 +18,10 @@ const cardVariants = {
 };
 
 const CATEGORIES = [
-  { id: null, label: 'Semua', emoji: '🚘' },
-  { id: 'economy', label: 'Economy', emoji: '💚' },
-  { id: 'comfort', label: 'Comfort', emoji: '🔵' },
-  { id: 'premium', label: 'Premium', emoji: '⭐' },
+  { id: null, label: 'Semua', icon: LayoutGrid },
+  { id: 'economy', label: 'Economy', icon: Leaf },
+  { id: 'comfort', label: 'Comfort', icon: Compass },
+  { id: 'premium', label: 'Premium', icon: Gem },
 ];
 
 export function CatalogGrid() {
@@ -54,8 +54,8 @@ export function CatalogGrid() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="mb-12 text-center"
         >
-          <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold bg-sky-400/10 border border-sky-400/20 text-sky-300 mb-4">
-            🚗 Armada Terlengkap
+          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-sky-400/10 border border-sky-400/20 text-sky-300 mb-4">
+            <Car className="w-3.5 h-3.5" /> Armada Terlengkap
           </span>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
             Pilih Mobil{' '}
@@ -123,7 +123,7 @@ export function CatalogGrid() {
                       : 'bg-slate-700/40 text-slate-300 border-slate-600/40 hover:border-sky-400/40 hover:text-sky-300',
                   )}
                 >
-                  <span className="text-sm">{cat.emoji}</span>
+                  <cat.icon size={14} className={isActive ? 'text-slate-900' : 'text-sky-400'} />
                   {cat.label}
                 </button>
               );

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(
@@ -6,6 +8,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const car = await prisma.car.findUnique({
       where: { id: params.id },
     });
@@ -31,8 +38,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { name, brand, type, capacity, transmission, fuelType, pricePerDay, image, status } = body;
+    const { name, brand, type, capacity, transmission, fuelType, pricePerDay, image, images, status } = body;
 
     const existingCar = await prisma.car.findUnique({
       where: { id: params.id },
@@ -45,6 +57,14 @@ export async function PATCH(
       );
     }
 
+    // Handle images: jika ada array, stringify; jika ada image tunggal; fallback biarkan apa adanya
+    let imagesData: string | undefined;
+    if (images !== undefined) {
+      imagesData = typeof images === 'string' ? images : JSON.stringify(images);
+    } else if (image !== undefined) {
+      imagesData = JSON.stringify([image]);
+    }
+
     const updatedCar = await prisma.car.update({
       where: { id: params.id },
       data: {
@@ -55,7 +75,7 @@ export async function PATCH(
         ...(transmission !== undefined && { transmission }),
         ...(fuelType !== undefined && { fuelType }),
         ...(pricePerDay !== undefined && { pricePerDay: Number(pricePerDay) }),
-        ...(image !== undefined && { images: JSON.stringify([image]) }),
+        ...(imagesData !== undefined && { images: imagesData }),
         ...(status !== undefined && { status }),
       },
     });
@@ -79,6 +99,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await prisma.car.delete({
       where: { id: params.id },
     });

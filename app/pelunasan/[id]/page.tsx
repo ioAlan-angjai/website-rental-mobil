@@ -1,68 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  CreditCard, Building2, CheckCircle2, Clock,
-  ArrowRight, ShieldCheck, Copy, Check, Upload,
-  AlertCircle, ChevronLeft, Car, Calendar, FileText, Landmark
-} from 'lucide-react';
 import { Navbar } from '@/components/landing/Navbar';
+import { Footer } from '@/components/landing/Footer';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
+import { Button } from '@/components/ui/button';
+import { BcaLogo } from '@/components/ui/bca-logo';
+import {
+  Car, CreditCard, Upload, ImageIcon, X, Building2, Copy, Check,
+  AlertCircle, Landmark, CheckCircle2, ArrowLeft, Clock, Calendar,
+  Loader2, MapPin,
+} from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { formatDuration, cn } from '@/lib/utils';
+import { formatDuration } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
-interface BankAccount {
-  id: string;
-  name: string;
-  fullName: string;
-  number: string;
-  accountName: string;
-  color: string;
-  logo: string;
-}
-
-const BANK_ACCOUNTS: BankAccount[] = [
+const BANK_ACCOUNTS = [
   {
     id: 'BCA',
     name: 'BCA',
     fullName: 'Bank Central Asia',
-    number: '8830-1234-5678',
-    accountName: 'PT RENTAL MOBIL INDONESIA',
-    color: 'bg-blue-600 text-white',
-    logo: '🏦',
-  },
-  {
-    id: 'MANDIRI',
-    name: 'Mandiri',
-    fullName: 'Bank Mandiri',
-    number: '137-00-9876543-2',
-    accountName: 'PT RENTAL MOBIL INDONESIA',
-    color: 'bg-yellow-500 text-white',
-    logo: '💳',
+    number: process.env.NEXT_PUBLIC_BANK_BCA_NUMBER || '1234567890',
+    accountName: process.env.NEXT_PUBLIC_BANK_BCA_NAME || 'PT RentalMobil Jogja',
+    color: 'bg-transparent',
+    logo: <BcaLogo />,
   },
   {
     id: 'BNI',
     name: 'BNI',
     fullName: 'Bank Negara Indonesia',
-    number: '0123-4567-8901',
-    accountName: 'PT RENTAL MOBIL INDONESIA',
-    color: 'bg-orange-500 text-white',
-    logo: '🏛️',
+    number: process.env.NEXT_PUBLIC_BANK_BNI_NUMBER || '0987654321',
+    accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT RentalMobil Jogja',
+    color: 'bg-orange-600',
+    logo: <Landmark className="w-5 h-5 text-white" />,
   },
   {
-    id: 'QRIS',
-    name: 'QRIS',
-    fullName: 'QRIS Instant Payment (Semua E-Wallet / Mobile Banking)',
-    number: 'ID1024354657689',
-    accountName: 'RENTAL MOBIL OFFICIAL',
-    color: 'bg-zinc-900 text-white',
-    logo: '📱',
+    id: 'MANDIRI',
+    name: 'Mandiri',
+    fullName: 'Bank Mandiri',
+    number: process.env.NEXT_PUBLIC_BANK_MANDIRI_NUMBER || '1122334455',
+    accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT RentalMobil Jogja',
+    color: 'bg-yellow-600',
+    logo: <Building2 className="w-5 h-5 text-white" />,
   },
 ];
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-400 hover:text-zinc-700"
+      aria-label="Salin nomor rekening"
+    >
+      {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+    </button>
+  );
+}
 
 function formatIDR(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -72,455 +81,514 @@ function formatIDR(amount: number) {
   }).format(amount);
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+function getPaidAmount(booking: any): number {
+  if (['COMPLETED'].includes(booking.status) || booking.fullPaid) {
+    return booking.totalPrice + (booking.penaltyAmount || 0);
+  }
+  const verifiedPaymentTotal =
+    booking.payments
+      ?.filter((p: any) => p.status === 'VERIFIED')
+      .reduce((sum: number, p: any) => sum + p.amount, 0) ?? 0;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  if (verifiedPaymentTotal > 0) return verifiedPaymentTotal;
 
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-    >
-      {copied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-      {copied ? 'Tersalin!' : 'Salin'}
-    </button>
-  );
+  if (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT'].includes(booking.status)) {
+    return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
+  }
+  return 0;
 }
 
 export default function PelunasanPage() {
   const params = useParams();
   const router = useRouter();
-  const bookingId = params.id as string;
+  const { data: session, status } = useSession();
+  const bookingId = params?.id as string;
 
-  const [booking, setBooking] = useState<any | null>(null);
+  const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const [selectedBank, setSelectedBank] = useState('BCA');
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const [selectedBank, setSelectedBank] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    if (!bookingId) return;
+    if (status === 'unauthenticated') {
+      router.push(`/login?callbackUrl=/pelunasan/${bookingId}`);
+    }
+  }, [status, router, bookingId]);
 
+  useEffect(() => {
+    if (!bookingId || !session) return;
     setLoading(true);
     fetch(`/api/booking/${bookingId}/pelunasan`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          setBooking(data.data);
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success) {
+          setBooking(res.data);
         } else {
-          setError(data.error || 'Pemesanan tidak ditemukan');
+          setError(res.error || 'Gagal memuat data tagihan.');
         }
       })
-      .catch((err) => {
-        console.error(err);
-        setError('Gagal terhubung ke server.');
-      })
+      .catch(() => setError('Gagal menghubungi server.'))
       .finally(() => setLoading(false));
-  }, [bookingId]);
+  }, [bookingId, session]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProofFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProofPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    setUploadedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setUploadedPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    maxSize: 5 * 1024 * 1024,
+  });
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setUploadedPreview(null);
   };
 
-  const handleSubmitPelunasan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!booking) return;
+  const handleSubmit = async () => {
+    if (!selectedBank) {
+      setSubmitError('Pilih metode pembayaran terlebih dahulu.');
+      return;
+    }
+    if (!uploadedFile) {
+      setSubmitError('Upload bukti transfer terlebih dahulu.');
+      return;
+    }
 
     setSubmitting(true);
+    setSubmitError('');
+
     try {
-      const res = await fetch(`/api/booking/${booking.id}/pelunasan`, {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      let paymentProofUrl = uploadedPreview;
+      try {
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          paymentProofUrl = uploadData?.url || uploadedPreview;
+        }
+      } catch {
+        // use base64 preview as fallback
+      }
+
+      const res = await fetch(`/api/booking/${bookingId}/pelunasan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          paymentMethod: selectedBank,
-          paymentProof: proofPreview || null,
+          paymentMethod: selectedBank + '_TRANSFER',
+          paymentProof: paymentProofUrl,
           notes,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Gagal memproses pelunasan');
-        return;
+      if (res.ok && data.success) {
+        setSubmitted(true);
+      } else {
+        setSubmitError(data.error || 'Gagal memproses pelunasan. Silakan coba lagi.');
       }
-
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/riwayat-booking');
-      }, 3000);
-    } catch (err) {
-      console.error(err);
-      alert('Terjadi kesalahan saat memproses pelunasan.');
+    } catch {
+      setSubmitError('Terjadi kesalahan koneksi. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-zinc-900 border-t-transparent rounded-full" />
+        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
       </div>
     );
   }
 
-  if (error || !booking) {
+  if (!session) return null;
+
+  if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col justify-between">
+      <div className="min-h-screen bg-slate-50 flex flex-col">
         <Navbar />
-        <BackgroundOrnaments />
-        <div className="max-w-2xl mx-auto px-4 pt-32 pb-20 relative z-10 text-center">
-          <div className="bg-white border border-rose-200 rounded-3xl p-8 shadow-sm">
-            <AlertCircle size={40} className="text-rose-500 mx-auto mb-3" />
-            <h2 className="text-xl font-bold text-zinc-900">Tagihan Tidak Ditemukan</h2>
-            <p className="text-sm text-zinc-500 mt-1">{error || 'ID Tagihan tidak valid'}</p>
-            <Link href="/riwayat-booking" className="inline-block mt-6 px-6 py-2.5 bg-zinc-900 text-white font-bold text-xs rounded-xl">
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-zinc-900 mb-2">Terjadi Kesalahan</h2>
+            <p className="text-zinc-500 text-sm mb-6">{error}</p>
+            <Button onClick={() => router.push('/riwayat-booking')} variant="outline">
               Kembali ke Riwayat Booking
-            </Link>
+            </Button>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
-  // Hitung komponen tagihan
-  const verifiedPaymentTotal = booking.payments
-    ?.filter((p: any) => p.status === 'VERIFIED')
-    .reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
+  if (!booking) return null;
 
-  const dpPaidAmount = verifiedPaymentTotal > 0
-    ? verifiedPaymentTotal
-    : (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT', 'COMPLETED'].includes(booking.status) || booking.paymentProof)
-    ? booking.dpAmount
-    : 0;
-
+  const paidAmount = getPaidAmount(booking);
   const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
-  const remainingAmount = Math.max(0, totalBill - dpPaidAmount);
-  const activeBank = BANK_ACCOUNTS.find((b) => b.id === selectedBank) || BANK_ACCOUNTS[0];
+  const remainingAmount = Math.max(0, totalBill - paidAmount);
+  const startDate = booking.startDateTime ? parseISO(booking.startDateTime) : null;
+  const endDate = booking.endDateTime ? parseISO(booking.endDateTime) : null;
 
-  const carImages = booking.car?.images
-    ? (typeof booking.car.images === 'string'
-        ? JSON.parse(booking.car.images)
-        : booking.car.images)
-    : [];
-  const carThumb = carImages[0] || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800';
-
-  return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col justify-between text-zinc-900">
-      <div>
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
         <Navbar />
         <BackgroundOrnaments />
-
-        <div className="max-w-6xl mx-auto px-4 pt-28 pb-16 relative z-10">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-              <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">
-                <Link href="/riwayat-booking" className="hover:text-zinc-950 flex items-center gap-1 transition-colors">
-                  <ChevronLeft size={14} /> Riwayat Booking
-                </Link>
-                <span>/</span>
-                <span className="text-zinc-950 font-bold">Penagihan Pelunasan</span>
+        <div className="flex-1 flex items-center justify-center px-4 py-24 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-zinc-200 rounded-3xl shadow-xl max-w-md w-full p-8 text-center"
+          >
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h2 className="text-2xl font-black text-zinc-900 mb-2">Pelunasan Berhasil!</h2>
+            <p className="text-zinc-500 text-sm mb-6">
+              Terima kasih! Pembayaran pelunasan sebesar{' '}
+              <span className="font-bold text-zinc-900">{formatIDR(remainingAmount)}</span>{' '}
+              telah kami terima dan sedang diproses.
+            </p>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-6 py-4 mb-6 text-left space-y-2">
+              <div>
+                <p className="text-xs text-zinc-500">Booking ID</p>
+                <p className="font-mono text-xs font-bold text-zinc-700">{booking.id}</p>
               </div>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-zinc-950">
-                Form Pelunasan Sisa Tagihan
-              </h1>
-              <p className="text-zinc-500 text-sm mt-1">
-                Selesaikan pembayaran sisa sewa mobil Anda secara aman dan instan.
-              </p>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-2xl flex items-center gap-2 text-amber-900 text-xs font-bold self-start md:self-auto">
-              <Clock size={16} className="text-amber-600 shrink-0" />
-              ID Pemesanan: <span className="font-mono">{booking.id}</span>
-            </div>
-          </div>
-
-          {/* Success Banner */}
-          <AnimatePresence>
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-8 p-6 bg-emerald-500 text-white rounded-3xl shadow-lg flex items-center gap-4"
-              >
-                <CheckCircle2 size={36} className="shrink-0" />
-                <div>
-                  <h3 className="text-lg font-bold">Pembayaran Pelunasan Berhasil Dikirim!</h3>
-                  <p className="text-xs text-emerald-100 mt-0.5">
-                    Terima kasih telah melunasi tagihan sewa. Anda akan dialihkan ke halaman Riwayat Booking...
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Main Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Form Pembayaran (Left 7 Columns) */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              {/* Alert Info Pelunasan */}
-              <div className="p-5 bg-white border border-zinc-200 rounded-3xl shadow-sm space-y-2">
-                <div className="flex items-center gap-2 text-zinc-900 font-bold text-sm">
-                  <Landmark size={18} className="text-emerald-600" />
-                  Instruksi Pelunasan Tagihan
-                </div>
-                <p className="text-xs text-zinc-600 leading-relaxed">
-                  Penyewaan unit mobil ini telah selesai atau sedang dalam tahap pengembalian. Silakan transfer nominal sisa pelunasan di bawah ke salah satu rekening resmi kami.
+              <div>
+                <p className="text-xs text-zinc-500">Kendaraan</p>
+                <p className="text-sm font-semibold text-zinc-900">
+                  {booking.car?.brand} {booking.car?.name}
                 </p>
               </div>
-
-              {/* 1. Pilih Rekening */}
-              <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-4 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-                  <Building2 size={18} className="text-zinc-900" />
-                  <h3 className="text-sm font-bold text-zinc-900">
-                    1. Pilih Rekening Tujuan Transfer
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {BANK_ACCOUNTS.map((bank) => (
-                    <motion.button
-                      key={bank.id}
-                      type="button"
-                      onClick={() => setSelectedBank(bank.id)}
-                      whileHover={{ scale: 1.005 }}
-                      whileTap={{ scale: 0.995 }}
-                      className={cn(
-                        'w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 flex items-center gap-4 cursor-pointer',
-                        selectedBank === bank.id
-                          ? 'border-zinc-900 bg-zinc-50 shadow-sm'
-                          : 'border-zinc-200 bg-white hover:border-zinc-300'
-                      )}
-                    >
-                      <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0', bank.color)}>
-                        {bank.logo}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-zinc-900 text-xs">{bank.fullName}</span>
-                          {selectedBank === bank.id && (
-                            <span className="text-[10px] bg-zinc-900 text-white px-2 py-0.5 rounded-full font-bold">Dipilih</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="font-mono text-sm font-bold text-zinc-900 tracking-wider">
-                            {bank.number}
-                          </span>
-                          <CopyButton text={bank.number} />
-                        </div>
-                        <p className="text-[10px] text-zinc-400">a.n. {bank.accountName}</p>
-                      </div>
-
-                      <div className={cn(
-                        'w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center',
-                        selectedBank === bank.id ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-300'
-                      )}>
-                        {selectedBank === bank.id && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-
-                {/* Account details panel */}
-                <div className="mt-4 p-4 rounded-2xl bg-zinc-900 text-white space-y-2">
-                  <p className="text-[10px] uppercase font-bold text-zinc-400">Nominal yang Harus Ditransfer</p>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-2xl font-black text-white">{formatIDR(remainingAmount)}</span>
-                    <CopyButton text={remainingAmount.toString()} />
-                  </div>
-                  <p className="text-[11px] text-zinc-400 pt-1 border-t border-zinc-800">
-                    Transfer ke <strong className="text-white">{activeBank.fullName}</strong> ({activeBank.number}) a.n. {activeBank.accountName}
-                  </p>
-                </div>
-              </div>
-
-              {/* 2. Upload Bukti Pelunasan */}
-              <form onSubmit={handleSubmitPelunasan} className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-4 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-                  <Upload size={18} className="text-zinc-900" />
-                  <h3 className="text-sm font-bold text-zinc-900">
-                    2. Unggah Bukti Pelunasan Transfer
-                  </h3>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold text-zinc-700">
-                    Foto / Screenshot Bukti Transfer <span className="text-rose-500">*</span>
-                  </label>
-                  
-                  <div className="border-2 border-dashed border-zinc-200 hover:border-zinc-400 rounded-2xl p-6 text-center bg-zinc-50/50 transition-colors relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-
-                    {proofPreview ? (
-                      <div className="space-y-3">
-                        <img
-                          src={proofPreview}
-                          alt="Preview Bukti Transfer"
-                          className="max-h-48 mx-auto rounded-xl border border-zinc-200 shadow-sm object-contain"
-                        />
-                        <p className="text-xs font-bold text-emerald-700 flex items-center justify-center gap-1">
-                          <CheckCircle2 size={14} /> Bukti transfer terpilih
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 py-4">
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-600 flex items-center justify-center mx-auto">
-                          <Upload size={20} />
-                        </div>
-                        <p className="text-xs font-bold text-zinc-900">Klik atau seret foto bukti transfer di sini</p>
-                        <p className="text-[10px] text-zinc-400">Format: JPG, PNG, WEBP (Maks 5MB)</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-zinc-700">Catatan Pelunasan (Opsional)</label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Contoh: Pelunasan via Mobile Banking BCA a.n Budi"
-                    className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {submitting ? (
-                      'Memproses Pelunasan...'
-                    ) : (
-                      <>
-                        <ShieldCheck size={18} />
-                        Kirim Bukti Pelunasan ({formatIDR(remainingAmount)})
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
             </div>
-
-            {/* Right Column: Resume Card (5 Columns) */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-5 shadow-sm sticky top-28">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 pb-2 border-b border-zinc-100">
-                  Ringkasan Tagihan & Unit
-                </h3>
-
-                {/* Mobil Details */}
-                <div className="flex gap-4 items-center">
-                  <div className="w-24 h-16 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0">
-                    <img src={carThumb} alt={booking.car?.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase text-zinc-400">{booking.car?.brand}</p>
-                    <h4 className="font-bold text-zinc-900 text-sm">{booking.car?.name}</h4>
-                    <span className="text-[10px] bg-zinc-100 text-zinc-650 px-2 py-0.5 rounded-md font-medium capitalize">
-                      {booking.serviceType?.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Dates & Duration */}
-                <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 text-xs space-y-2 text-zinc-650">
-                  <div className="flex items-center gap-2 text-zinc-900 font-bold mb-1">
-                    <Calendar size={14} className="text-zinc-500" /> Periode Sewa
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Mulai:</span>
-                    <span className="font-semibold text-zinc-900">
-                      {format(parseISO(booking.startDateTime || booking.startDate), 'd MMM yyyy', { locale: localeId })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Selesai:</span>
-                    <span className="font-semibold text-zinc-900">
-                      {format(parseISO(booking.endDateTime || booking.endDate), 'd MMM yyyy', { locale: localeId })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t border-zinc-200 pt-2">
-                    <span>Durasi Total:</span>
-                    <span className="font-bold text-zinc-950">{formatDuration(booking.durationMinutes ?? booking.duration)}</span>
-                  </div>
-                </div>
-
-                {/* Rincian Perhitungan Total */}
-                <div className="space-y-2.5 text-xs">
-                  <div className="flex justify-between text-zinc-500">
-                    <span>Sewa Dasar Unit</span>
-                    <span>{formatIDR(booking.basePrice)}</span>
-                  </div>
-
-                  {booking.discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-600 font-medium">
-                      <span>Diskon</span>
-                      <span>-{formatIDR(booking.discountAmount)}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between text-zinc-900 font-bold border-t border-zinc-100 pt-2">
-                    <span>Total Biaya Sewa</span>
-                    <span>{formatIDR(booking.totalPrice)}</span>
-                  </div>
-
-                  <div className="flex justify-between text-emerald-700 font-semibold">
-                    <span>DP (50%) Terbayar</span>
-                    <span>-{formatIDR(dpPaidAmount)}</span>
-                  </div>
-
-                  {booking.penaltyAmount > 0 && (
-                    <div className="flex justify-between text-rose-600 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200">
-                      <span>Denda Keterlambatan</span>
-                      <span>+{formatIDR(booking.penaltyAmount)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Big Total Box */}
-                <div className="bg-zinc-900 text-white rounded-2xl p-5 space-y-1 shadow-lg">
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Total Sisa Pelunasan</p>
-                  <p className="text-3xl font-black text-white">{formatIDR(remainingAmount)}</p>
-                  <p className="text-[10px] text-zinc-400">Termasuk seluruh tagihan sisa & denda keterlambatan (jika ada).</p>
-                </div>
-              </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => router.push('/riwayat-booking')}
+                className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold h-12 rounded-xl"
+              >
+                Lihat Riwayat Booking
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/')}
+                className="w-full border-zinc-200 text-zinc-700 h-12 rounded-xl"
+              >
+                Kembali ke Beranda
+              </Button>
             </div>
+          </motion.div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
+  return (
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col">
+      <Navbar />
+      <BackgroundOrnaments />
+
+      <div className="flex-1 max-w-5xl mx-auto w-full px-4 pt-28 pb-16 relative z-10">
+        <div className="flex items-center gap-2 text-xs text-zinc-500 mb-6">
+          <Link href="/" className="hover:text-zinc-900 transition-colors">Beranda</Link>
+          <span>/</span>
+          <Link href="/riwayat-booking" className="hover:text-zinc-900 transition-colors">Riwayat Booking</Link>
+          <span>/</span>
+          <span className="text-zinc-900 font-bold">Pelunasan</span>
+        </div>
+
+        <div className="flex items-center gap-3 mb-8">
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-zinc-100 rounded-xl transition-colors text-zinc-400 hover:text-zinc-700"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-zinc-900">Pelunasan Pembayaran</h1>
+            <p className="text-zinc-500 text-sm mt-0.5">Selesaikan pembayaran sisa tagihan sewa Anda</p>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-zinc-900 rounded-xl">
+                  <Car size={16} className="text-white" />
+                </div>
+                <h2 className="font-bold text-zinc-900">Detail Pemesanan</h2>
+              </div>
+
+              {booking.car?.images?.[0] && (
+                <div className="mb-4 rounded-xl overflow-hidden bg-zinc-100 h-40">
+                  <img
+                    src={booking.car.images[0]}
+                    alt={booking.car.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-zinc-400">Kendaraan</p>
+                  <p className="font-bold text-zinc-900">
+                    {booking.car?.brand} {booking.car?.name}
+                  </p>
+                  <p className="text-xs text-zinc-500 capitalize">{booking.car?.category?.toLowerCase()}</p>
+                </div>
+
+                <div className="h-px bg-zinc-100" />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-zinc-400 flex items-center gap-1 mb-0.5">
+                      <Calendar size={10} /> Mulai
+                    </p>
+                    <p className="text-sm font-semibold text-zinc-900">
+                      {startDate ? format(startDate, 'dd MMM yyyy', { locale: localeId }) : '-'}
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      {startDate ? format(startDate, 'HH:mm') : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400 flex items-center gap-1 mb-0.5">
+                      <Calendar size={10} /> Selesai
+                    </p>
+                    <p className="text-sm font-semibold text-zinc-900">
+                      {endDate ? format(endDate, 'dd MMM yyyy', { locale: localeId }) : '-'}
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      {endDate ? format(endDate, 'HH:mm') : '-'}
+                    </p>
+                  </div>
+                </div>
+
+                {booking.durationMinutes && (
+                  <div className="flex items-center gap-1.5 text-sm text-zinc-600">
+                    <Clock size={13} className="text-zinc-400" />
+                    <span>Durasi: {formatDuration(booking.durationMinutes)}</span>
+                  </div>
+                )}
+
+                {booking.pickupLocation && (
+                  <div className="flex items-center gap-1.5 text-sm text-zinc-600">
+                    <MapPin size={13} className="text-zinc-400" />
+                    <span>{booking.pickupLocation}</span>
+                  </div>
+                )}
+
+                <div className="h-px bg-zinc-100" />
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Total Tagihan</span>
+                    <span className="font-semibold text-zinc-900">{formatIDR(totalBill)}</span>
+                  </div>
+                  {(booking.penaltyAmount > 0) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-500">Denda</span>
+                      <span className="font-semibold text-red-600">{formatIDR(booking.penaltyAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Sudah Dibayar (DP)</span>
+                    <span className="font-semibold text-emerald-600">- {formatIDR(paidAmount)}</span>
+                  </div>
+                  <div className="h-px bg-zinc-100" />
+                  <div className="flex justify-between">
+                    <span className="font-bold text-zinc-900">Sisa Tagihan</span>
+                    <span className="text-xl font-black text-zinc-900">{formatIDR(remainingAmount)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-zinc-400">Booking ID</p>
+                <p className="font-mono text-xs font-bold text-zinc-700">{booking.id}</p>
+              </div>
+              <CopyButton text={booking.id} />
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-4"
+          >
+            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-zinc-900 rounded-xl">
+                  <CreditCard size={16} className="text-white" />
+                </div>
+                <h2 className="font-bold text-zinc-900">Metode Pembayaran</h2>
+              </div>
+
+              <div className="space-y-3">
+                {BANK_ACCOUNTS.map((bank) => (
+                  <button
+                    key={bank.id}
+                    type="button"
+                    onClick={() => setSelectedBank(bank.id)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left',
+                      selectedBank === bank.id
+                        ? 'border-zinc-900 bg-zinc-50'
+                        : 'border-zinc-200 hover:border-zinc-400 bg-white'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', bank.color, bank.id === 'BCA' ? 'bg-blue-50 border border-blue-100' : '')}>
+                        {bank.logo}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-zinc-900">{bank.fullName}</p>
+                        <p className="text-xs text-zinc-500 font-mono">{bank.number}</p>
+                        <p className="text-xs text-zinc-400">{bank.accountName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CopyButton text={bank.number} />
+                      <div className={cn(
+                        'w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center',
+                        selectedBank === bank.id ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-300'
+                      )}>
+                        {selectedBank === bank.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedBank && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4"
+              >
+                <p className="text-xs font-bold text-amber-800 mb-1">Transfer tepat sejumlah:</p>
+                <p className="text-2xl font-black text-amber-900">{formatIDR(remainingAmount)}</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  ke rekening {BANK_ACCOUNTS.find(b => b.id === selectedBank)?.fullName} &bull;{' '}
+                  {BANK_ACCOUNTS.find(b => b.id === selectedBank)?.number}
+                </p>
+              </motion.div>
+            )}
+
+            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-zinc-900 rounded-xl">
+                  <Upload size={16} className="text-white" />
+                </div>
+                <h2 className="font-bold text-zinc-900">Bukti Transfer</h2>
+              </div>
+
+              {!uploadedPreview ? (
+                <div
+                  {...getRootProps()}
+                  className={cn(
+                    'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors',
+                    isDragActive ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50'
+                  )}
+                >
+                  <input {...getInputProps()} />
+                  <ImageIcon className="mx-auto w-8 h-8 text-zinc-400 mb-3" />
+                  <p className="text-sm font-semibold text-zinc-700">
+                    {isDragActive ? 'Letakkan file di sini' : 'Klik atau drag foto bukti transfer'}
+                  </p>
+                  <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP - Maks. 5MB</p>
+                </div>
+              ) : (
+                <div className="relative rounded-xl overflow-hidden border border-zinc-200">
+                  <img src={uploadedPreview} alt="Bukti transfer" className="w-full h-48 object-contain bg-zinc-50" />
+                  <button
+                    onClick={removeFile}
+                    className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur rounded-full border border-zinc-200 hover:bg-red-50 hover:border-red-200 text-zinc-500 hover:text-red-500 transition-all"
+                  >
+                    <X size={14} />
+                  </button>
+                  <div className="px-4 py-2 bg-zinc-50 border-t border-zinc-200 flex items-center gap-2">
+                    <ImageIcon size={13} className="text-zinc-400" />
+                    <span className="text-xs text-zinc-600 truncate">{uploadedFile?.name}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
+              <label className="text-sm font-semibold text-zinc-700 block mb-2">Catatan (opsional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Misal: transfer pada 12 Juli jam 14:00 dari BNI ..."
+                className="w-full rounded-xl border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 p-3 focus:outline-none focus:border-zinc-900 resize-none h-20"
+              />
+            </div>
+
+            {submitError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl"
+              >
+                <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-700 font-medium">{submitError}</p>
+              </motion.div>
+            )}
+
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold h-12 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-base"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={18} />
+                  Konfirmasi Pelunasan
+                </>
+              )}
+            </Button>
+
+            <p className="text-center text-xs text-zinc-400">
+              Dengan mengklik tombol di atas, Anda menyatakan telah melakukan pembayaran sisa tagihan
+            </p>
+          </motion.div>
+        </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

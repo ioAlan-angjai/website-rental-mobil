@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { KeyRound, Coins, FileCheck2, Map } from 'lucide-react';
+import { KeyRound, Coins, FileCheck2, Map, Star } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -54,8 +54,8 @@ export function Features() {
         
         {/* Section Header */}
         <div className="text-center mb-16 space-y-3">
-          <span className="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 uppercase tracking-wider">
-            ⭐ Keunggulan Utama
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 uppercase tracking-wider">
+            <Star className="w-3.5 h-3.5" /> Keunggulan Utama
           </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Mengapa Memilih{' '}

@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Zap, Fuel, Gauge, ArrowRight } from 'lucide-react';
+import { Users, Zap, Fuel, Gauge, ArrowRight, Car as CarIcon } from 'lucide-react';
 import type { Car } from '@/types';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,7 @@ export function CarCard({ car }: CarCardProps) {
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <span className="text-5xl">🚗</span>
+            <CarIcon className="w-12 h-12 text-slate-550" />
             <span className="text-slate-400 text-sm font-medium">{car.name}</span>
           </div>
         )}

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import { HeroHighlight, Highlight } from '@/components/ui/hero-highlight';
-import { ArrowRight, Star, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowRight, Star, ShieldCheck, Clock, Car, MapPin } from 'lucide-react';
 
 function AnimatedCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -51,9 +51,9 @@ const itemVariants = {
 };
 
 const stats = [
-  { label: 'Armada Mobil', value: 100, suffix: '+', icon: '🚗' },
-  { label: 'Pelanggan Puas', value: 5000, suffix: '+', icon: '⭐' },
-  { label: 'Cabang Aktif', value: 3, suffix: '', icon: '📍' },
+  { label: 'Armada Mobil', value: 100, suffix: '+', icon: Car },
+  { label: 'Pelanggan Puas', value: 5000, suffix: '+', icon: Star },
+  { label: 'Cabang Aktif', value: 3, suffix: '', icon: MapPin },
 ];
 
 const badges = [
@@ -165,7 +165,9 @@ export function CatalogHero() {
               {/* Glow on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-sky-400/5 to-amber-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
               <div className="relative z-10">
-                <span className="text-2xl mb-2 block">{stat.icon}</span>
+                <span className="text-sky-400 mb-2 block">
+                  <stat.icon size={24} />
+                </span>
                 <div className="text-3xl md:text-4xl font-black bg-gradient-to-r from-sky-400 to-amber-400 bg-clip-text text-transparent mb-1">
                   <AnimatedCounter target={stat.value} />
                   {stat.suffix}

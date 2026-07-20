@@ -8,6 +8,7 @@ import {
   ShieldCheck, UserCog, DollarSign, Sliders, AlertCircle
 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { ImageUploader } from '@/components/admin/ImageUploader';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import { formatDuration } from '@/lib/utils';
 
@@ -66,6 +67,7 @@ export default function AdminDashboard() {
   const [editingCar, setEditingCar] = useState<any | null>(null);
   const [isCreatingCar, setIsCreatingCar] = useState(false);
   const [isSavingCar, setIsSavingCar] = useState(false);
+  const [carImages, setCarImages] = useState<string[]>([]);
   const [carFormData, setCarFormData] = useState({
     name: '',
     brand: '',
@@ -268,6 +270,7 @@ export default function AdminDashboard() {
   // Car Management actions
   const handleOpenEditCar = (car: any) => {
     setEditingCar(car);
+    setCarImages(car.images ? JSON.parse(car.images) : []);
     setCarFormData({
       name: car.name || '',
       brand: car.brand || '',
@@ -283,6 +286,7 @@ export default function AdminDashboard() {
 
   const handleOpenCreateCar = () => {
     setIsCreatingCar(true);
+    setCarImages([]);
     setCarFormData({
       name: '',
       brand: '',
@@ -308,7 +312,11 @@ export default function AdminDashboard() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(carFormData),
+        body: JSON.stringify({
+          ...carFormData,
+          images: JSON.stringify(carImages),
+          image: carImages[0] || '',
+        }),
       });
 
       const data = await res.json();
@@ -397,7 +405,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden text-zinc-900">
       <BackgroundOrnaments />
-      <AdminHeader />
+      <AdminHeader onNavigate={setActiveTab} />
 
       {/* Navigation Tabs */}
       <div className="border-b border-zinc-200 bg-white relative z-10">
@@ -627,7 +635,12 @@ export default function AdminDashboard() {
                       {/* Car Image Banner */}
                       <div className="h-48 bg-zinc-100 relative overflow-hidden border-b border-zinc-100">
                         <img
-                          src={car.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop'}
+                          src={
+                            (car.images
+                              ? (typeof car.images === 'string' ? JSON.parse(car.images) : car.images)
+                              : [car.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop']
+                            )[0]
+                          }
                           alt={car.name}
                           className="w-full h-full object-cover"
                         />
@@ -960,15 +973,12 @@ export default function AdminDashboard() {
                   </select>
                 </div>
 
-                {/* Image URL */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-zinc-700">URL Gambar Mobil</label>
-                  <input
-                    type="url"
-                    value={carFormData.image}
-                    onChange={(e) => setCarFormData({ ...carFormData, image: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                {/* Image Uploader Drag & Drop */}
+                <div className="pt-2">
+                  <ImageUploader
+                    value={carImages}
+                    onChange={setCarImages}
+                    maxFiles={5}
                   />
                 </div>
 

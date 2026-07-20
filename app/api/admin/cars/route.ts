@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const cars = await prisma.car.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -22,8 +29,13 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { name, brand, type, capacity, transmission, fuelType, pricePerDay, image, status } = body;
+    const { name, brand, type, capacity, transmission, fuelType, pricePerDay, image, images, status } = body;
 
     if (!name || !brand || !pricePerDay) {
       return NextResponse.json(
@@ -31,6 +43,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Gunakan array images jika ada, fallback ke image string tunggal
+    const parsedImages = images
+      ? (typeof images === 'string' ? images : JSON.stringify(images))
+      : JSON.stringify([image || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop"]);
 
     const newCar = await prisma.car.create({
       data: {
@@ -43,7 +60,7 @@ export async function POST(req: Request) {
         year: 2024,
         pricePerDay: Number(pricePerDay),
         features: JSON.stringify(["AC", "Bluetooth", "USB", "Airbag"]),
-        images: JSON.stringify([image || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop"]),
+        images: parsedImages,
         status: status || "AVAILABLE",
       },
     });
