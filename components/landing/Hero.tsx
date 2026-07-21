@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, MapPin, Clock, Shield } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Shield, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import { HeroHighlight, Highlight } from '@/components/ui/hero-highlight';
@@ -125,7 +125,7 @@ export function Hero() {
                 </div>
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i} className="text-amber-400 text-xs">★</span>
+                    <Star key={i} className="text-amber-400 w-3 h-3 fill-amber-400" />
                   ))}
                 </div>
               </div>

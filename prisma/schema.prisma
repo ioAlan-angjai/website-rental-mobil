@@ -20,7 +20,19 @@ model User {
   password      String?
   phone         String?
   image         String?
+
+  // Profile lengkap
+  address     String?
+  city        String?
+  province    String?
+  postalCode  String?
+
+  // Dokumen identitas
+  ktpImage String?
+  simImage  String?
+
   role          String    @default("USER") // USER | ADMIN
+  avatar        String?   // profile photo
 
   // Relations
   accounts      Account[]
@@ -75,6 +87,19 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+// ── Password Reset Token ──
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  used      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
 // ==================== VEHICLE MANAGEMENT ====================
 
 model Car {
@@ -119,7 +144,7 @@ model Booking {
   returnLocation String?
 
   // Pricing
-  basePrice     Int
+  basePrice      Int
   discountAmount Int @default(0)
   penaltyAmount  Int @default(0)
   totalPrice     Int
@@ -145,15 +170,42 @@ model Booking {
   // Admin notes
   notes String?
 
+  // Dokumen identitas (upload saat booking)
+  ktpBookingImage String?
+  simBookingImage  String?
+
   // Relations
   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   car      Car       @relation(fields: [carId], references: [id])
   payments Payment[]
+  invoice  Invoice?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("bookings")
+}
+
+// ==================== INVOICE ====================
+
+model Invoice {
+  id        String @id @default(cuid())
+  bookingId String @unique
+
+  invoiceNumber String   @unique
+  subtotal      Int
+  penalty       Int      @default(0)
+  total         Int
+  paymentStatus String   @default("UNPAID") // UNPAID | PARTIAL | PAID
+  pdfUrl        String?
+  dueDate       DateTime
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("invoices")
 }
 
 // ==================== PAYMENT TRACKING ====================
@@ -176,9 +228,9 @@ model Payment {
   uploadedAt DateTime?
 
   // Verification
-  status     String   @default("PENDING") // PENDING | VERIFIED | REJECTED
-  verifiedAt DateTime?
-  verifiedBy String?
+  status       String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  verifiedAt   DateTime?
+  verifiedBy   String?
   rejectReason String?
 
   // Relations

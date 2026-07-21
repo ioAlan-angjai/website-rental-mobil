@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, Car, ChevronDown, CalendarDays, LogIn, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, Car, ChevronDown, CalendarDays, LogIn, User, LogOut, LayoutDashboard, HelpCircle } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import {
   Sheet,
@@ -26,9 +26,8 @@ import { usePathname } from 'next/navigation';
 const navItems = [
   { label: 'Beranda', href: '/' },
   { label: 'Armada', href: '/armada', isDropdown: true },
-  { label: 'Layanan', href: '/layanan' },
+  { label: 'Layanan', href: '/#layanan' },
   { label: 'Tentang Kami', href: '/tentang-kami' },
-  { label: 'Testimoni', href: '/testimoni' },
   { label: 'Kontak', href: '/kontak' },
 ];
 

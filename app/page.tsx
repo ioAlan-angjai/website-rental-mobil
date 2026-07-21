@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
+import { FAQ } from '@/components/landing/FAQ';
 import { motion } from 'framer-motion';
-import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight } from 'lucide-react';
+import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight, CheckCircle2, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
@@ -270,9 +271,9 @@ export default function Home() {
                 </p>
 
                 <div className="mb-6 space-y-2">
-                  <div className="text-sm text-zinc-700">✓ Mulai dari Rp 150.000/hari</div>
-                  <div className="text-sm text-zinc-700">✓ Hemat BBM</div>
-                  <div className="text-sm text-zinc-700">✓ Mudah parkir</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mulai dari Rp 150.000/hari</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Hemat BBM</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mudah parkir</div>
                 </div>
               </div>
 
@@ -311,9 +312,9 @@ export default function Home() {
                 </p>
 
                 <div className="mb-6 space-y-2">
-                  <div className="text-sm text-zinc-700">✓ Mulai dari Rp 250.000/hari</div>
-                  <div className="text-sm text-zinc-700">✓ AC dingin & audio premium</div>
-                  <div className="text-sm text-zinc-700">✓ Kapasitas 5-7 penumpang</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mulai dari Rp 250.000/hari</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> AC dingin & audio premium</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Kapasitas 5-7 penumpang</div>
                 </div>
               </div>
 
@@ -352,9 +353,9 @@ export default function Home() {
                 </p>
 
                 <div className="mb-6 space-y-2">
-                  <div className="text-sm text-zinc-700">✓ Mulai dari Rp 400.000/hari</div>
-                  <div className="text-sm text-zinc-700">✓ Fitur lengkap & teknologi terkini</div>
-                  <div className="text-sm text-zinc-700">✓ Performa & kenyamanan terbaik</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mulai dari Rp 400.000/hari</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Fitur lengkap & teknologi terkini</div>
+                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Performa & kenyamanan terbaik</div>
                 </div>
               </div>
 
@@ -374,7 +375,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="relative py-24 px-6 bg-[#F5F3EF]">
+      <section id="testimoni" className="relative py-24 px-6 bg-[#F5F3EF]">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -499,6 +500,32 @@ export default function Home() {
               <ChevronRight className="w-5 h-5" />
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="relative py-24 px-6 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-zinc-100 rounded-2xl">
+                <HelpCircle size={24} className="text-zinc-900" />
+              </div>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 mb-4">
+              Pertanyaan Umum
+            </h2>
+            <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
+              Temukan jawaban untuk pertanyaan yang sering diajukan
+            </p>
+          </motion.div>
+          <FAQ />
         </div>
       </section>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Search, CalendarCheck, CarFront, ArrowRight } from 'lucide-react';
+import { Search, CalendarCheck, CarFront, ArrowRight, Sparkles } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -65,7 +65,7 @@ export function HowItWorks() {
           className="text-center mb-16"
         >
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 mb-4">
-            ✨ Mudah & Cepat
+            <Sparkles className="w-3 h-3 inline-block mr-1" /> Mudah & Cepat
           </span>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
             Cara{' '}

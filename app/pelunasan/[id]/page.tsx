@@ -341,15 +341,24 @@ export default function PelunasanPage() {
                 <h2 className="font-bold text-zinc-900">Detail Pemesanan</h2>
               </div>
 
-              {booking.car?.images?.[0] && (
-                <div className="mb-4 rounded-xl overflow-hidden bg-zinc-100 h-40">
-                  <img
-                    src={booking.car.images[0]}
-                    alt={booking.car.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+              {(() => {
+                const carImages = booking.car?.images ? (() => { try { return JSON.parse(booking.car.images); } catch { return null; } })() : null;
+                const firstImage = Array.isArray(carImages) ? carImages[0] : null;
+                return firstImage ? (
+                  <div className="mb-4 rounded-xl overflow-hidden bg-zinc-100 h-40">
+                    <img
+                      src={firstImage}
+                      alt={booking.car.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                ) : (
+                  <div className="mb-4 rounded-xl overflow-hidden bg-zinc-100 h-40 flex items-center justify-center text-zinc-300">
+                    <Car size={40} />
+                  </div>
+                );
+              })()}
 
               <div className="space-y-3">
                 <div>

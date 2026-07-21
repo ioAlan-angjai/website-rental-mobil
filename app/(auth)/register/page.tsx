@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Car, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, UserPlus, User, Phone, CheckCircle2 } from 'lucide-react';
+import { Car, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, UserPlus, User, Phone, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -123,9 +123,9 @@ export default function RegisterPage() {
                 <CheckCircle2 size={40} className="text-green-500" />
               </div>
             </div>
-            <h2 className="text-xl font-bold text-zinc-900 mb-2">Registrasi Berhasil! 🎉</h2>
+            <h2 className="text-xl font-bold text-zinc-900 mb-2">Registrasi Berhasil</h2>
             <p className="text-sm text-zinc-500 mb-1">Akun Anda berhasil dibuat.</p>
-            <p className="text-sm text-zinc-400">Mengarahkan ke halaman login...</p>
+            <p className="text-sm text-zinc-400">Silakan cek email untuk verifikasi akun Anda.</p>
           </motion.div>
         ) : (
           /* Card */
@@ -338,7 +338,7 @@ export default function RegisterPage() {
             href="/"
             className="text-sm text-zinc-400 hover:text-zinc-700 transition-colors inline-flex items-center gap-1.5"
           >
-            ← Kembali ke Beranda
+            <ArrowLeft size={14} /> Kembali ke Beranda
           </Link>
         </div>
       </motion.div>

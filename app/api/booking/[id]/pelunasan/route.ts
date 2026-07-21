@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
@@ -150,10 +150,25 @@ export async function POST(
       });
     }
 
+    // Buat invoice setelah booking selesai
+    const invoiceNumber = `INV/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${booking.id.slice(-6).toUpperCase()}`;
+    await prisma.invoice.create({
+      data: {
+        bookingId: booking.id,
+        invoiceNumber,
+        subtotal: booking.totalPrice,
+        penalty: booking.penaltyAmount || 0,
+        total: totalBill,
+        paymentStatus: "PAID",
+        dueDate: new Date(),
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: "Pelunasan berhasil dikonfirmasi. Terima kasih!",
       data: updatedBooking,
+      invoiceNumber,
     });
   } catch (error: any) {
     console.error("POST pelunasan error:", error);

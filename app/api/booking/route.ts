@@ -67,6 +67,8 @@ export async function POST(req: NextRequest) {
       guestPhone,
       notes,
       paymentMethod,
+      ktpBookingImage,
+      simBookingImage,
     } = body;
 
     // Validasi input
@@ -173,6 +175,8 @@ export async function POST(req: NextRequest) {
       guestName,
       guestEmail,
       guestPhone,
+      ktpBookingImage: ktpBookingImage || null,
+      simBookingImage: simBookingImage || null,
     };
 
     // Hubungkan ke user jika sedang login (deteksi ID atau via Email)

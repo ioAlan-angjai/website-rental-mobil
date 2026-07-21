@@ -167,7 +167,7 @@ export function CatalogGrid() {
             transition={{ duration: 0.3 }}
             className="text-center py-20"
           >
-            <span className="text-5xl mb-4 block">🔍</span>
+            <span className="text-5xl mb-4 block"><Search size={48} className="text-slate-400" /></span>
             <p className="text-slate-400 text-lg font-medium">
               Tidak ada mobil yang sesuai
             </p>

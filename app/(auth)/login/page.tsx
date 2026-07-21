@@ -5,7 +5,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Car, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, LogIn } from 'lucide-react';
+import { Car, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -204,19 +204,27 @@ function LoginContent() {
               </div>
             </div>
 
-            {/* Demo credentials info */}
-            <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl space-y-2">
-              <p className="text-xs font-bold text-zinc-700">🔑 Akun Demo Admin:</p>
-              <div className="grid grid-cols-2 gap-1 text-xs text-zinc-600">
-                <span className="text-zinc-500">Email:</span>
-                <span className="font-mono font-medium">admin@rentalmobil.com</span>
-                <span className="text-zinc-500">Password:</span>
-                <span className="font-mono font-medium">adminpassword123</span>
-              </div>
+            {/* Remember Me + Forgot Password */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  name="remember"
+                  className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 focus:ring-1 cursor-pointer"
+                />
+                <span className="text-xs font-medium text-zinc-600">Ingat saya</span>
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-bold text-zinc-700 hover:text-zinc-900 underline-offset-4 hover:underline transition-all"
+              >
+                Lupa Password?
+              </Link>
             </div>
 
             {/* Register link */}
-            {/* <p className="text-center text-sm text-zinc-500">
+            <p className="text-center text-sm text-zinc-500">
               Belum punya akun?{' '}
               <Link
                 href="/register"
@@ -225,7 +233,7 @@ function LoginContent() {
               >
                 Daftar sekarang
               </Link>
-            </p> */}
+            </p>
           </form>
         </div>
 
@@ -235,7 +243,7 @@ function LoginContent() {
             href="/"
             className="text-sm text-zinc-400 hover:text-zinc-700 transition-colors inline-flex items-center gap-1.5"
           >
-            ← Kembali ke Beranda
+            <ArrowLeft size={14} /> Kembali ke Beranda
           </Link>
         </div>
       </motion.div>

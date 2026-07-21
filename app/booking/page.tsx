@@ -131,6 +131,10 @@ function BookingForm() {
   const [selectedBank, setSelectedBank] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  const [ktpFile, setKtpFile] = useState<File | null>(null);
+  const [ktpPreview, setKtpPreview] = useState<string | null>(null);
+  const [simFile, setSimFile] = useState<File | null>(null);
+  const [simPreview, setSimPreview] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -241,6 +245,33 @@ function BookingForm() {
     setUploadedPreview(null);
   };
 
+  // KTP & SIM upload handlers using native input
+  const handleDocumentUpload = (type: 'ktp' | 'sim') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.onchange = (e: any) => {
+      const file = e.target?.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setSubmitError('Ukuran file maksimal 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (type === 'ktp') {
+          setKtpFile(file);
+          setKtpPreview(ev.target?.result as string);
+        } else {
+          setSimFile(file);
+          setSimPreview(ev.target?.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     setSubmitError('');
@@ -271,6 +302,8 @@ function BookingForm() {
         guestName: formData.name,
         guestEmail: formData.email || null,
         guestPhone: formData.phone,
+        ktpBookingImage: ktpPreview || null,
+        simBookingImage: simPreview || null,
       };
 
       const res = await fetch('/api/booking', {
@@ -832,6 +865,100 @@ function BookingForm() {
                         )}
                       </div>
 
+                      {/* Upload Foto KTP */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Upload size={16} className="text-zinc-700" />
+                          <h3 className="text-sm font-bold text-zinc-900">
+                            3. Upload Foto KTP <span className="text-red-500">*</span>
+                          </h3>
+                        </div>
+
+                        {!ktpPreview ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDocumentUpload('ktp')}
+                            className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer hover:border-zinc-400 hover:bg-zinc-50 w-full"
+                          >
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="p-4 rounded-full bg-zinc-100">
+                                <ImageIcon size={28} className="text-zinc-500" />
+                              </div>
+                              <p className="font-bold text-zinc-900 text-sm">Klik untuk upload foto KTP</p>
+                              <p className="text-xs text-zinc-500">Format: JPG, PNG, WEBP • Maksimal 5 MB</p>
+                            </div>
+                          </button>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.97 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative rounded-2xl overflow-hidden border-2 border-green-200 bg-green-50"
+                          >
+                            <img src={ktpPreview} alt="KTP" className="w-full max-h-72 object-contain" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 size={16} className="text-green-400" />
+                                <span className="text-white text-xs font-medium">KTP terupload</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => { setKtpFile(null); setKtpPreview(null); }}
+                                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30"
+                              >
+                                <X size={14} className="text-white" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+
+                      {/* Upload Foto SIM */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Upload size={16} className="text-zinc-700" />
+                          <h3 className="text-sm font-bold text-zinc-900">
+                            4. Upload Foto SIM <span className="text-red-500">*</span>
+                          </h3>
+                        </div>
+
+                        {!simPreview ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDocumentUpload('sim')}
+                            className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer hover:border-zinc-400 hover:bg-zinc-50 w-full"
+                          >
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="p-4 rounded-full bg-zinc-100">
+                                <ImageIcon size={28} className="text-zinc-500" />
+                              </div>
+                              <p className="font-bold text-zinc-900 text-sm">Klik untuk upload foto SIM</p>
+                              <p className="text-xs text-zinc-500">Format: JPG, PNG, WEBP • Maksimal 5 MB</p>
+                            </div>
+                          </button>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.97 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative rounded-2xl overflow-hidden border-2 border-green-200 bg-green-50"
+                          >
+                            <img src={simPreview} alt="SIM" className="w-full max-h-72 object-contain" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 size={16} className="text-green-400" />
+                                <span className="text-white text-xs font-medium">SIM terupload</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => { setSimFile(null); setSimPreview(null); }}
+                                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30"
+                              >
+                                <X size={14} className="text-white" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+
                       {/* Info */}
                       <div className="p-4 rounded-2xl bg-zinc-100 border border-zinc-200">
                         <p className="text-xs text-zinc-700 leading-relaxed">
@@ -880,7 +1007,7 @@ function BookingForm() {
                         type="button"
                         id="btn-kirim-booking"
                         onClick={handleSubmit}
-                        disabled={!selectedBank || submitting}
+                        disabled={!selectedBank || !ktpPreview || !simPreview || submitting}
                         className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 h-12 rounded-xl ml-auto flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {submitting ? (
