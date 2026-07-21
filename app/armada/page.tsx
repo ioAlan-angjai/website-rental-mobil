@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { 
-  Users, Zap, Fuel, Search, SlidersHorizontal, ArrowUpDown, CheckCircle2, CalendarDays
+  Users, Zap, Fuel, Search, SlidersHorizontal, ArrowUpDown, ArrowRight, CheckCircle2, CalendarDays
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -144,7 +144,7 @@ function ArmadaContent() {
             <div className="inline-flex items-center gap-2 bg-zinc-900 text-white text-xs font-semibold px-4 py-2 rounded-full">
               <CalendarDays size={13} />
               {startDateParam && <span>Mulai: {startDateParam}</span>}
-              {startDateParam && endDateParam && <span>→</span>}
+              {startDateParam && endDateParam && <span><ArrowRight size={13} className="inline" /></span>}
               {endDateParam && <span>Selesai: {endDateParam}</span>}
             </div>
           )}

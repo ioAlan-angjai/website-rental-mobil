@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Zap, Fuel, Gauge, ArrowRight, Car as CarIcon } from 'lucide-react';
+import { Users, Zap, Fuel, Gauge, ArrowRight, Car as CarIcon, GraduationCap } from 'lucide-react';
 import type { Car } from '@/types';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
@@ -78,7 +78,7 @@ export function CarCard({ car }: CarCardProps) {
         {car.studentDiscount > 0 && (
           <div className="absolute top-3 right-3">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 backdrop-blur-sm">
-              🎓 -{car.studentDiscount}%
+              <GraduationCap size={14} /> -{car.studentDiscount}%
             </span>
           </div>
         )}

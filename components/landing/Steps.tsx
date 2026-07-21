@@ -1,7 +1,7 @@
 'use client';
 
 import { mockStepsMovus } from '@/lib/mock-data-movus';
-import { ArrowRight, Send, CheckSquare, Search, FileText, Gift } from 'lucide-react';
+import { ArrowRight, Send, CheckSquare, Search, FileText, Gift, Lightbulb } from 'lucide-react';
 
 const STEP_ICONS = [Send, CheckSquare, FileText, Search, Gift];
 
@@ -16,7 +16,7 @@ export function Steps() {
         {/* Section Header */}
         <div className="text-center mb-16 space-y-3">
           <span className="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
-            💡 Alur Pengajuan
+            <Lightbulb className="w-3 h-3 inline-block mr-1" /> Alur Pengajuan
           </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Bagaimana Cara{' '}

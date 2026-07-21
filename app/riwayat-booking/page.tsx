@@ -452,7 +452,7 @@ export default function RiwayatBookingPage() {
                                 </span>
                                 <div className="flex items-center justify-between mt-1">
                                   <span className={`text-xs font-black block ${outstanding > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
-                                    {outstanding > 0 ? formatIDR(outstanding) : '✓ Lunas'}
+                                    {outstanding > 0 ? formatIDR(outstanding) : <span className="inline-flex items-center gap-1"><CheckCircle2 size={12} /> Lunas</span>}
                                   </span>
                                   {outstanding > 0 && ['WAITING_PAYMENT', 'IN_PROGRESS', 'DP_CONFIRMED'].includes(booking.status) && (
                                     <Link href={`/pelunasan/${booking.id}`}>
@@ -545,6 +545,19 @@ export default function RiwayatBookingPage() {
                             </button>
                           </Link>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Link Invoice untuk booking completed */}
+                    {booking.status === 'COMPLETED' && (
+                      <div className="mt-4 pt-4 border-t border-zinc-100">
+                        <Link
+                          href={`/invoice?bookingId=${booking.id}`}
+                          className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors"
+                        >
+                          <FileText size={14} />
+                          Lihat Invoice
+                        </Link>
                       </div>
                     )}
 

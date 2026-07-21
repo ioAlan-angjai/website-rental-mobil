@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import * as crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,13 +42,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Buat verification token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 jam
+
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires,
+      },
+    });
+
     // Hapus password dari response
     const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json(
       {
-        message: "Registrasi berhasil",
+        message: "Registrasi berhasil. Silakan cek email untuk verifikasi.",
         user: userWithoutPassword,
+        verificationToken: token, // Untuk testing (tanpa email server)
       },
       { status: 201 }
     );

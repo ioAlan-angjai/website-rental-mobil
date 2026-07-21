@@ -1,5 +1,6 @@
 'use client';
-
+import { motion } from 'framer-motion';
+import { Gift } from 'lucide-react';
 import { mockBenefitsMovus } from '@/lib/mock-data-movus';
 
 export function Benefits() {
@@ -14,7 +15,7 @@ export function Benefits() {
         {/* Section Header */}
         <div className="text-center mb-16 space-y-3">
           <span className="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 uppercase tracking-wider">
-            🎁 All-Inclusive Program
+            <Gift className="w-3 h-3 inline-block mr-1" /> All-Inclusive Program
           </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Keuntungan Menakjubkan <br />

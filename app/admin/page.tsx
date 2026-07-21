@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Car, CalendarCheck,
   TrendingUp, Clock, Eye, Search, UserCheck, Pencil, Plus, Check, X,
-  ShieldCheck, UserCog, DollarSign, Sliders, AlertCircle
+  ShieldCheck, UserCog, DollarSign, Sliders, AlertCircle, User
 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { ImageUploader } from '@/components/admin/ImageUploader';
@@ -762,7 +762,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-3 shadow-sm">
                 <div className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold">
-                  🚗
+                  <Car size={18} />
                 </div>
                 <h4 className="font-bold text-zinc-950 text-base">Tarif Lepas Kunci</h4>
                 <p className="text-xs text-zinc-500 leading-relaxed">
@@ -772,7 +772,7 @@ export default function AdminDashboard() {
 
               <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-3 shadow-sm">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold">
-                  👨‍✈️
+                  <User size={18} />
                 </div>
                 <h4 className="font-bold text-zinc-950 text-base">Tarif Dengan Driver</h4>
                 <p className="text-xs text-zinc-500 leading-relaxed">
@@ -1101,6 +1101,39 @@ export default function AdminDashboard() {
                     Belum ada bukti pembayaran DP yang diunggah.
                   </div>
                 )
+              )}
+
+              {/* Dokumen Identitas Penyewa */}
+              {(selectedBooking.ktpBookingImage || selectedBooking.simBookingImage) && (
+                <div className="space-y-3">
+                  <h4 className="font-bold text-zinc-900 text-sm">Dokumen Identitas Penyewa</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedBooking.ktpBookingImage && (
+                      <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 p-2">
+                        <p className="text-xs text-zinc-500 font-medium mb-1">Foto KTP</p>
+                        <img
+                          src={selectedBooking.ktpBookingImage}
+                          alt="KTP"
+                          className="max-h-60 w-full object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
+                          onClick={() => window.open(selectedBooking.ktpBookingImage)}
+                          title="Klik untuk memperbesar"
+                        />
+                      </div>
+                    )}
+                    {selectedBooking.simBookingImage && (
+                      <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 p-2">
+                        <p className="text-xs text-zinc-500 font-medium mb-1">Foto SIM</p>
+                        <img
+                          src={selectedBooking.simBookingImage}
+                          alt="SIM"
+                          className="max-h-60 w-full object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
+                          onClick={() => window.open(selectedBooking.simBookingImage)}
+                          title="Klik untuk memperbesar"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               {/* Reject Reason Form */}

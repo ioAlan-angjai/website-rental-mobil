@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Star, Quote } from 'lucide-react';
+import { Star, Quote, MessageSquare } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -79,7 +79,7 @@ export function Testimonials() {
           className="text-center mb-16"
         >
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-400/10 border border-amber-400/20 text-amber-300 mb-4">
-            💬 Kata Mereka
+            <MessageSquare className="w-3 h-3 inline-block mr-1" /> Kata Mereka
           </span>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
             Dipercaya{' '}
