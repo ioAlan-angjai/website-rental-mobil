@@ -98,77 +98,85 @@ export async function POST(
       );
     }
 
-    // Hitung sisa tagihan
-    const verifiedPaymentTotal = booking.payments
-      ?.filter((p) => p.status === "VERIFIED")
-      .reduce((sum, p) => sum + p.amount, 0) || 0;
+    // Hitung jumlah total pembayaran VERIFIED dari tabel Payment (SUM, bukan asumsi DP tunggal)
+    const verifiedPayments = await prisma.payment.findMany({
+      where: {
+        bookingId: booking.id,
+        status: "VERIFIED",
+      },
+    });
 
-    const dpPaidAmount = verifiedPaymentTotal > 0
-      ? verifiedPaymentTotal
-      : (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT', 'COMPLETED'].includes(booking.status) || booking.paymentProof)
-      ? booking.dpAmount
-      : 0;
+    const verifiedPaymentTotal = verifiedPayments.reduce(
+      (sum: number, p: any) => sum + p.amount,
+      0
+    );
 
     const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
-    const remainingAmount = Math.max(0, totalBill - dpPaidAmount);
+    const remainingAmount = Math.max(0, totalBill - verifiedPaymentTotal);
 
-    // Update booking state
+    // Validasi: pastikan ada sisa yang harus dibayar
+    if (remainingAmount <= 0) {
+      return NextResponse.json(
+        { error: "Tidak ada tagihan yang perlu dilunasi. Seluruh pembayaran sudah lunas." },
+        { status: 400 }
+      );
+    }
+
+    // Update booking state: menunggu verifikasi pelunasan dari admin
     const updatedBooking = await prisma.booking.update({
       where: { id: params.id },
       data: {
-        fullPaid: true,
-        status: "COMPLETED",
+        status: "WAITING_PAYMENT",
         paymentMethod: paymentMethod || booking.paymentMethod,
         paymentProof: paymentProof || booking.paymentProof,
         notes: notes ? `${booking.notes || ''} | Pelunasan: ${notes}` : booking.notes,
       },
     });
 
-    // Create payment record untuk pelunasan
+    // Create payment record untuk pelunasan (PENDING — menunggu verifikasi admin)
     await prisma.payment.create({
       data: {
         bookingId: booking.id,
-        amount: remainingAmount > 0 ? remainingAmount : booking.totalPrice - booking.dpAmount,
+        amount: remainingAmount,
         type: "FULL_PAYMENT",
         method: paymentMethod || "BCA_TRANSFER",
-        status: "VERIFIED",
+        status: "PENDING",
         proofImage: paymentProof || null,
-        verifiedAt: new Date(),
-        verifiedBy: session?.user?.email || "system",
       },
     });
 
-    // Notifikasi ke user bahwa pelunasan sukses
-    if (booking.userId) {
+    // Notifikasi admin bahwa user mengirim bukti pelunasan
+    const adminUsers = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+    for (const admin of adminUsers) {
       await prisma.notification.create({
         data: {
-          userId: booking.userId,
-          title: "Pelunasan Berhasil & Sewa Selesai",
-          message: `Terima kasih! Pelunasan sisa tagihan sebesar Rp ${(remainingAmount > 0 ? remainingAmount : booking.totalPrice - booking.dpAmount).toLocaleString('id-ID')} untuk unit ${booking.car.name} telah berhasil diproses.`,
-          type: "RENTAL_COMPLETED",
+          userId: admin.id,
+          title: "Bukti Pelunasan Masuk",
+          message: `Booking ${booking.id} — ${booking.car?.name || ''}. Sisa tagihan Rp ${remainingAmount.toLocaleString('id-ID')} menunggu verifikasi.`,
+          type: "PAYMENT_RECEIVED",
         } as any,
       });
     }
 
-    // Buat invoice setelah booking selesai
-    const invoiceNumber = `INV/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${booking.id.slice(-6).toUpperCase()}`;
-    await prisma.invoice.create({
-      data: {
-        bookingId: booking.id,
-        invoiceNumber,
-        subtotal: booking.totalPrice,
-        penalty: booking.penaltyAmount || 0,
-        total: totalBill,
-        paymentStatus: "PAID",
-        dueDate: new Date(),
-      },
-    });
+    // Notifikasi ke user bahwa bukti pelunasan diterima
+    if (booking.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: booking.userId,
+          title: "Bukti Pelunasan Diterima Sistem",
+          message: `Bukti pembayaran pelunasan Anda untuk ${booking.car?.name || 'mobil'} telah kami terima. Menunggu verifikasi admin.`,
+          type: "PAYMENT_RECEIVED",
+        } as any,
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Pelunasan berhasil dikonfirmasi. Terima kasih!",
+      message: "Bukti pelunasan berhasil dikirim. Menunggu verifikasi admin.",
       data: updatedBooking,
-      invoiceNumber,
     });
   } catch (error: any) {
     console.error("POST pelunasan error:", error);

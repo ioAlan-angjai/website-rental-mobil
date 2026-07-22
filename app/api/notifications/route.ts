@@ -29,6 +29,39 @@ export async function GET(_req: NextRequest) {
   }
 }
 
+// POST: admin mengirim notifikasi (seperti pengingat pelunasan)
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const { bookingId, title, message, type } = await req.json();
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: { userId: true },
+    });
+
+    if (booking?.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: booking.userId,
+          title,
+          message,
+          type,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("POST notification error:", error);
+    return NextResponse.json({ error: "Gagal mengirim notifikasi" }, { status: 500 });
+  }
+}
+
 // PATCH: tandai sudah dibaca
 export async function PATCH(req: NextRequest) {
   try {
