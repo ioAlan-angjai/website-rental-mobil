@@ -180,7 +180,7 @@ export default function AdminDashboard() {
     return name.includes(query) || type.includes(query);
   });
 
-  const handleVerify = async (action: 'APPROVE' | 'REJECT') => {
+  const handleVerify = async (action: 'APPROVE' | 'REJECT', paymentType: 'DP' | 'FULL_PAYMENT' = 'DP') => {
     if (!selectedBooking) return;
     if (action === 'REJECT' && !rejectReason.trim()) {
       alert('Silakan isi alasan penolakan terlebih dahulu.');
@@ -194,6 +194,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
+          paymentType,
           rejectReason: action === 'REJECT' ? rejectReason : undefined,
         }),
       });
@@ -928,37 +929,115 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Rincian Pembayaran */}
-              <div className="space-y-3 bg-zinc-50 p-5 rounded-2xl border border-zinc-200">
-                <h4 className="text-sm font-bold text-zinc-950 uppercase tracking-wider mb-2">Rincian Pembayaran</h4>
-                <div className="grid grid-cols-2 text-sm gap-y-2">
-                  <div className="text-zinc-500">Harga Dasar:</div>
-                  <div className="font-bold text-right text-zinc-900">Rp {selectedBooking.basePrice.toLocaleString('id-ID')}</div>
-                  {selectedBooking.discountAmount > 0 && (
-                    <>
-                      <div className="text-zinc-500">Diskon:</div>
-                      <div className="font-bold text-right text-green-600">Rp {selectedBooking.discountAmount.toLocaleString('id-ID')}</div>
-                    </>
-                  )}
-                  {selectedBooking.penaltyAmount > 0 && (
-                    <>
-                      <div className="text-zinc-500 text-rose-600">Denda Keterlambatan:</div>
-                      <div className="font-bold text-right text-rose-600">Rp {selectedBooking.penaltyAmount.toLocaleString('id-ID')}</div>
-                    </>
-                  )}
-                  <div className="text-zinc-900 font-bold border-t pt-2">Total Biaya:</div>
-                  <div className="font-extrabold text-right text-zinc-950 border-t pt-2">Rp {selectedBooking.totalPrice.toLocaleString('id-ID')}</div>
-                  <div className="text-emerald-700 font-bold">DP Diterima (50%):</div>
-                  <div className="font-bold text-right text-emerald-700">Rp {selectedBooking.dpAmount.toLocaleString('id-ID')}</div>
-                </div>
+              {/* Rincian Pembayaran — computed from payments */}
+              {(() => {
+                const verifiedPayments = (selectedBooking.payments || []).filter((p: any) => p.status === 'VERIFIED');
+                const totalVerifiedPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+                const totalBill = selectedBooking.totalPrice + (selectedBooking.penaltyAmount || 0);
+                const remainingAmount = Math.max(0, totalBill - totalVerifiedPaid);
+                const isLunas = remainingAmount <= 0;
 
-                {selectedBooking.paymentMethod && (
-                  <div className="pt-2 border-t mt-2 text-sm">
-                    <p><span className="text-zinc-500">Metode Bayar DP:</span> <span className="font-bold">{selectedBooking.paymentMethod.replace('_', ' ')}</span></p>
+                return (
+                  <div className="space-y-3 bg-zinc-50 p-5 rounded-2xl border border-zinc-200">
+                    <h4 className="text-sm font-bold text-zinc-950 uppercase tracking-wider mb-2">Rincian Pembayaran</h4>
+                    <div className="grid grid-cols-2 text-sm gap-y-2">
+                      <div className="text-zinc-500">Harga Dasar:</div>
+                      <div className="font-bold text-right text-zinc-900">Rp {selectedBooking.basePrice.toLocaleString('id-ID')}</div>
+                      {selectedBooking.discountAmount > 0 && (
+                        <>
+                          <div className="text-zinc-500">Diskon:</div>
+                          <div className="font-bold text-right text-green-600">Rp {selectedBooking.discountAmount.toLocaleString('id-ID')}</div>
+                        </>
+                      )}
+                      {selectedBooking.penaltyAmount > 0 && (
+                        <>
+                          <div className="text-zinc-500 text-rose-600">Denda Keterlambatan:</div>
+                          <div className="font-bold text-right text-rose-600">Rp {selectedBooking.penaltyAmount.toLocaleString('id-ID')}</div>
+                        </>
+                      )}
+                      <div className="text-zinc-900 font-bold border-t pt-2">Total Biaya:</div>
+                      <div className="font-extrabold text-right text-zinc-950 border-t pt-2">Rp {totalBill.toLocaleString('id-ID')}</div>
+
+                      {/* Separator */}
+                      <div className="col-span-2 border-t border-dashed border-zinc-300 my-1" />
+
+                      <div className="text-emerald-700 font-bold">Total Sudah Dibayar:</div>
+                      <div className="font-bold text-right text-emerald-700">Rp {totalVerifiedPaid.toLocaleString('id-ID')}</div>
+                      <div className={`font-bold ${isLunas ? 'text-emerald-700' : 'text-rose-600'}`}>
+                        {isLunas ? '✅ Status Pelunasan:' : '⚠️ Sisa Tagihan:'}
+                      </div>
+                      <div className={`font-extrabold text-right ${isLunas ? 'text-emerald-700' : 'text-rose-600'}`}>
+                        {isLunas ? '✅ LUNAS' : `Rp ${remainingAmount.toLocaleString('id-ID')}`}
+                      </div>
+                    </div>
+
+                    {selectedBooking.paymentMethod && (
+                      <div className="pt-2 border-t mt-2 text-sm">
+                        <p><span className="text-zinc-500">Metode Bayar DP:</span> <span className="font-bold">{selectedBooking.paymentMethod.replace('_', ' ')}</span></p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
+              {/* Bukti Pembayaran FULL_PAYMENT (Pelunasan) */}
+              {selectedBooking.status === 'WAITING_PAYMENT' && (
+                <>
+                  {(() => {
+                    const fullPayment = (selectedBooking.payments || []).find((p: any) => p.type === 'FULL_PAYMENT' && p.status === 'PENDING');
+                    return fullPayment ? (
+                      <div className="space-y-4 bg-purple-50 p-5 rounded-2xl border border-purple-200">
+                        <h4 className="text-sm font-bold text-zinc-950 uppercase tracking-wider mb-2">Bukti Pembayaran Pelunasan</h4>
+                        <div className="grid grid-cols-2 text-sm gap-y-1">
+                          <div className="text-zinc-500">Jumlah:</div>
+                          <div className="font-bold text-right text-zinc-900">Rp {fullPayment.amount.toLocaleString('id-ID')}</div>
+                          <div className="text-zinc-500">Metode:</div>
+                          <div className="font-bold text-right text-zinc-900 capitalize">{fullPayment.method?.replace('_', ' ') || '-'}</div>
+                          <div className="text-zinc-500">Status:</div>
+                          <div className="font-bold text-right text-amber-600">Menunggu Verifikasi</div>
+                        </div>
+                        {fullPayment.proofImage && (
+                          <div className="mt-3 rounded-xl overflow-hidden bg-zinc-100 border border-purple-300">
+                            <img
+                              src={fullPayment.proofImage}
+                              alt="Bukti Pelunasan"
+                              className="w-full h-56 object-contain"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </div>
+                        )}
+                        {showRejectForm ? (
+                          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                            <label className="block text-sm font-bold text-rose-900">Alasan Penolakan Pelunasan</label>
+                            <textarea
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              placeholder="Contoh: Bukti tidak valid / nominal kurang."
+                              className="w-full p-3 bg-white border border-rose-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-zinc-900 placeholder:text-zinc-400"
+                              rows={3}
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <button type="button" onClick={() => { setShowRejectForm(false); setRejectReason(''); }} className="px-4 py-2 bg-transparent hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg transition-all">Batal</button>
+                              <button type="button" disabled={isVerifying || !rejectReason.trim()} onClick={() => handleVerify('REJECT', 'FULL_PAYMENT')} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50">Kirim Penolakan</button>
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <div className="flex gap-2 pt-2">
+                            <button type="button" onClick={() => setShowRejectForm(true)} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition-all">Tolak Pelunasan</button>
+                            <button type="button" disabled={isVerifying} onClick={() => handleVerify('APPROVE', 'FULL_PAYMENT')} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all">
+                              {isVerifying ? 'Memproses...' : 'Setujui Pelunasan & Selesaikan Sewa'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-purple-50 p-5 rounded-2xl border border-purple-200 text-center">
+                        <p className="text-sm text-zinc-500">Belum ada bukti pelunasan dari penyewa.</p>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
               {/* Bukti Pembayaran DP */}
               {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (
                 selectedBooking.paymentProof ? (
@@ -1086,8 +1165,17 @@ export default function AdminDashboard() {
 
                   <div className="bg-white p-4 rounded-xl border border-zinc-200 text-xs space-y-2">
                     <div className="flex justify-between">
+                      <span className="text-zinc-500">Total Harga Sewa:</span>
+                      <span className="font-bold">Rp {selectedBooking.totalPrice.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-700">
+                      <span>Sudah Dibayar:</span>
+                      <span className="font-bold">Rp {(selectedBooking.payments || []).filter((p: any) => p.status === 'VERIFIED').reduce((s: number, p: any) => s + p.amount, 0).toLocaleString('id-ID')}</span>
+                    </div>
+                    <hr className="border-zinc-200" />
+                    <div className="flex justify-between">
                       <span className="text-zinc-500">Sisa Sewa yang Belum Dibayar:</span>
-                      <span className="font-bold">Rp {(selectedBooking.totalPrice - selectedBooking.dpAmount).toLocaleString('id-ID')}</span>
+                      <span className="font-bold">Rp {Math.max(0, selectedBooking.totalPrice - (selectedBooking.payments || []).filter((p: any) => p.status === 'VERIFIED').reduce((s: number, p: any) => s + p.amount, 0)).toLocaleString('id-ID')}</span>
                     </div>
                     {calculatePenaltyPreview(selectedBooking, actualReturnDate) > 0 && (
                       <div className="flex justify-between text-rose-600 font-bold">
@@ -1097,7 +1185,7 @@ export default function AdminDashboard() {
                     )}
                     <div className="flex justify-between text-sm font-bold border-t pt-2 text-zinc-900">
                       <span>Total Tagihan Pelunasan:</span>
-                      <span>Rp {((selectedBooking.totalPrice - selectedBooking.dpAmount) + calculatePenaltyPreview(selectedBooking, actualReturnDate)).toLocaleString('id-ID')}</span>
+                      <span>Rp {(Math.max(0, selectedBooking.totalPrice - (selectedBooking.payments || []).filter((p: any) => p.status === 'VERIFIED').reduce((s: number, p: any) => s + p.amount, 0)) + calculatePenaltyPreview(selectedBooking, actualReturnDate)).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
 
@@ -1157,14 +1245,46 @@ export default function AdminDashboard() {
                 )}
 
                 {selectedBooking.status === 'DP_CONFIRMED' && (
-                  <button
-                    type="button"
-                    disabled={isStartingSewa}
-                    onClick={handleStartSewa}
-                    className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
-                  >
-                    {isStartingSewa ? 'Memproses...' : 'Mulai Sewa (Serah Terima Unit)'}
-                  </button>
+                  <>
+                    {/* Hitung sisa tagihan dari payments */}
+                    {(() => {
+                      const pay = (selectedBooking.payments || []).filter((p: any) => p.status === 'VERIFIED').reduce((s: number, p: any) => s + p.amount, 0);
+                      const sisa = Math.max(0, selectedBooking.totalPrice - pay);
+                      return sisa > 0 ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm(`Kirim notifikasi tagihan pelunasan Rp ${sisa.toLocaleString('id-ID')} ke penyewa?`)) return;
+                            try {
+                              const res = await fetch(`/api/notifications`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  bookingId: selectedBooking.id,
+                                  title: 'Tagihan Pelunasan',
+                                  message: `Sisa tagihan pelunasan Anda untuk ${selectedBooking.car?.name || 'mobil'} sebesar Rp ${sisa.toLocaleString('id-ID')} perlu segera dibayar.`,
+                                  type: 'PAYMENT_PENDING',
+                                }),
+                              });
+                              if (res.ok) alert('Notifikasi tagihan berhasil dikirim ke penyewa.');
+                              else alert('Gagal mengirim notifikasi.');
+                            } catch { alert('Gagal mengirim notifikasi.'); }
+                          }}
+                          className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm transition-all"
+                        >
+                          Kirim Tagihan Pelunasan (Rp {sisa.toLocaleString('id-ID')})
+                        </button>
+                      ) : null;
+                    })()}
+                    <button
+                      type="button"
+                      disabled={isStartingSewa}
+                      onClick={handleStartSewa}
+                      className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
+                    >
+                      {isStartingSewa ? 'Memproses...' : 'Mulai Sewa (Serah Terima Unit)'}
+                    </button>
+                  </>
                 )}
 
                 {selectedBooking.status === 'IN_PROGRESS' && !showReturnForm && (

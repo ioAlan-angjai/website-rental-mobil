@@ -260,11 +260,11 @@ export default function PelunasanPage() {
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
-            <h2 className="text-2xl font-black text-zinc-900 mb-2">Pelunasan Berhasil!</h2>
+            <h2 className="text-2xl font-black text-zinc-900 mb-2">Bukti Pelunasan Terkirim!</h2>
             <p className="text-zinc-500 text-sm mb-6">
-              Terima kasih! Pembayaran pelunasan sebesar{' '}
+              Bukti pembayaran pelunasan sebesar{' '}
               <span className="font-bold text-zinc-900">{formatIDR(remainingAmount)}</span>{' '}
-              telah kami terima dan sedang diproses.
+              telah kami terima. Tim Admin akan memverifikasi pembayaran Anda.
             </p>
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-6 py-4 mb-6 text-left space-y-2">
               <div>
