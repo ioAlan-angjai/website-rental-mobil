@@ -2,16 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Car, CalendarCheck,
   TrendingUp, Clock, Eye, Search, UserCheck, Pencil, Plus, Check, X,
-  ShieldCheck, UserCog, DollarSign, Sliders, AlertCircle, User
+  ShieldCheck, UserCog, DollarSign, Sliders, AlertCircle, User, List, Calendar
 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { AdminSidebar, TabType } from '@/components/admin/AdminSidebar';
+import { DashboardKPIs } from '@/components/admin/dashboard/DashboardKPIs';
+import { DashboardCharts } from '@/components/admin/dashboard/DashboardCharts';
+import { RecentActivity } from '@/components/admin/dashboard/RecentActivity';
+import { FleetSummary } from '@/components/admin/dashboard/FleetSummary';
+import { BookingsTable } from '@/components/admin/bookings/BookingsTable';
+import { BookingCalendar } from '@/components/admin/bookings/BookingCalendar';
+import { AdminLiveChat } from '@/components/admin/chat/AdminLiveChat';
 import { ImageUploader } from '@/components/admin/ImageUploader';
-import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import { formatDuration } from '@/lib/utils';
-
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-250',
   DP_CONFIRMED: 'bg-emerald-100 text-emerald-800 border-emerald-250',
@@ -41,8 +48,9 @@ const initialDrivers = [
 ];
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'cars' | 'drivers'>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [bookingView, setBookingView] = useState<'list' | 'calendar'>('list');
 
   // Real DB Booking states
   const [bookings, setBookings] = useState<any[]>([]);
@@ -403,201 +411,79 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden text-zinc-900">
-      <BackgroundOrnaments />
-      <AdminHeader onNavigate={setActiveTab} />
+    <div className="flex min-h-screen w-full bg-muted/40">
+      <AdminSidebar activeTab={activeTab} onNavigate={setActiveTab} />
+      <div className="flex flex-col sm:gap-4 sm:py-4 flex-1 w-full overflow-hidden">
+        <AdminHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+        
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 h-full overflow-y-auto">
+          {activeTab === 'overview' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <DashboardKPIs bookings={bookings} cars={cars} drivers={drivers} />
+              <DashboardCharts bookings={bookings} cars={cars} />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <RecentActivity bookings={bookings} />
+                </div>
+                <div>
+                  <FleetSummary cars={cars} bookings={bookings} />
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-      {/* Navigation Tabs */}
-      <div className="border-b border-zinc-200 bg-white relative z-10">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex gap-1">
-            {[
-              { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-              { id: 'bookings', label: 'Bookings', icon: CalendarCheck },
-              { id: 'cars', label: 'Armada', icon: Car },
-              { id: 'drivers', label: 'Driver', icon: UserCheck },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
-                  activeTab === tab.id
-                    ? 'border-zinc-900 text-zinc-900'
-                    : 'border-transparent text-zinc-400 hover:text-zinc-600'
-                }`}
-              >
-                <tab.icon size={16} />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="max-w-7xl mx-auto px-8 py-8 relative z-10">
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white border border-zinc-200 rounded-2xl p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="p-2 bg-zinc-100 rounded-xl">
-                      <stat.icon size={18} className="text-zinc-700" />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-zinc-950 mb-1">{stat.value}</p>
-                  <p className="text-xs text-zinc-500 font-semibold">{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Quick Summary Table */}
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-zinc-900">Pemesanan Terbaru</h3>
-                <button
-                  onClick={() => setActiveTab('bookings')}
-                  className="text-xs font-bold text-zinc-700 hover:text-zinc-950 underline"
-                >
-                  Lihat Semua
-                </button>
+          {activeTab === 'bookings' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <div className="flex justify-end mb-2">
+                <div className="inline-flex p-1 bg-zinc-200/60 rounded-2xl border border-zinc-200/80 shadow-inner">
+                  <button
+                    onClick={() => setBookingView('list')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2",
+                      bookingView === 'list'
+                        ? "bg-white text-zinc-900 shadow-sm"
+                        : "text-zinc-600 hover:text-zinc-900"
+                    )}
+                  >
+                    <List size={14} />
+                    Tampilan Daftar
+                  </button>
+                  <button
+                    onClick={() => setBookingView('calendar')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2",
+                      bookingView === 'calendar'
+                        ? "bg-white text-zinc-900 shadow-sm"
+                        : "text-zinc-600 hover:text-zinc-900"
+                    )}
+                  >
+                    <Calendar size={14} />
+                    Tampilan Kalender
+                  </button>
+                </div>
               </div>
 
-              {loadingBookings ? (
-                <div className="py-8 text-center text-sm text-zinc-400">Memuat data booking...</div>
-              ) : bookings.length === 0 ? (
-                <div className="py-8 text-center text-sm text-zinc-400">Belum ada transaksi pemesanan.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-zinc-100 text-xs uppercase tracking-wider text-zinc-400 font-semibold">
-                        <th className="pb-3 font-semibold">ID</th>
-                        <th className="pb-3 font-semibold">Pelanggan</th>
-                        <th className="pb-3 font-semibold">Mobil</th>
-                        <th className="pb-3 font-semibold">Layanan</th>
-                        <th className="pb-3 font-semibold">Total</th>
-                        <th className="pb-3 font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {bookings.slice(0, 5).map((b) => (
-                        <tr key={b.id} className="hover:bg-zinc-50/50">
-                          <td className="py-3 font-mono text-xs font-bold">{b.id}</td>
-                          <td className="py-3 font-medium text-zinc-900">{b.guestName || b.user?.name || 'Guest'}</td>
-                          <td className="py-3 text-zinc-650">{b.car?.brand} {b.car?.name}</td>
-                          <td className="py-3 capitalize text-xs text-zinc-650">{b.serviceType === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Dengan Driver'}</td>
-                          <td className="py-3 font-bold text-zinc-950">Rp {b.totalPrice.toLocaleString('id-ID')}</td>
-                          <td className="py-3">
-                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusColors[b.status]}`}>
-                              {statusLabels[b.status]}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Bookings Tab */}
-        {activeTab === 'bookings' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 border border-zinc-200 rounded-2xl shadow-sm">
-              <div className="relative w-full sm:w-80">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Cari ID, Nama Pelanggan, Mobil..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400"
+              {bookingView === 'list' ? (
+                <BookingsTable 
+                  bookings={bookings} 
+                  searchQuery={searchQuery}
+                  onView={setSelectedBooking} 
+                  onEdit={() => {}} 
                 />
-              </div>
+              ) : (
+                <BookingCalendar bookings={bookings} />
+              )}
+            </motion.div>
+          )}
 
-              <div className="text-xs text-zinc-500 font-medium">
-                Menampilkan <span className="font-bold text-zinc-900">{filteredBookings.length}</span> dari {bookings.length} booking
-              </div>
-            </div>
+          {activeTab === 'chats' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <AdminLiveChat />
+            </motion.div>
+          )}
 
-            {loadingBookings ? (
-              <div className="py-12 text-center text-sm text-zinc-400 bg-white rounded-2xl border">Memuat daftar booking...</div>
-            ) : filteredBookings.length === 0 ? (
-              <div className="py-12 text-center text-sm text-zinc-400 bg-white rounded-2xl border">Tidak ditemukan booking yang sesuai.</div>
-            ) : (
-              <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="bg-zinc-50 border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        <th className="p-4">ID Pemesanan</th>
-                        <th className="p-4">Pelanggan</th>
-                        <th className="p-4">Mobil & Layanan</th>
-                        <th className="p-4">Tanggal Sewa</th>
-                        <th className="p-4">Total & DP</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200">
-                      {filteredBookings.map((b) => (
-                        <tr key={b.id} className="hover:bg-zinc-50/50 transition-colors">
-                          <td className="p-4 font-mono text-xs font-bold text-zinc-900">{b.id}</td>
-                          <td className="p-4">
-                            <p className="font-bold text-zinc-900">{b.guestName || b.user?.name || 'Guest'}</p>
-                            <p className="text-xs text-zinc-500">{b.guestPhone || b.user?.phone || '-'}</p>
-                          </td>
-                          <td className="p-4">
-                            <p className="font-semibold text-zinc-900">{b.car?.brand} {b.car?.name}</p>
-                            <span className="text-[11px] text-zinc-500 capitalize bg-zinc-100 px-2 py-0.5 rounded-md font-medium">
-                              {b.serviceType === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Dengan Driver'}
-                            </span>
-                          </td>
-                          <td className="p-4 text-xs text-zinc-650">
-                            <p>{new Date(b.startDateTime || b.startDate).toLocaleDateString('id-ID')} - {new Date(b.endDateTime || b.endDate).toLocaleDateString('id-ID')}</p>
-                            <p className="text-zinc-400 mt-0.5">{formatDuration(b.durationMinutes || b.duration)}</p>
-                          </td>
-                          <td className="p-4">
-                            <p className="font-bold text-zinc-950">Rp {b.totalPrice.toLocaleString('id-ID')}</p>
-                            <p className="text-xs text-emerald-600 font-semibold">DP: Rp {b.dpAmount.toLocaleString('id-ID')}</p>
-                          </td>
-                          <td className="p-4">
-                            <span className={`text-[11px] font-bold px-3 py-1 rounded-full border inline-block ${statusColors[b.status]}`}>
-                              {statusLabels[b.status]}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
-                            <button
-                              onClick={() => setSelectedBooking(b)}
-                              className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 ml-auto transition-all"
-                            >
-                              <Eye size={14} /> Detail
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Armada (Cars) Tab */}
-        {activeTab === 'cars' && (
+          {/* Armada (Cars) Tab */}
+          {activeTab === 'cars' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 border border-zinc-200 rounded-2xl shadow-sm">
               <div className="relative w-full sm:w-80">
@@ -832,7 +718,7 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
         )}
-      </div>
+      </main>
 
       {/* Modal Edit / Create Car */}
       <AnimatePresence>
@@ -1306,6 +1192,7 @@ export default function AdminDashboard() {
           </div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

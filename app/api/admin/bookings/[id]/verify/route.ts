@@ -44,30 +44,35 @@ export async function PATCH(
     const payment = await prisma.payment.findFirst({
       where: {
         bookingId,
-        type: "DP",
-        status: "PENDING"
-      }
+        type: "DP"
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
-    if (!payment) {
-      return NextResponse.json(
-        { error: "Pembayaran PENDING untuk booking ini tidak ditemukan" },
-        { status: 404 }
-      );
-    }
-
     if (action === "APPROVE") {
-      // Update payment
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: "VERIFIED",
-          verifiedAt: new Date(),
-          verifiedBy: session.user?.email || "admin"
-        }
-      });
+      if (payment) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: "VERIFIED",
+            verifiedAt: new Date(),
+            verifiedBy: session.user?.email || "admin"
+          }
+        });
+      } else {
+        await prisma.payment.create({
+          data: {
+            bookingId,
+            amount: booking.dpAmount,
+            type: "DP",
+            method: booking.paymentMethod || "MANUAL",
+            status: "VERIFIED",
+            verifiedAt: new Date(),
+            verifiedBy: session.user?.email || "admin"
+          }
+        });
+      }
 
-      // Update booking
       await prisma.booking.update({
         where: { id: bookingId },
         data: {
@@ -78,7 +83,6 @@ export async function PATCH(
         }
       });
 
-      // Buat notifikasi untuk user
       if (booking.userId) {
         await prisma.notification.create({
           data: {
@@ -98,16 +102,27 @@ export async function PATCH(
         );
       }
 
-      // Update payment
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: "REJECTED",
-          rejectReason
-        }
-      });
+      if (payment) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: "REJECTED",
+            rejectReason
+          }
+        });
+      } else {
+        await prisma.payment.create({
+          data: {
+            bookingId,
+            amount: booking.dpAmount,
+            type: "DP",
+            method: booking.paymentMethod || "MANUAL",
+            status: "REJECTED",
+            rejectReason
+          }
+        });
+      }
 
-      // Update booking
       await prisma.booking.update({
         where: { id: bookingId },
         data: {
