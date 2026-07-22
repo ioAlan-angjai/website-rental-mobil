@@ -118,7 +118,7 @@ export default function AccountPage() {
                 {editing ? (
                   <Input value={(formData as any)[field.name]} onChange={e => setFormData({...formData, [field.name]: e.target.value})} />
                 ) : (
-                  <p className="font-bold text-sm h-9 p-2 bg-zinc-50 rounded-lg">{profile[field.name] || '-'}</p>
+                  <p className="font-bold text-sm h-9 p-2 bg-zinc-50 rounded-lg">{profile?.[field.name] || '-'}</p>
                 )}
               </div>
             ))}

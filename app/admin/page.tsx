@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Car, CalendarCheck,
-  TrendingUp, Clock, Eye, Search, UserCheck, Pencil, Plus, Check, X,
+  TrendingUp, Clock, Eye, Search, UserCheck, Pencil, Plus, Check, X, Trash2,
   ShieldCheck, UserCog, DollarSign, Sliders, AlertCircle, User, List, Calendar
 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -87,12 +87,36 @@ export default function AdminDashboard() {
     status: 'AVAILABLE',
   });
 
-  // Real Driver Fee states
+  // Real Driver Fee & Drivers states
   const [driverFeePerDay, setDriverFeePerDay] = useState(150000);
   const [editingDriverFeeInput, setEditingDriverFeeInput] = useState('150000');
   const [isSavingDriverFee, setIsSavingDriverFee] = useState(false);
   const [driverFeeMsg, setDriverFeeMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [drivers, setDrivers] = useState(initialDrivers);
+  const [isEditingDriverFee, setIsEditingDriverFee] = useState(false);
+
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
+  const [isCreatingDriver, setIsCreatingDriver] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<any | null>(null);
+  const [isSavingDriver, setIsSavingDriver] = useState(false);
+  const [confirmDeleteDriver, setConfirmDeleteDriver] = useState<any | null>(null);
+  const [isDeletingDriver, setIsDeletingDriver] = useState(false);
+  const [newDriverFormData, setNewDriverFormData] = useState<{
+    name: string;
+    phone: string;
+    address: string;
+    initialExperience: number | string;
+  }>({
+    name: '',
+    phone: '',
+    address: '',
+    initialExperience: '',
+  });
+  const [editDriverFormData, setEditDriverFormData] = useState({
+    name: '',
+    phone: '',
+    address: '',
+  });
 
   const fetchBookings = () => {
     setLoadingBookings(true);
@@ -120,6 +144,19 @@ export default function AdminDashboard() {
       .finally(() => setLoadingCars(false));
   };
 
+  const fetchDrivers = () => {
+    setLoadingDrivers(true);
+    fetch('/api/admin/drivers')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) {
+          setDrivers(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingDrivers(false));
+  };
+
   const fetchDriverFee = () => {
     fetch('/api/admin/driver')
       .then((r) => r.json())
@@ -135,6 +172,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchBookings();
     fetchCars();
+    fetchDrivers();
     fetchDriverFee();
   }, []);
 
@@ -387,11 +425,116 @@ export default function AdminDashboard() {
 
       setDriverFeePerDay(data.driverFeePerDay);
       setDriverFeeMsg({ type: 'success', text: 'Tarif driver harian berhasil diperbarui!' });
+      setTimeout(() => {
+        setIsEditingDriverFee(false);
+        setDriverFeeMsg(null);
+      }, 1000);
     } catch (err) {
       console.error(err);
       setDriverFeeMsg({ type: 'error', text: 'Gagal mengontak server.' });
     } finally {
       setIsSavingDriverFee(false);
+    }
+  };
+
+  // Driver Roster Management Actions
+  const handleOpenCreateDriver = () => {
+    setIsCreatingDriver(true);
+    setNewDriverFormData({
+      name: '',
+      phone: '',
+      address: '',
+      initialExperience: '',
+    });
+  };
+
+  const handleOpenEditDriver = (driver: any) => {
+    setEditingDriver(driver);
+    setEditDriverFormData({
+      name: driver.name || '',
+      phone: driver.phone || '',
+      address: driver.address || '',
+    });
+  };
+
+  const handleSaveNewDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDriverFormData.name.trim() || !newDriverFormData.phone.trim()) {
+      alert('Nama dan nomor WhatsApp driver wajib diisi.');
+      return;
+    }
+    setIsSavingDriver(true);
+    try {
+      const res = await fetch('/api/admin/drivers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newDriverFormData,
+          initialExperience: newDriverFormData.initialExperience === '' ? 0 : Number(newDriverFormData.initialExperience),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Gagal menambahkan driver baru.');
+        return;
+      }
+      setIsCreatingDriver(false);
+      setNewDriverFormData({ name: '', phone: '', address: '', initialExperience: '' });
+      fetchDrivers();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengontak server.');
+    } finally {
+      setIsSavingDriver(false);
+    }
+  };
+
+  const handleSaveEditDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDriver) return;
+    if (!editDriverFormData.name.trim() || !editDriverFormData.phone.trim()) {
+      alert('Nama dan nomor WhatsApp driver wajib diisi.');
+      return;
+    }
+    setIsSavingDriver(true);
+    try {
+      const res = await fetch(`/api/admin/drivers/${editingDriver.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editDriverFormData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Gagal memperbarui data driver.');
+        return;
+      }
+      setEditingDriver(null);
+      fetchDrivers();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengontak server.');
+    } finally {
+      setIsSavingDriver(false);
+    }
+  };
+
+  const handleDeleteDriver = async () => {
+    if (!confirmDeleteDriver) return;
+    setIsDeletingDriver(true);
+    try {
+      const res = await fetch(`/api/admin/drivers/${confirmDeleteDriver.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Gagal menghapus driver.');
+        return;
+      }
+      setConfirmDeleteDriver(null);
+      fetchDrivers();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengontak server.');
+    } finally {
+      setIsDeletingDriver(false);
     }
   };
 
@@ -412,9 +555,9 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
       <AdminSidebar activeTab={activeTab} onNavigate={setActiveTab} />
-      <div className="flex flex-col sm:gap-4 sm:py-4 flex-1 w-full overflow-hidden">
+      <div className="flex flex-col sm:gap-4 sm:pb-4 flex-1 w-full overflow-hidden">
         <AdminHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-        
+
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 h-full overflow-y-auto">
           {activeTab === 'overview' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -463,11 +606,11 @@ export default function AdminDashboard() {
               </div>
 
               {bookingView === 'list' ? (
-                <BookingsTable 
-                  bookings={bookings} 
+                <BookingsTable
+                  bookings={bookings}
                   searchQuery={searchQuery}
-                  onView={setSelectedBooking} 
-                  onEdit={() => {}} 
+                  onView={setSelectedBooking}
+                  onEdit={() => { }}
                 />
               ) : (
                 <BookingCalendar bookings={bookings} />
@@ -476,714 +619,1021 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'cars' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 border border-zinc-200 rounded-2xl shadow-sm">
-              <div className="relative w-full sm:w-80">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Cari armada, brand, tipe..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400"
-                />
-              </div>
-
-              <button
-                onClick={handleOpenCreateCar}
-                className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
-              >
-                <Plus size={16} /> Tambah Mobil Baru
-              </button>
-            </div>
-
-            {loadingCars ? (
-              <div className="py-12 text-center text-sm text-zinc-400 bg-white rounded-2xl border">Memuat daftar armada...</div>
-            ) : filteredCars.length === 0 ? (
-              <div className="py-12 text-center text-sm text-zinc-400 bg-white rounded-2xl border">Belum ada data mobil yang sesuai.</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCars.map((car) => (
-                  <motion.div
-                    key={car.id}
-                    layout
-                    className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* Car Image Banner */}
-                      <div className="h-48 bg-zinc-100 relative overflow-hidden border-b border-zinc-100">
-                        <img
-                          src={
-                            (car.images
-                              ? (typeof car.images === 'string' ? JSON.parse(car.images) : car.images)
-                              : [car.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop']
-                            )[0]
-                          }
-                          alt={car.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-3 right-3">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
-                              car.status === 'AVAILABLE'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : car.status === 'BOOKED'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-rose-50 text-rose-700 border-rose-200'
-                            }`}
-                          >
-                            {car.status === 'AVAILABLE' ? 'Tersedia' : car.status === 'BOOKED' ? 'Tersewa' : 'Perawatan'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Details */}
-                      <div className="p-5 space-y-3">
-                        <div>
-                          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{car.brand}</p>
-                          <h4 className="text-lg font-bold text-zinc-950">{car.name}</h4>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 text-xs text-zinc-600">
-                          <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.type}</span>
-                          <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.transmission}</span>
-                          <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.capacity} Kursi</span>
-                          <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.fuelType}</span>
-                        </div>
-
-                        <div className="pt-3 border-t border-zinc-100 flex items-baseline justify-between">
-                          <span className="text-xs text-zinc-400 font-medium">Harga Sewa / Hari</span>
-                          <span className="text-lg font-extrabold text-zinc-950">
-                            Rp {car.pricePerDay.toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="p-5 pt-0 flex gap-2">
-                      <button
-                        onClick={() => handleOpenEditCar(car)}
-                        className="flex-1 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Pencil size={14} /> Edit Mobil & Harga
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCar(car.id)}
-                        className="px-3 py-2.5 border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-xl transition-all"
-                        title="Hapus Mobil"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Driver Tab */}
-        {activeTab === 'drivers' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            {/* Driver Fee Config Card */}
-            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 text-white border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-lg relative overflow-hidden">
-              <div className="max-w-2xl space-y-4 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-zinc-200 border border-white/10">
-                  <DollarSign size={14} className="text-emerald-400" />
-                  Pengaturan Tarif Driver Tambahan
-                </div>
-
-                <h3 className="text-2xl font-bold">Kelola Biaya Sewa Driver</h3>
-                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Tentukan besaran jasa driver per hari. Tarif driver ini otomatis ditambahkan ke total harga pemesanan ketika penyewa memilih opsi <strong className="text-white">"Dengan Driver"</strong>.
-                </p>
-
-                <form onSubmit={handleSaveDriverFee} className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <div className="relative flex-1">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-zinc-400 text-sm">Rp</span>
-                    <input
-                      type="number"
-                      value={editingDriverFeeInput}
-                      onChange={(e) => setEditingDriverFeeInput(e.target.value)}
-                      placeholder="Contoh: 150000"
-                      className="w-full pl-12 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-white/50 placeholder:text-zinc-500"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-medium">/ Hari</span>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSavingDriverFee}
-                    className="px-6 py-3 bg-white hover:bg-zinc-100 text-zinc-950 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isSavingDriverFee ? 'Menyimpan...' : 'Simpan Tarif Driver'}
-                  </button>
-                </form>
-
-                {driverFeeMsg && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 border ${
-                      driverFeeMsg.type === 'success' ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30' : 'bg-rose-500/20 text-rose-200 border-rose-500/30'
-                    }`}
-                  >
-                    {driverFeeMsg.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
-                    {driverFeeMsg.text}
-                  </motion.div>
-                )}
-              </div>
-            </div>
-
-            {/* Explanation Card */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-3 shadow-sm">
-                <div className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold">
-                  <Car size={18} />
-                </div>
-                <h4 className="font-bold text-zinc-950 text-base">Tarif Lepas Kunci</h4>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Penyewa mengemudikan sendiri unit mobil. Total harga murni diambil dari <strong className="text-zinc-900">Harga Sewa Mobil Per Hari × Jumlah Hari</strong>.
-                </p>
-              </div>
-
-              <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-3 shadow-sm">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold">
-                  <User size={18} />
-                </div>
-                <h4 className="font-bold text-zinc-950 text-base">Tarif Dengan Driver</h4>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Penyewa menyewa unit beserta driver. Total harga dihitung dari <strong className="text-zinc-900">(Harga Sewa Mobil + Rp {driverFeePerDay.toLocaleString('id-ID')} Tarif Driver) × Jumlah Hari</strong>.
-                </p>
-              </div>
-            </div>
-
-            {/* Driver Roster Management Table */}
-            <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-zinc-950 text-base">Tim Driver Operasional</h3>
-                  <p className="text-xs text-zinc-500">Daftar pengemudi aktif untuk penugasan booking Dengan Driver.</p>
-                </div>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                  {drivers.filter(d => d.status === 'READY').length} Driver Ready
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-400 font-bold bg-zinc-50/50">
-                      <th className="p-3">ID Driver</th>
-                      <th className="p-3">Nama Pengemudi</th>
-                      <th className="p-3">Kontak WA</th>
-                      <th className="p-3">Pengalaman</th>
-                      <th className="p-3">Penugasan Saat Ini</th>
-                      <th className="p-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {drivers.map((drv) => (
-                      <tr key={drv.id} className="hover:bg-zinc-50/50">
-                        <td className="p-3 font-mono text-xs font-bold text-zinc-900">{drv.id}</td>
-                        <td className="p-3 font-bold text-zinc-900">{drv.name}</td>
-                        <td className="p-3 text-xs text-zinc-650 font-mono">{drv.phone}</td>
-                        <td className="p-3 text-xs text-zinc-600">{drv.experience}</td>
-                        <td className="p-3 text-xs font-medium text-zinc-700">{drv.activeCar}</td>
-                        <td className="p-3">
-                          <span
-                            className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                              drv.status === 'READY'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
-                            }`}
-                          >
-                            {drv.status === 'READY' ? 'Ready / Standby' : 'Sedang Bertugas'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </main>
-
-      {/* Modal Edit / Create Car */}
-      <AnimatePresence>
-        {(editingCar || isCreatingCar) && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl max-h-[90vh] overflow-y-auto text-zinc-950"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
-                <div>
-                  <h3 className="text-lg font-bold text-zinc-950">
-                    {editingCar ? 'Edit Detail & Harga Mobil' : 'Tambah Mobil Baru'}
-                  </h3>
-                  <p className="text-xs text-zinc-500">
-                    {editingCar ? `ID: ${editingCar.id}` : 'Isi atribut lengkap armada baru'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setEditingCar(null);
-                    setIsCreatingCar(false);
-                  }}
-                  className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveCar} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <label className="font-bold text-zinc-700">Nama Mobil</label>
-                    <input
-                      type="text"
-                      required
-                      value={carFormData.name}
-                      onChange={(e) => setCarFormData({ ...carFormData, name: e.target.value })}
-                      placeholder="Contoh: Avanza Veloz"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-zinc-700">Brand / Merek</label>
-                    <input
-                      type="text"
-                      required
-                      value={carFormData.brand}
-                      onChange={(e) => setCarFormData({ ...carFormData, brand: e.target.value })}
-                      placeholder="Contoh: Toyota"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-zinc-700">Kategori / Tipe</label>
-                    <select
-                      value={carFormData.type}
-                      onChange={(e) => setCarFormData({ ...carFormData, type: e.target.value })}
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    >
-                      <option value="SUV">SUV</option>
-                      <option value="MPV">MPV</option>
-                      <option value="Sedan">Sedan</option>
-                      <option value="Compact">Compact / City Car</option>
-                      <option value="Luxury">Luxury / Mewah</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-zinc-700">Kapasitas (Penumpang)</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={carFormData.capacity}
-                      onChange={(e) => setCarFormData({ ...carFormData, capacity: Number(e.target.value) })}
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-zinc-700">Transmisi</label>
-                    <select
-                      value={carFormData.transmission}
-                      onChange={(e) => setCarFormData({ ...carFormData, transmission: e.target.value })}
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    >
-                      <option value="Automatic">Automatic</option>
-                      <option value="Manual">Manual</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-zinc-700">Bahan Bakar</label>
-                    <input
-                      type="text"
-                      value={carFormData.fuelType}
-                      onChange={(e) => setCarFormData({ ...carFormData, fuelType: e.target.value })}
-                      placeholder="Bensin / Diesel"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    />
-                  </div>
-                </div>
-
-                {/* Harga Per Hari */}
-                <div className="space-y-1 pt-2">
-                  <label className="block text-xs font-bold text-zinc-900">
-                    Harga Sewa Per Hari (Rp) <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-zinc-400 text-sm">Rp</span>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      value={carFormData.pricePerDay}
-                      onChange={(e) => setCarFormData({ ...carFormData, pricePerDay: Number(e.target.value) })}
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-300 rounded-xl text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                    />
-                  </div>
-                </div>
-
-                {/* Status Mobil */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-zinc-700">Status Ketersediaan</label>
-                  <select
-                    value={carFormData.status}
-                    onChange={(e) => setCarFormData({ ...carFormData, status: e.target.value })}
-                    className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-bold"
-                  >
-                    <option value="AVAILABLE">Tersedia (AVAILABLE)</option>
-                    <option value="BOOKED">Sedang Tersewa (BOOKED)</option>
-                    <option value="MAINTENANCE">Perawatan / Service (MAINTENANCE)</option>
-                  </select>
-                </div>
-
-                {/* Image Uploader Drag & Drop */}
-                <div className="pt-2">
-                  <ImageUploader
-                    value={carImages}
-                    onChange={setCarImages}
-                    maxFiles={5}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 border border-zinc-200 rounded-2xl shadow-sm">
+                <div className="relative w-full sm:w-80">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari armada, brand, tipe..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400"
                   />
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
+                <button
+                  onClick={handleOpenCreateCar}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+                >
+                  <Plus size={16} /> Tambah Mobil Baru
+                </button>
+              </div>
+
+              {loadingCars ? (
+                <div className="py-12 text-center text-sm text-zinc-400 bg-white rounded-2xl border">Memuat daftar armada...</div>
+              ) : filteredCars.length === 0 ? (
+                <div className="py-12 text-center text-sm text-zinc-400 bg-white rounded-2xl border">Belum ada data mobil yang sesuai.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCars.map((car) => (
+                    <motion.div
+                      key={car.id}
+                      layout
+                      className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        {/* Car Image Banner */}
+                        <div className="h-48 bg-zinc-100 relative overflow-hidden border-b border-zinc-100">
+                          <img
+                            src={
+                              (car.images
+                                ? (typeof car.images === 'string' ? JSON.parse(car.images) : car.images)
+                                : [car.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop']
+                              )[0]
+                            }
+                            alt={car.name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-3 right-3">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${car.status === 'AVAILABLE'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : car.status === 'BOOKED'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                                }`}
+                            >
+                              {car.status === 'AVAILABLE' ? 'Tersedia' : car.status === 'BOOKED' ? 'Tersewa' : 'Perawatan'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="p-5 space-y-3">
+                          <div>
+                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{car.brand}</p>
+                            <h4 className="text-lg font-bold text-zinc-950">{car.name}</h4>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 text-xs text-zinc-600">
+                            <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.type}</span>
+                            <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.transmission}</span>
+                            <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.capacity} Kursi</span>
+                            <span className="bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{car.fuelType}</span>
+                          </div>
+
+                          <div className="pt-3 border-t border-zinc-100 flex items-baseline justify-between">
+                            <span className="text-xs text-zinc-400 font-medium">Harga Sewa / Hari</span>
+                            <span className="text-lg font-extrabold text-zinc-950">
+                              Rp {car.pricePerDay.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="p-5 pt-0 flex gap-2">
+                        <button
+                          onClick={() => handleOpenEditCar(car)}
+                          className="flex-1 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <Pencil size={14} /> Edit Mobil & Harga
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCar(car.id)}
+                          className="px-3 py-2.5 border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-xl transition-all"
+                          title="Hapus Mobil"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Driver Tab */}
+          {activeTab === 'drivers' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              {/* Driver Roster Management Table */}
+              <div className="bg-white border border-zinc-200 rounded-3xl p-6 space-y-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-zinc-950 text-base">Tim Driver Operasional</h3>
+                    <p className="text-xs text-zinc-500">Tarif saat ini: <strong>Rp {driverFeePerDay.toLocaleString('id-ID')} / hari</strong>.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+                      {drivers.filter(d => d.status === 'READY').length} Driver Ready
+                    </span>
+                    <button
+                      onClick={() => setIsEditingDriverFee(true)}
+                      className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                    >
+                      <DollarSign size={14} className="text-zinc-500" /> Ubah Tarif
+                    </button>
+                    <button
+                      onClick={handleOpenCreateDriver}
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                    >
+                      <Plus size={16} /> Tambah Driver Baru
+                    </button>
+                  </div>
+                </div>
+
+                {loadingDrivers ? (
+                  <div className="py-8 text-center text-xs text-zinc-400">Memuat data driver...</div>
+                ) : drivers.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+                    Belum ada data driver. Klik tombol "+ Tambah Driver Baru" di atas untuk menambahkan.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-400 font-bold bg-zinc-50/50">
+                          {/* <th className="p-3">ID Driver</th> */}
+                          <th className="p-3">Nama Pengemudi</th>
+                          <th className="p-3">Kontak WA</th>
+                          <th className="p-3">Alamat</th>
+                          <th className="p-3">Pengalaman</th>
+                          <th className="p-3">Penugasan</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3">
+                            <div className="flex justify-end pr-3">Aksi</div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {drivers.map((drv) => (
+                          <tr key={drv.id} className="hover:bg-zinc-50/50">
+                            {/* <td className="p-3 font-mono text-xs font-bold text-zinc-900">{drv.id}</td> */}
+                            <td className="p-3 font-bold text-zinc-900">{drv.name}</td>
+                            <td className="p-3 text-xs text-zinc-600 font-mono">{drv.phone}</td>
+                            <td className="p-3 text-xs text-zinc-600 max-w-[180px] truncate" title={drv.address || '-'}>
+                              {drv.address || '-'}
+                            </td>
+                            <td className="p-3 text-xs text-zinc-700 font-semibold">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 text-[11px] font-bold">
+                                {drv.experience || `${drv.initialExperience || 0} Tahun`}
+                              </span>
+                            </td>
+                            <td className="p-3 text-xs font-medium text-zinc-700">{drv.activeCar || '-'}</td>
+                            <td className="p-3">
+                              <span
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${drv.status === 'READY'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                                  }`}
+                              >
+                                {drv.status === 'READY' ? 'Ready' : 'Sedang Bertugas'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenEditDriver(drv)}
+                                  className="p-1.5 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 rounded-lg transition-all"
+                                  title="Edit Data Driver"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteDriver(drv)}
+                                  className="p-1.5 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-lg transition-all"
+                                  title="Hapus Driver"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </main>
+
+        {/* Modal Edit / Create Car */}
+        <AnimatePresence>
+          {(editingCar || isCreatingCar) && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl max-h-[90vh] overflow-y-auto text-zinc-950"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-950">
+                      {editingCar ? 'Edit Detail & Harga Mobil' : 'Tambah Mobil Baru'}
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                      {editingCar ? `ID: ${editingCar.id}` : 'Isi atribut lengkap armada baru'}
+                    </p>
+                  </div>
                   <button
-                    type="button"
                     onClick={() => {
                       setEditingCar(null);
                       setIsCreatingCar(false);
                     }}
-                    className="px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
+                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
                   >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingCar}
-                    className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
-                  >
-                    {isSavingCar ? 'Memproses...' : 'Simpan Perubahan'}
+                    <X size={18} />
                   </button>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      {/* Booking Verification Modal */}
-      <AnimatePresence>
-        {selectedBooking && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-6 relative border border-zinc-200 shadow-xl max-h-[90vh] overflow-y-auto text-zinc-950"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
-                <div>
-                  <span className="text-xs font-mono text-zinc-500 uppercase">Detail Booking</span>
-                  <h3 className="text-lg font-bold text-zinc-900">{selectedBooking.id}</h3>
-                </div>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full border ${statusColors[selectedBooking.status]}`}>
-                  {statusLabels[selectedBooking.status]}
-                </span>
-              </div>
+                <form onSubmit={handleSaveCar} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-bold text-zinc-700">Nama Mobil</label>
+                      <input
+                        type="text"
+                        required
+                        value={carFormData.name}
+                        onChange={(e) => setCarFormData({ ...carFormData, name: e.target.value })}
+                        placeholder="Contoh: Avanza Veloz"
+                        className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      />
+                    </div>
 
-              {/* Grid Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                {/* Pelanggan */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-zinc-900 border-b pb-1">Informasi Pelanggan</h4>
-                  <p><span className="text-zinc-500 font-medium">Nama:</span> {selectedBooking.guestName || selectedBooking.user?.name || 'Guest'}</p>
-                  <p><span className="text-zinc-500 font-medium">No. WA:</span> {selectedBooking.guestPhone || '-'}</p>
-                  <p><span className="text-zinc-500 font-medium">Email:</span> {selectedBooking.guestEmail || selectedBooking.user?.email || '-'}</p>
-                </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-zinc-700">Brand / Merek</label>
+                      <input
+                        type="text"
+                        required
+                        value={carFormData.brand}
+                        onChange={(e) => setCarFormData({ ...carFormData, brand: e.target.value })}
+                        placeholder="Contoh: Toyota"
+                        className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      />
+                    </div>
 
-                {/* Sewa */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-zinc-900 border-b pb-1">Detail Sewa</h4>
-                  <p><span className="text-zinc-500 font-medium">Mobil:</span> {selectedBooking.car?.brand} {selectedBooking.car?.name}</p>
-                  <p><span className="text-zinc-500 font-medium">Layanan:</span> {selectedBooking.serviceType === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Dengan Driver'}</p>
-                  <p><span className="text-zinc-500 font-medium">Tanggal:</span> {new Date(selectedBooking.startDateTime || selectedBooking.startDate).toLocaleDateString('id-ID')} s.d. {new Date(selectedBooking.endDateTime || selectedBooking.endDate).toLocaleDateString('id-ID')}</p>
-                  <p><span className="text-zinc-500 font-medium">Durasi:</span> {formatDuration(selectedBooking.durationMinutes || selectedBooking.duration)}</p>
-                  {selectedBooking.pickupLocation && <p><span className="text-zinc-500 font-medium">Lokasi:</span> {selectedBooking.pickupLocation}</p>}
-                </div>
-              </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-zinc-700">Kategori / Tipe</label>
+                      <select
+                        value={carFormData.type}
+                        onChange={(e) => setCarFormData({ ...carFormData, type: e.target.value })}
+                        className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      >
+                        <option value="SUV">SUV</option>
+                        <option value="MPV">MPV</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="Compact">Compact / City Car</option>
+                        <option value="Luxury">Luxury / Mewah</option>
+                      </select>
+                    </div>
 
-              {/* Rincian Pembayaran */}
-              <div className="space-y-3 bg-zinc-50 p-5 rounded-2xl border border-zinc-200">
-                <h4 className="text-sm font-bold text-zinc-950 uppercase tracking-wider mb-2">Rincian Pembayaran</h4>
-                <div className="grid grid-cols-2 text-sm gap-y-2">
-                  <div className="text-zinc-500">Harga Dasar:</div>
-                  <div className="font-bold text-right text-zinc-900">Rp {selectedBooking.basePrice.toLocaleString('id-ID')}</div>
-                  {selectedBooking.discountAmount > 0 && (
-                    <>
-                      <div className="text-zinc-500">Diskon:</div>
-                      <div className="font-bold text-right text-green-600">Rp {selectedBooking.discountAmount.toLocaleString('id-ID')}</div>
-                    </>
-                  )}
-                  {selectedBooking.penaltyAmount > 0 && (
-                    <>
-                      <div className="text-zinc-500 text-rose-600">Denda Keterlambatan:</div>
-                      <div className="font-bold text-right text-rose-600">Rp {selectedBooking.penaltyAmount.toLocaleString('id-ID')}</div>
-                    </>
-                  )}
-                  <div className="text-zinc-900 font-bold border-t pt-2">Total Biaya:</div>
-                  <div className="font-extrabold text-right text-zinc-950 border-t pt-2">Rp {selectedBooking.totalPrice.toLocaleString('id-ID')}</div>
-                  <div className="text-emerald-700 font-bold">DP Diterima (50%):</div>
-                  <div className="font-bold text-right text-emerald-700">Rp {selectedBooking.dpAmount.toLocaleString('id-ID')}</div>
-                </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-zinc-700">Kapasitas (Penumpang)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={carFormData.capacity}
+                        onChange={(e) => setCarFormData({ ...carFormData, capacity: Number(e.target.value) })}
+                        className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      />
+                    </div>
 
-                {selectedBooking.paymentMethod && (
-                  <div className="pt-2 border-t mt-2 text-sm">
-                    <p><span className="text-zinc-500">Metode Bayar DP:</span> <span className="font-bold">{selectedBooking.paymentMethod.replace('_', ' ')}</span></p>
-                  </div>
-                )}
-              </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-zinc-700">Transmisi</label>
+                      <select
+                        value={carFormData.transmission}
+                        onChange={(e) => setCarFormData({ ...carFormData, transmission: e.target.value })}
+                        className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      >
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                    </div>
 
-              {/* Bukti Pembayaran DP */}
-              {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (
-                selectedBooking.paymentProof ? (
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-zinc-900 text-sm">Bukti Pembayaran DP</h4>
-                    <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 flex items-center justify-center p-2">
-                      <img
-                        src={selectedBooking.paymentProof}
-                        alt="Bukti Transfer"
-                        className="max-h-80 w-auto object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
-                        onClick={() => window.open(selectedBooking.paymentProof)}
-                        title="Klik untuk memperbesar"
+                    <div className="space-y-1">
+                      <label className="font-bold text-zinc-700">Bahan Bakar</label>
+                      <input
+                        type="text"
+                        value={carFormData.fuelType}
+                        onChange={(e) => setCarFormData({ ...carFormData, fuelType: e.target.value })}
+                        placeholder="Bensin / Diesel"
+                        className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                       />
                     </div>
                   </div>
-                ) : (
-                  <div className="p-4 bg-zinc-50 text-zinc-500 text-center text-sm rounded-2xl border border-dashed">
-                    Belum ada bukti pembayaran DP yang diunggah.
-                  </div>
-                )
-              )}
 
-              {/* Dokumen Identitas Penyewa */}
-              {(selectedBooking.ktpBookingImage || selectedBooking.simBookingImage) && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-zinc-900 text-sm">Dokumen Identitas Penyewa</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedBooking.ktpBookingImage && (
-                      <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 p-2">
-                        <p className="text-xs text-zinc-500 font-medium mb-1">Foto KTP</p>
-                        <img
-                          src={selectedBooking.ktpBookingImage}
-                          alt="KTP"
-                          className="max-h-60 w-full object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
-                          onClick={() => window.open(selectedBooking.ktpBookingImage)}
-                          title="Klik untuk memperbesar"
-                        />
-                      </div>
-                    )}
-                    {selectedBooking.simBookingImage && (
-                      <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 p-2">
-                        <p className="text-xs text-zinc-500 font-medium mb-1">Foto SIM</p>
-                        <img
-                          src={selectedBooking.simBookingImage}
-                          alt="SIM"
-                          className="max-h-60 w-full object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
-                          onClick={() => window.open(selectedBooking.simBookingImage)}
-                          title="Klik untuk memperbesar"
-                        />
-                      </div>
-                    )}
+                  {/* Harga Per Hari */}
+                  <div className="space-y-1 pt-2">
+                    <label className="block text-xs font-bold text-zinc-900">
+                      Harga Sewa Per Hari (Rp) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-zinc-400 text-sm">Rp</span>
+                      <input
+                        type="number"
+                        required
+                        min={0}
+                        value={carFormData.pricePerDay}
+                        onChange={(e) => setCarFormData({ ...carFormData, pricePerDay: Number(e.target.value) })}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-300 rounded-xl text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Reject Reason Form */}
-              {showRejectForm && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 p-4 bg-rose-50 rounded-2xl border border-rose-200">
-                  <label className="block text-sm font-bold text-rose-900">
-                    Alasan Penolakan Pembayaran DP
-                  </label>
-                  <textarea
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="Contoh: Bukti transfer buram / nominal kurang."
-                    className="w-full p-3 bg-white border border-rose-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-zinc-900 placeholder:text-zinc-400"
-                    rows={3}
-                  />
-                  <div className="flex gap-2 justify-end">
+                  {/* Status Mobil */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Status Ketersediaan</label>
+                    <select
+                      value={carFormData.status}
+                      onChange={(e) => setCarFormData({ ...carFormData, status: e.target.value })}
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-bold"
+                    >
+                      <option value="AVAILABLE">Tersedia (AVAILABLE)</option>
+                      <option value="BOOKED">Sedang Tersewa (BOOKED)</option>
+                      <option value="MAINTENANCE">Perawatan / Service (MAINTENANCE)</option>
+                    </select>
+                  </div>
+
+                  {/* Image Uploader Drag & Drop */}
+                  <div className="pt-2">
+                    <ImageUploader
+                      value={carImages}
+                      onChange={setCarImages}
+                      maxFiles={5}
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
                     <button
                       type="button"
                       onClick={() => {
-                        setShowRejectForm(false);
-                        setRejectReason('');
+                        setEditingCar(null);
+                        setIsCreatingCar(false);
                       }}
-                      className="px-4 py-2 bg-transparent hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg transition-all"
+                      className="px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
                     >
                       Batal
                     </button>
                     <button
-                      type="button"
-                      disabled={isVerifying || !rejectReason.trim()}
-                      onClick={() => handleVerify('REJECT')}
-                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                      type="submit"
+                      disabled={isSavingCar}
+                      className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
                     >
-                      Kirim Penolakan
+                      {isSavingCar ? 'Memproses...' : 'Simpan Perubahan'}
                     </button>
                   </div>
-                </motion.div>
-              )}
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
-              {/* Return & Pelunasan Form */}
-              {showReturnForm && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 p-5 bg-zinc-50 rounded-2xl border border-zinc-200">
-                  <h4 className="text-sm font-bold text-zinc-950 border-b pb-1">Form Pengembalian & Pelunasan</h4>
+        {/* Booking Verification Modal */}
+        <AnimatePresence>
+          {selectedBooking && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-6 relative border border-zinc-200 shadow-xl max-h-[90vh] overflow-y-auto text-zinc-950"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <div>
+                    <span className="text-xs font-mono text-zinc-500 uppercase">Detail Booking</span>
+                    <h3 className="text-lg font-bold text-zinc-900">{selectedBooking.id}</h3>
+                  </div>
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full border ${statusColors[selectedBooking.status]}`}>
+                    {statusLabels[selectedBooking.status]}
+                  </span>
+                </div>
 
+                {/* Grid Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                  {/* Pelanggan */}
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-zinc-900 border-b pb-1">Informasi Pelanggan</h4>
+                    <p><span className="text-zinc-500 font-medium">Nama:</span> {selectedBooking.guestName || selectedBooking.user?.name || 'Guest'}</p>
+                    <p><span className="text-zinc-500 font-medium">No. WA:</span> {selectedBooking.guestPhone || '-'}</p>
+                    <p><span className="text-zinc-500 font-medium">Email:</span> {selectedBooking.guestEmail || selectedBooking.user?.email || '-'}</p>
+                  </div>
+
+                  {/* Sewa */}
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-zinc-900 border-b pb-1">Detail Sewa</h4>
+                    <p><span className="text-zinc-500 font-medium">Mobil:</span> {selectedBooking.car?.brand} {selectedBooking.car?.name}</p>
+                    <p><span className="text-zinc-500 font-medium">Layanan:</span> {selectedBooking.serviceType === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Dengan Driver'}</p>
+                    <p><span className="text-zinc-500 font-medium">Tanggal:</span> {new Date(selectedBooking.startDateTime || selectedBooking.startDate).toLocaleDateString('id-ID')} s.d. {new Date(selectedBooking.endDateTime || selectedBooking.endDate).toLocaleDateString('id-ID')}</p>
+                    <p><span className="text-zinc-500 font-medium">Durasi:</span> {formatDuration(selectedBooking.durationMinutes || selectedBooking.duration)}</p>
+                    {selectedBooking.pickupLocation && <p><span className="text-zinc-500 font-medium">Lokasi:</span> {selectedBooking.pickupLocation}</p>}
+                  </div>
+                </div>
+
+                {/* Rincian Pembayaran */}
+                <div className="space-y-3 bg-zinc-50 p-5 rounded-2xl border border-zinc-200">
+                  <h4 className="text-sm font-bold text-zinc-950 uppercase tracking-wider mb-2">Rincian Pembayaran</h4>
+                  <div className="grid grid-cols-2 text-sm gap-y-2">
+                    <div className="text-zinc-500">Harga Dasar:</div>
+                    <div className="font-bold text-right text-zinc-900">Rp {selectedBooking.basePrice.toLocaleString('id-ID')}</div>
+                    {selectedBooking.discountAmount > 0 && (
+                      <>
+                        <div className="text-zinc-500">Diskon:</div>
+                        <div className="font-bold text-right text-green-600">Rp {selectedBooking.discountAmount.toLocaleString('id-ID')}</div>
+                      </>
+                    )}
+                    {selectedBooking.penaltyAmount > 0 && (
+                      <>
+                        <div className="text-zinc-500 text-rose-600">Denda Keterlambatan:</div>
+                        <div className="font-bold text-right text-rose-600">Rp {selectedBooking.penaltyAmount.toLocaleString('id-ID')}</div>
+                      </>
+                    )}
+                    <div className="text-zinc-900 font-bold border-t pt-2">Total Biaya:</div>
+                    <div className="font-extrabold text-right text-zinc-950 border-t pt-2">Rp {selectedBooking.totalPrice.toLocaleString('id-ID')}</div>
+                    <div className="text-emerald-700 font-bold">DP Diterima (50%):</div>
+                    <div className="font-bold text-right text-emerald-700">Rp {selectedBooking.dpAmount.toLocaleString('id-ID')}</div>
+                  </div>
+
+                  {selectedBooking.paymentMethod && (
+                    <div className="pt-2 border-t mt-2 text-sm">
+                      <p><span className="text-zinc-500">Metode Bayar DP:</span> <span className="font-bold">{selectedBooking.paymentMethod.replace('_', ' ')}</span></p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bukti Pembayaran DP */}
+                {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (
+                  selectedBooking.paymentProof ? (
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900 text-sm">Bukti Pembayaran DP</h4>
+                      <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 flex items-center justify-center p-2">
+                        <img
+                          src={selectedBooking.paymentProof}
+                          alt="Bukti Transfer"
+                          className="max-h-80 w-auto object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
+                          onClick={() => window.open(selectedBooking.paymentProof)}
+                          title="Klik untuk memperbesar"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-zinc-50 text-zinc-500 text-center text-sm rounded-2xl border border-dashed">
+                      Belum ada bukti pembayaran DP yang diunggah.
+                    </div>
+                  )
+                )}
+
+                {/* Dokumen Identitas Penyewa */}
+                {(selectedBooking.ktpBookingImage || selectedBooking.simBookingImage) && (
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-zinc-900 text-sm">Dokumen Identitas Penyewa</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedBooking.ktpBookingImage && (
+                        <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 p-2">
+                          <p className="text-xs text-zinc-500 font-medium mb-1">Foto KTP</p>
+                          <img
+                            src={selectedBooking.ktpBookingImage}
+                            alt="KTP"
+                            className="max-h-60 w-full object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
+                            onClick={() => window.open(selectedBooking.ktpBookingImage)}
+                            title="Klik untuk memperbesar"
+                          />
+                        </div>
+                      )}
+                      {selectedBooking.simBookingImage && (
+                        <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 p-2">
+                          <p className="text-xs text-zinc-500 font-medium mb-1">Foto SIM</p>
+                          <img
+                            src={selectedBooking.simBookingImage}
+                            alt="SIM"
+                            className="max-h-60 w-full object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
+                            onClick={() => window.open(selectedBooking.simBookingImage)}
+                            title="Klik untuk memperbesar"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Reject Reason Form */}
+                {showRejectForm && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 p-4 bg-rose-50 rounded-2xl border border-rose-200">
+                    <label className="block text-sm font-bold text-rose-900">
+                      Alasan Penolakan Pembayaran DP
+                    </label>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="Contoh: Bukti transfer buram / nominal kurang."
+                      className="w-full p-3 bg-white border border-rose-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-zinc-900 placeholder:text-zinc-400"
+                      rows={3}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRejectForm(false);
+                          setRejectReason('');
+                        }}
+                        className="px-4 py-2 bg-transparent hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg transition-all"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isVerifying || !rejectReason.trim()}
+                        onClick={() => handleVerify('REJECT')}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                      >
+                        Kirim Penolakan
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Return & Pelunasan Form */}
+                {showReturnForm && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 p-5 bg-zinc-50 rounded-2xl border border-zinc-200">
+                    <h4 className="text-sm font-bold text-zinc-950 border-b pb-1">Form Pengembalian & Pelunasan</h4>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-zinc-700">
+                        Waktu Aktual Pengembalian
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={actualReturnDate}
+                        onChange={(e) => setActualReturnDate(e.target.value)}
+                        className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-zinc-700">
+                        Metode Pembayaran Pelunasan
+                      </label>
+                      <select
+                        value={returnPaymentMethod}
+                        onChange={(e) => setReturnPaymentMethod(e.target.value)}
+                        className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      >
+                        <option value="CASH">CASH / Tunai</option>
+                        <option value="BCA_TRANSFER">BCA Transfer</option>
+                        <option value="BNI_TRANSFER">BNI Transfer</option>
+                        <option value="MANDIRI_TRANSFER">Mandiri Transfer</option>
+                        <option value="QRIS">QRIS</option>
+                      </select>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-zinc-200 text-xs space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-zinc-500">Sisa Sewa yang Belum Dibayar:</span>
+                        <span className="font-bold">Rp {(selectedBooking.totalPrice - selectedBooking.dpAmount).toLocaleString('id-ID')}</span>
+                      </div>
+                      {calculatePenaltyPreview(selectedBooking, actualReturnDate) > 0 && (
+                        <div className="flex justify-between text-rose-600 font-bold">
+                          <span>Denda Keterlambatan:</span>
+                          <span>Rp {calculatePenaltyPreview(selectedBooking, actualReturnDate).toLocaleString('id-ID')}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-bold border-t pt-2 text-zinc-900">
+                        <span>Total Tagihan Pelunasan:</span>
+                        <span>Rp {((selectedBooking.totalPrice - selectedBooking.dpAmount) + calculatePenaltyPreview(selectedBooking, actualReturnDate)).toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowReturnForm(false)}
+                        className="px-4 py-2 bg-transparent hover:bg-zinc-100 text-zinc-700 text-xs font-bold rounded-lg transition-all"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isProcessingReturn}
+                        onClick={handleReturnSewa}
+                        className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                      >
+                        {isProcessingReturn ? 'Memproses...' : 'Konfirmasi Pengembalian'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Footer Actions */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-zinc-100 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBooking(null);
+                      setShowRejectForm(false);
+                      setShowReturnForm(false);
+                      setRejectReason('');
+                    }}
+                    className="px-6 py-3 border border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-bold rounded-xl text-sm transition-all"
+                  >
+                    Tutup
+                  </button>
+
+                  {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && selectedBooking.paymentProof && !showRejectForm && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(true)}
+                        className="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-sm border border-rose-200 transition-all"
+                      >
+                        Tolak DP
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isVerifying}
+                        onClick={() => handleVerify('APPROVE')}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all"
+                      >
+                        {isVerifying ? 'Memproses...' : 'Konfirmasi & Setujui DP'}
+                      </button>
+                    </>
+                  )}
+
+                  {selectedBooking.status === 'DP_CONFIRMED' && (
+                    <button
+                      type="button"
+                      disabled={isStartingSewa}
+                      onClick={handleStartSewa}
+                      className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
+                    >
+                      {isStartingSewa ? 'Memproses...' : 'Mulai Sewa (Serah Terima Unit)'}
+                    </button>
+                  )}
+
+                  {selectedBooking.status === 'IN_PROGRESS' && !showReturnForm && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActualReturnDate(new Date().toISOString().slice(0, 16));
+                        setShowReturnForm(true);
+                      }}
+                      className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
+                    >
+                      Kembalikan Mobil & Pelunasan
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Create Driver */}
+        <AnimatePresence>
+          {isCreatingDriver && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl text-zinc-950"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-950">Tambah Driver Baru</h3>
+                    <p className="text-xs text-zinc-500">Daftarkan pengemudi operasional baru ke sistem</p>
+                  </div>
+                  <button
+                    onClick={() => setIsCreatingDriver(false)}
+                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveNewDriver} className="space-y-4">
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-zinc-700">
-                      Waktu Aktual Pengembalian
+                      Nama Driver <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="datetime-local"
-                      value={actualReturnDate}
-                      onChange={(e) => setActualReturnDate(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      type="text"
+                      required
+                      value={newDriverFormData.name}
+                      onChange={(e) => setNewDriverFormData({ ...newDriverFormData, name: e.target.value })}
+                      placeholder="Contoh: Budi Santoso"
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-zinc-700">
-                      Metode Pembayaran Pelunasan
+                      Nomor WhatsApp / Phone <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={returnPaymentMethod}
-                      onChange={(e) => setReturnPaymentMethod(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                    >
-                      <option value="CASH">CASH / Tunai</option>
-                      <option value="BCA_TRANSFER">BCA Transfer</option>
-                      <option value="BNI_TRANSFER">BNI Transfer</option>
-                      <option value="MANDIRI_TRANSFER">Mandiri Transfer</option>
-                      <option value="QRIS">QRIS</option>
-                    </select>
+                    <input
+                      type="text"
+                      required
+                      value={newDriverFormData.phone}
+                      onChange={(e) => setNewDriverFormData({ ...newDriverFormData, phone: e.target.value })}
+                      placeholder="Contoh: 081234567890"
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                    />
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-zinc-200 text-xs space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Sisa Sewa yang Belum Dibayar:</span>
-                      <span className="font-bold">Rp {(selectedBooking.totalPrice - selectedBooking.dpAmount).toLocaleString('id-ID')}</span>
-                    </div>
-                    {calculatePenaltyPreview(selectedBooking, actualReturnDate) > 0 && (
-                      <div className="flex justify-between text-rose-600 font-bold">
-                        <span>Denda Keterlambatan:</span>
-                        <span>Rp {calculatePenaltyPreview(selectedBooking, actualReturnDate).toLocaleString('id-ID')}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm font-bold border-t pt-2 text-zinc-900">
-                      <span>Total Tagihan Pelunasan:</span>
-                      <span>Rp {((selectedBooking.totalPrice - selectedBooking.dpAmount) + calculatePenaltyPreview(selectedBooking, actualReturnDate)).toLocaleString('id-ID')}</span>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Alamat Lengkap Driver</label>
+                    <textarea
+                      rows={2}
+                      value={newDriverFormData.address}
+                      onChange={(e) => setNewDriverFormData({ ...newDriverFormData, address: e.target.value })}
+                      placeholder="Contoh: Jl. Malioboro No. 45, Sleman, Yogyakarta"
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">
+                      Pengalaman Awal Saat Ini (Tahun) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={newDriverFormData.initialExperience}
+                        onChange={(e) => setNewDriverFormData({ ...newDriverFormData, initialExperience: e.target.value })}
+                        placeholder="0"
+                        className="w-full p-2.5 pr-14 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-400 pointer-events-none select-none">Tahun</span>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 justify-end pt-2">
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <AlertCircle size={14} className="text-blue-600" /> Perhitungan Otomatis
+                    </p>
+                    <p className="text-blue-700 leading-relaxed">
+                      Pengalaman driver ini akan bertambah +1 tahun secara otomatis oleh sistem setiap kali genap 1 tahun terlewati dari tanggal pendaftarannya hari ini.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
                     <button
                       type="button"
-                      onClick={() => setShowReturnForm(false)}
-                      className="px-4 py-2 bg-transparent hover:bg-zinc-100 text-zinc-700 text-xs font-bold rounded-lg transition-all"
+                      onClick={() => setIsCreatingDriver(false)}
+                      className="px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
                     >
                       Batal
                     </button>
                     <button
-                      type="button"
-                      disabled={isProcessingReturn}
-                      onClick={handleReturnSewa}
-                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                      type="submit"
+                      disabled={isSavingDriver}
+                      className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
                     >
-                      {isProcessingReturn ? 'Memproses...' : 'Konfirmasi Pengembalian'}
+                      {isSavingDriver ? 'Menyimpan...' : 'Tambah Driver'}
                     </button>
                   </div>
-                </motion.div>
-              )}
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
-              {/* Footer Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-zinc-100 justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedBooking(null);
-                    setShowRejectForm(false);
-                    setShowReturnForm(false);
-                    setRejectReason('');
-                  }}
-                  className="px-6 py-3 border border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-bold rounded-xl text-sm transition-all"
-                >
-                  Tutup
-                </button>
-
-                {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && selectedBooking.paymentProof && !showRejectForm && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowRejectForm(true)}
-                      className="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-sm border border-rose-200 transition-all"
-                    >
-                      Tolak DP
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isVerifying}
-                      onClick={() => handleVerify('APPROVE')}
-                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all"
-                    >
-                      {isVerifying ? 'Memproses...' : 'Konfirmasi & Setujui DP'}
-                    </button>
-                  </>
-                )}
-
-                {selectedBooking.status === 'DP_CONFIRMED' && (
+        {/* Modal Edit Driver */}
+        <AnimatePresence>
+          {editingDriver && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl text-zinc-950"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-950">Edit Data Driver</h3>
+                    <p className="text-xs text-zinc-500">Perbarui informasi pengemudi (ID: {editingDriver.id})</p>
+                  </div>
                   <button
-                    type="button"
-                    disabled={isStartingSewa}
-                    onClick={handleStartSewa}
-                    className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
+                    onClick={() => setEditingDriver(null)}
+                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
                   >
-                    {isStartingSewa ? 'Memproses...' : 'Mulai Sewa (Serah Terima Unit)'}
+                    <X size={18} />
                   </button>
-                )}
+                </div>
 
-                {selectedBooking.status === 'IN_PROGRESS' && !showReturnForm && (
+                <form onSubmit={handleSaveEditDriver} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">
+                      Nama Driver <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editDriverFormData.name}
+                      onChange={(e) => setEditDriverFormData({ ...editDriverFormData, name: e.target.value })}
+                      placeholder="Contoh: Budi Santoso"
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">
+                      Nomor WhatsApp / Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editDriverFormData.phone}
+                      onChange={(e) => setEditDriverFormData({ ...editDriverFormData, phone: e.target.value })}
+                      placeholder="Contoh: 081234567890"
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Alamat Lengkap Driver</label>
+                    <textarea
+                      rows={2}
+                      value={editDriverFormData.address}
+                      onChange={(e) => setEditDriverFormData({ ...editDriverFormData, address: e.target.value })}
+                      placeholder="Contoh: Jl. Malioboro No. 45, Sleman, Yogyakarta"
+                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-zinc-100 rounded-xl text-xs text-zinc-600 flex items-center justify-between">
+                    <span>Pengalaman Terhitung Otomatis Saat Ini:</span>
+                    <span className="font-bold text-zinc-900">{editingDriver.experience || `${editingDriver.initialExperience || 0} Tahun`}</span>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setEditingDriver(null)}
+                      className="px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingDriver}
+                      className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
+                    >
+                      {isSavingDriver ? 'Memproses...' : 'Simpan Perubahan'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Konfirmasi Hapus Driver */}
+        <AnimatePresence>
+          {confirmDeleteDriver && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl text-zinc-950"
+              >
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+                    <AlertCircle size={24} />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-zinc-950">Hapus Data Driver?</h3>
+                    <p className="text-sm text-zinc-500 leading-relaxed text-center">
+                      Apakah Anda yakin ingin menghapus data driver <strong className="text-zinc-900">{confirmDeleteDriver.name}</strong>? Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2 justify-center">
                   <button
                     type="button"
+                    onClick={() => setConfirmDeleteDriver(null)}
+                    className="flex-1 px-5 py-3 border border-zinc-200 text-zinc-700 font-bold rounded-2xl text-xs hover:bg-zinc-50 transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDeletingDriver}
+                    onClick={handleDeleteDriver}
+                    className="flex-1 px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {isDeletingDriver ? 'Menghapus...' : 'Ya, Hapus'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Ubah Tarif Driver */}
+        <AnimatePresence>
+          {isEditingDriverFee && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl text-zinc-950"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-950">Ubah Tarif Driver</h3>
+                    <p className="text-xs text-zinc-500">Sesuaikan biaya jasa pengemudi harian</p>
+                  </div>
+                  <button
                     onClick={() => {
-                      setActualReturnDate(new Date().toISOString().slice(0, 16));
-                      setShowReturnForm(true);
+                      setIsEditingDriverFee(false);
+                      setDriverFeeMsg(null);
                     }}
-                    className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
+                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
                   >
-                    Kembalikan Mobil & Pelunasan
+                    <X size={18} />
                   </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                </div>
+
+                <form onSubmit={handleSaveDriverFee} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">
+                      Tarif Driver Per Hari (Rp) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">Rp</span>
+                      <input
+                        type="number"
+                        required
+                        min={0}
+                        value={editingDriverFeeInput}
+                        onChange={(e) => setEditingDriverFeeInput(e.target.value)}
+                        placeholder="150000"
+                        className="w-full pl-10 pr-16 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-400">/ Hari</span>
+                    </div>
+                  </div>
+
+                  {driverFeeMsg && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 border ${
+                        driverFeeMsg.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-250'
+                          : 'bg-rose-50 text-rose-800 border-rose-250'
+                      }`}
+                    >
+                      {driverFeeMsg.type === 'success' ? <Check size={16} className="text-emerald-600" /> : <AlertCircle size={16} className="text-rose-600" />}
+                      {driverFeeMsg.text}
+                    </motion.div>
+                  )}
+
+                  <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingDriverFee(false);
+                        setDriverFeeMsg(null);
+                      }}
+                      className="flex-1 px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingDriverFee}
+                      className="flex-1 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
+                    >
+                      {isSavingDriverFee ? 'Memproses...' : 'Simpan Tarif'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
