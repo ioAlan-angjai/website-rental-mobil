@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, X, Loader2, PhoneCall, Sparkles } from 'lucide-react';
+import { Send, Bot, X, Loader2, PhoneCall, Sparkles, UserCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, MessageProps, QuickOption } from './ChatMessage';
@@ -14,6 +14,7 @@ interface ChatWindowProps {
   onOptionClick: (option: QuickOption) => void;
   isTyping?: boolean;
   statusText?: string;
+  handledBy?: 'AI' | 'ADMIN';
 }
 
 export function ChatWindow({
@@ -24,6 +25,7 @@ export function ChatWindow({
   onOptionClick,
   isTyping = false,
   statusText = 'Bot CS Aktif 24/7',
+  handledBy = 'AI',
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,10 +37,10 @@ export function ChatWindow({
 
   useEffect(() => {
     if (isOpen) {
-      scrollToBottom();
+      setTimeout(scrollToBottom, 100);
       inputRef.current?.focus();
     }
-  }, [isOpen, messages]);
+  }, [isOpen, messages, isTyping]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +52,8 @@ export function ChatWindow({
 
   if (!isOpen) return null;
 
+  const isAI = handledBy === 'AI';
+
   return (
     <div className="fixed bottom-5 right-5 w-[92vw] sm:w-[400px] h-[580px] bg-white border border-zinc-200/90 rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden font-sans">
       
@@ -58,16 +62,24 @@ export function ChatWindow({
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white shadow-inner">
-              <Bot size={22} />
+              {isAI ? <Bot size={22} /> : <UserCircle size={22} />}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-zinc-900 rounded-full" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-sm font-extrabold text-white">RentalBot CS</h3>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                <Sparkles size={10} /> AI
-              </span>
+              <h3 className="text-sm font-extrabold text-white">
+                {isAI ? 'RentalBot CS' : 'Customer Service'}
+              </h3>
+              {isAI ? (
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                  <Sparkles size={10} /> AI
+                </span>
+              ) : (
+                <span className="text-[10px] bg-blue-500/20 text-blue-400 font-semibold px-2 py-0.5 rounded-full border border-blue-500/30 flex items-center gap-1">
+                  <UserCircle size={10} /> CS
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-zinc-400 font-medium">{statusText}</p>
           </div>
@@ -103,7 +115,7 @@ export function ChatWindow({
         {isTyping && (
           <div className="flex gap-2.5 items-start">
             <div className="w-8 h-8 shrink-0 bg-zinc-900 text-white rounded-full flex items-center justify-center">
-              <Bot size={16} />
+              {isAI ? <Bot size={16} /> : <UserCircle size={16} />}
             </div>
             <div className="px-4 py-3 rounded-2xl rounded-tl-none bg-white border border-zinc-200/80 shadow-sm">
               <div className="flex gap-1.5 items-center">
@@ -124,7 +136,11 @@ export function ChatWindow({
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Ketik pesan atau pilih opsi..."
+            placeholder={
+              handledBy === 'ADMIN'
+                ? 'Pesan Anda langsung dikirim ke admin...'
+                : 'Ketik pertanyaan Anda...'
+            }
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isTyping}

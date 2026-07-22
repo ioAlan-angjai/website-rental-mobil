@@ -51,7 +51,7 @@ export function AdminHeader({ searchQuery, onSearchChange }: AdminHeaderProps) {
         setNotifications(data.data || []);
         setUnread(data.unreadCount || 0);
       }
-    } catch (err) {}
+    } catch (err) { }
   }, []);
 
   useEffect(() => {
@@ -63,34 +63,34 @@ export function AdminHeader({ searchQuery, onSearchChange }: AdminHeaderProps) {
       await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}), 
+        body: JSON.stringify({}),
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnread(0);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   return (
     <header className="flex h-14 lg:h-[60px] items-center justify-between gap-4 border-b bg-background px-6 pl-16 md:pl-6">
       <div className="flex-1" />
-      
+
       {/* Notification Panel */}
       <DropdownMenu onOpenChange={(o) => { if (o) fetchNotifications(); }}>
         <DropdownMenuTrigger className="relative inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 w-10">
-            <Bell className="h-5 w-5" />
-            <AnimatePresence>
-              {unread > 0 && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
-                >
-                  {unread}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <span className="sr-only">Notifikasi</span>
+          <Bell className="h-5 w-5" />
+          <AnimatePresence>
+            {unread > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
+              >
+                {unread}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <span className="sr-only">Notifikasi</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
           <div className="flex items-center justify-between px-4 py-2 border-b">
