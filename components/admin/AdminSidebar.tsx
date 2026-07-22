@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +23,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-export type TabType = 'overview' | 'bookings' | 'cars' | 'drivers' | 'chats';
+export type TabType = 'overview' | 'bookings' | 'cars' | 'drivers';
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -34,6 +35,7 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,8 +74,9 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
     { id: 'bookings' as TabType, label: 'Pemesanan', icon: CalendarCheck },
     { id: 'cars' as TabType, label: 'Armada', icon: Car },
     { id: 'drivers' as TabType, label: 'Driver', icon: Users },
-    { id: 'chats' as TabType, label: 'Live Chat CS', icon: MessageSquare },
   ];
+
+  const externalLink = { href: '/livechat-cs', label: 'Live Chat CS', icon: MessageSquare };
 
   const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
     <TooltipProvider>
@@ -145,6 +148,33 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
 
             return buttonContent;
           })}
+          
+          {/* External link to /livechat-cs */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger className="w-full">
+                <button
+                  onClick={() => router.push(externalLink.href)}
+                  className="w-full flex items-center justify-center px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 relative text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                >
+                  <externalLink.icon className="h-5 w-5 shrink-0 text-zinc-500" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-semibold text-xs">
+                {externalLink.label}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <button
+              onClick={() => router.push(externalLink.href)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 relative text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+              )}
+            >
+              <externalLink.icon className="h-5 w-5 shrink-0 text-zinc-500" />
+              <span className="truncate">{externalLink.label}</span>
+            </button>
+          )}
         </div>
 
         {/* Profile & Footer */}

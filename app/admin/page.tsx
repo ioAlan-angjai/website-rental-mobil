@@ -16,7 +16,6 @@ import { RecentActivity } from '@/components/admin/dashboard/RecentActivity';
 import { FleetSummary } from '@/components/admin/dashboard/FleetSummary';
 import { BookingsTable } from '@/components/admin/bookings/BookingsTable';
 import { BookingCalendar } from '@/components/admin/bookings/BookingCalendar';
-import { AdminLiveChat } from '@/components/admin/chat/AdminLiveChat';
 import { ImageUploader } from '@/components/admin/ImageUploader';
 import { formatDuration } from '@/lib/utils';
 const statusColors: Record<string, string> = {
@@ -476,13 +475,6 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {activeTab === 'chats' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <AdminLiveChat />
-            </motion.div>
-          )}
-
-          {/* Armada (Cars) Tab */}
           {activeTab === 'cars' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 border border-zinc-200 rounded-2xl shadow-sm">

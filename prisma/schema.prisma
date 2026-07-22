@@ -40,6 +40,7 @@ model User {
   bookings      Booking[]
   chats         Chat[]
   chatMessages  ChatMessage[]
+  assignedChats Chat[]      @relation("ChatAssignment")
   notifications Notification[]
 
   createdAt DateTime @default(now())
@@ -249,9 +250,15 @@ model Chat {
   userId String
 
   status String @default("ACTIVE") // ACTIVE | CLOSED
+  handledBy String @default("AI") // AI | ADMIN
+
+  // Admin assignment (Take Over)
+  assignedToId String?
+  assignedAt   DateTime?
 
   // Relations
   user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo User?       @relation("ChatAssignment", fields: [assignedToId], references: [id])
   messages ChatMessage[]
 
   createdAt DateTime @default(now())
@@ -265,8 +272,9 @@ model ChatMessage {
   chatId   String
   senderId String
 
-  message String
-  isRead  Boolean @default(false)
+  message   String
+  senderType String @default("USER") // USER | ADMIN | AI
+  isRead    Boolean @default(false)
 
   // Relations
   chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)

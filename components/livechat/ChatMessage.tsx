@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Bot, ExternalLink } from 'lucide-react';
+import { User, Bot, ExternalLink, UserCircle } from 'lucide-react';
 
 export interface QuickOption {
   label: string;
@@ -11,7 +11,7 @@ export interface QuickOption {
 }
 
 export interface MessageProps {
-  sender: 'user' | 'bot';
+  sender: 'user' | 'bot' | 'admin';
   text: string;
   timestamp: string;
   options?: QuickOption[];
@@ -21,26 +21,34 @@ export interface MessageProps {
 
 export function ChatMessage({ sender, text, timestamp, options, whatsappUrl, onOptionClick }: MessageProps) {
   const isBot = sender === 'bot';
+  const isAdmin = sender === 'admin';
 
   return (
-    <div className={cn('flex gap-2.5 items-start', !isBot && 'flex-row-reverse')}>
+    <div className={cn('flex gap-2.5 items-start', (isBot || isAdmin) ? '' : 'flex-row-reverse')}>
       {/* Avatar */}
       <Avatar className={cn(
         'w-8 h-8 shrink-0 border border-zinc-200 shadow-sm',
-        isBot ? 'bg-zinc-900 text-white' : 'bg-blue-600 text-white'
+        isBot ? 'bg-zinc-900 text-white' : isAdmin ? 'bg-blue-600 text-white' : 'bg-zinc-700 text-white'
       )}>
         <AvatarFallback className="bg-transparent text-xs font-bold">
-          {isBot ? <Bot size={16} /> : <User size={16} />}
+          {isBot ? <Bot size={16} /> : isAdmin ? <UserCircle size={16} /> : <User size={16} />}
         </AvatarFallback>
       </Avatar>
 
       {/* Message Content */}
-      <div className={cn('flex flex-col gap-1.5 max-w-[82%]', !isBot && 'items-end')}>
+      <div className={cn('flex flex-col gap-1.5 max-w-[82%]', (isBot || isAdmin) ? '' : 'items-end')}>
+        {/* Label sender */}
+        {isAdmin && (
+          <span className="text-[10px] font-semibold text-blue-600 px-1">Admin CS</span>
+        )}
+
         <div
           className={cn(
             'px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm whitespace-pre-line',
             isBot
               ? 'bg-white text-zinc-800 border border-zinc-200/80 rounded-tl-none'
+              : isAdmin
+              ? 'bg-blue-600 text-white rounded-tl-none'
               : 'bg-zinc-900 text-white rounded-tr-none font-medium'
           )}
         >

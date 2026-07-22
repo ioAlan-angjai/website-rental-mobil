@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+// GET: ambil pesan dari suatu chat
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -18,6 +19,19 @@ export async function GET(
     }
 
     const { id: chatId } = params;
+
+    // Validasi chat exists
+    const chat = await prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { id: true, userId: true, handledBy: true, assignedToId: true },
+    });
+
+    if (!chat) {
+      return NextResponse.json(
+        { error: "Sesi chat tidak ditemukan" },
+        { status: 404 }
+      );
+    }
 
     const messages = await prisma.chatMessage.findMany({
       where: { chatId },
@@ -38,6 +52,11 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
+      chat: {
+        id: chat.id,
+        handledBy: chat.handledBy,
+        assignedToId: chat.assignedToId,
+      },
       data: messages,
     });
   } catch (error) {
@@ -49,6 +68,7 @@ export async function GET(
   }
 }
 
+// POST: admin mengirim pesan
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -63,6 +83,7 @@ export async function POST(
       );
     }
 
+    const adminId = (session.user as any).id;
     const { id: chatId } = params;
     const { message } = await req.json();
 
@@ -84,14 +105,42 @@ export async function POST(
       );
     }
 
+    if (chat.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Sesi chat sudah ditutup" },
+        { status: 400 }
+      );
+    }
+
+    // Jika chat masih di-handle AI, take over otomatis
+    if (chat.handledBy === "AI") {
+      await prisma.chat.update({
+        where: { id: chatId },
+        data: {
+          handledBy: "ADMIN",
+          assignedToId: adminId,
+          assignedAt: new Date(),
+        },
+      });
+    }
+
+    // Buat pesan admin
     const newMessage = await prisma.chatMessage.create({
       data: {
         chatId,
-        senderId: session.user.id,
-        message,
+        senderId: adminId,
+        senderType: "ADMIN",
+        message: message.trim(),
       },
       include: {
-        sender: true,
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
       },
     });
 
