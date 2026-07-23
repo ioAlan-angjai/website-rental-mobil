@@ -20,7 +20,7 @@ export async function PATCH(
 
     const { id: bookingId } = params;
     const body = await req.json();
-    const { action, rejectReason } = body; // action: "APPROVE" or "REJECT"
+    const { action, rejectReason, paymentType } = body; // action: "APPROVE" | "REJECT", paymentType: "DP" | "FULL_PAYMENT" (default: "DP")
 
     if (!action || !["APPROVE", "REJECT"].includes(action)) {
       return NextResponse.json(
@@ -29,9 +29,11 @@ export async function PATCH(
       );
     }
 
+    const targetType = paymentType || "DP";
+
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { user: true, car: true }
+      include: { user: true, car: true, payments: true }
     });
 
     if (!booking) {
@@ -44,7 +46,7 @@ export async function PATCH(
     const payment = await prisma.payment.findFirst({
       where: {
         bookingId,
-        type: "DP"
+        type: targetType,
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -60,11 +62,15 @@ export async function PATCH(
           }
         });
       } else {
+        // Fallback: create dummy verified payment
+        const fallbackAmount = targetType === "FULL_PAYMENT"
+          ? Math.max(0, booking.totalPrice - (booking.payments || []).filter((p: any) => p.status === "VERIFIED").reduce((s: number, p: any) => s + p.amount, 0))
+          : booking.dpAmount;
         await prisma.payment.create({
           data: {
             bookingId,
-            amount: booking.dpAmount,
-            type: "DP",
+            amount: fallbackAmount,
+            type: targetType,
             method: booking.paymentMethod || "MANUAL",
             status: "VERIFIED",
             verifiedAt: new Date(),
@@ -73,25 +79,98 @@ export async function PATCH(
         });
       }
 
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: {
-          status: "DP_CONFIRMED",
-          dpPaid: true,
-          paymentVerifiedAt: new Date(),
-          paymentVerifiedBy: session.user?.email || "admin"
-        }
+      // Hitung total verified payments
+      const verifiedPayments = await prisma.payment.findMany({
+        where: { bookingId, status: "VERIFIED" },
       });
+      const totalVerified = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
+      const remainingAmount = Math.max(0, totalBill - totalVerified);
+      const isFullyPaid = remainingAmount <= 0;
 
-      if (booking.userId) {
-        await prisma.notification.create({
+      if (targetType === "DP") {
+        // Approve DP → DP_CONFIRMED + buat FULL_PAYMENT otomatis
+        await prisma.booking.update({
+          where: { id: bookingId },
           data: {
-            userId: booking.userId,
-            title: "Pembayaran DP Diterima",
-            message: `Pembayaran DP untuk booking mobil ${booking.car.name} telah dikonfirmasi oleh admin.`,
-            type: "PAYMENT_VERIFIED"
+            status: "DP_CONFIRMED",
+            dpPaid: true,
+            fullPaid: isFullyPaid,
+            paymentVerifiedAt: new Date(),
+            paymentVerifiedBy: session.user?.email || "admin"
           }
         });
+
+        if (!isFullyPaid) {
+          // Buat tagihan FULL_PAYMENT (PENDING) untuk sisa
+          await prisma.payment.create({
+            data: {
+              bookingId,
+              amount: remainingAmount,
+              type: "FULL_PAYMENT",
+              method: booking.paymentMethod || "MANUAL",
+              status: "PENDING",
+            }
+          });
+        }
+
+        if (booking.userId) {
+          const notifMsg = isFullyPaid
+            ? "Pembayaran DP telah dikonfirmasi. Seluruh pembayaran sudah lunas."
+            : `Pembayaran DP telah dikonfirmasi. Sisa tagihan Anda sebesar Rp ${remainingAmount.toLocaleString('id-ID')}. Silakan lakukan pelunasan setelah sewa selesai.`;
+          await prisma.notification.create({
+            data: {
+              userId: booking.userId,
+              title: "Pembayaran DP Diterima",
+              message: notifMsg,
+              type: "PAYMENT_VERIFIED"
+            }
+          });
+        }
+      } else if (targetType === "FULL_PAYMENT") {
+        // Approve FULL_PAYMENT → COMPLETED
+        await prisma.booking.update({
+          where: { id: bookingId },
+          data: {
+            status: "COMPLETED",
+            fullPaid: true,
+            paymentVerifiedAt: new Date(),
+            paymentVerifiedBy: session.user?.email || "admin"
+          }
+        });
+
+        // Set car back to AVAILABLE
+        if (booking.carId) {
+          await prisma.car.update({
+            where: { id: booking.carId },
+            data: { status: "AVAILABLE" }
+          });
+        }
+
+        // Buat invoice
+        const invoiceNumber = `INV/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${booking.id.slice(-6).toUpperCase()}`;
+        await prisma.invoice.create({
+          data: {
+            bookingId: booking.id,
+            invoiceNumber,
+            subtotal: booking.basePrice || booking.totalPrice,
+            penalty: booking.penaltyAmount || 0,
+            total: totalBill,
+            paymentStatus: "PAID",
+            dueDate: new Date(),
+          },
+        });
+
+        if (booking.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: booking.userId,
+              title: "Pembayaran Pelunasan Diterima & Sewa Selesai",
+              message: `Pelunasan sebesar Rp ${totalVerified.toLocaleString('id-ID')} telah dikonfirmasi. Sewa mobil ${booking.car?.name || ''} telah selesai. Terima kasih!`,
+              type: "RENTAL_COMPLETED"
+            }
+          });
+        }
       }
     } else {
       // REJECT
@@ -110,49 +189,48 @@ export async function PATCH(
             rejectReason
           }
         });
-      } else {
-        await prisma.payment.create({
-          data: {
-            bookingId,
-            amount: booking.dpAmount,
-            type: "DP",
-            method: booking.paymentMethod || "MANUAL",
-            status: "REJECTED",
-            rejectReason
-          }
-        });
       }
 
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: {
-          status: "REJECTED",
-          notes: rejectReason
-        }
-      });
-
-      // Set car back to AVAILABLE
-      await prisma.car.update({
-        where: { id: booking.carId },
-        data: { status: "AVAILABLE" }
-      });
-
-      // Buat notifikasi untuk user
-      if (booking.userId) {
-        await prisma.notification.create({
-          data: {
-            userId: booking.userId,
-            title: "Pembayaran DP Ditolak",
-            message: `Pembayaran DP ditolak dengan alasan: ${rejectReason}. Silakan upload bukti pembayaran baru.`,
-            type: "BOOKING_REJECTED"
-          }
+      if (targetType === "DP") {
+        await prisma.booking.update({
+          where: { id: bookingId },
+          data: { status: "REJECTED", notes: rejectReason }
         });
+        // Set car back to AVAILABLE
+        if (booking.carId) {
+          await prisma.car.update({
+            where: { id: booking.carId },
+            data: { status: "AVAILABLE" }
+          });
+        }
+        if (booking.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: booking.userId,
+              title: "Pembayaran DP Ditolak",
+              message: `Pembayaran DP ditolak: ${rejectReason}. Silakan upload bukti baru.`,
+              type: "BOOKING_REJECTED"
+            }
+          });
+        }
+      } else {
+        // Reject FULL_PAYMENT → tetap WAITING_PAYMENT, user upload ulang
+        if (booking.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: booking.userId,
+              title: "Bukti Pelunasan Ditolak",
+              message: `Bukti pelunasan ditolak: ${rejectReason}. Silakan upload bukti baru.`,
+              type: "PAYMENT_REJECTED"
+            }
+          });
+        }
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `Berhasil melakukan ${action} pada pembayaran.`
+      message: `Berhasil melakukan ${action} pada pembayaran ${targetType}.`
     });
 
   } catch (error) {

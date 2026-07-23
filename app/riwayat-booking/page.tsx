@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarCheck, Car, CreditCard, AlertCircle, CheckCircle2,
   Clock, XCircle, ArrowRight, Loader2, MapPin, Settings2,
-  Calendar, FileText, ChevronRight, RefreshCw, Landmark
+  Calendar, FileText, ChevronRight, RefreshCw, Landmark,
+  Send, Wallet
 } from 'lucide-react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
@@ -342,6 +343,25 @@ export default function RiwayatBookingPage() {
                         <StatusIcon size={12} />
                         {statusLabels[booking.status] || booking.status}
                       </span>
+                      {/* Payment status badges */}
+                      {['WAITING_PAYMENT'].includes(booking.status) && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                          <Wallet size={11} />
+                          Menunggu Pelunasan
+                        </span>
+                      )}
+                      {booking.status === 'DP_CONFIRMED' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          <CheckCircle2 size={11} />
+                          DP Terbayar
+                        </span>
+                      )}
+                      {booking.status === 'IN_PROGRESS' && !booking.fullPaid && outstanding > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <Clock size={11} />
+                          Sisa Tagihan Ada
+                        </span>
+                      )}
                     </div>
                   </div>
 

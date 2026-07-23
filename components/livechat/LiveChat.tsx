@@ -157,38 +157,38 @@ export function LiveChat() {
 
   // Poll for new messages (for real-time update)
   const pollForMessages = useCallback(async () => {
-    if (!chatId) return;
-
     try {
       const res = await apiFetch('/api/chat');
       const data = await res.json();
 
       if (data.success && data.chat) {
+        setChatId(data.chat.id);
         setHandledBy(data.chat.handledBy || 'AI');
         setChatStatus(data.chat.status || 'ACTIVE');
 
-        // Gunakan messageCount dari server untuk sinkronisasi yang akurat
-        if (data.messageCount !== undefined && data.messageCount > lastMessageCount) {
-          // Fetch ulang semua pesan jika ada selisih di DB
-          await fetchChatSession();
-          setLastMessageCount(data.messageCount);
-          
-          // Notif unread
-          if (!isOpen) setUnreadCount((prev) => prev + 1);
-        }
+        const serverMessages = data.chat.messages || [];
+        if (serverMessages.length !== lastMessageCount) {
+          const uiMessages = serverMessages.map((m: any) => ({
+            id: m.id,
+            message: m.message,
+            senderType: m.senderType,
+            senderId: m.senderId,
+            sender: m.sender,
+            createdAt: m.createdAt,
+          }));
 
-        // Jika chat ditutup
-        if (data.chat.status === 'CLOSED') {
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
+          setMessages(uiMessages.map(formatMessageFromAPI));
+          setLastMessageCount(serverMessages.length);
+
+          if (!isOpen && serverMessages.length > lastMessageCount) {
+            setUnreadCount((prev) => prev + 1);
           }
         }
       }
-    } catch {
-      // Silent fail for polling
+    } catch (err) {
+      console.error('Polling chat error:', err);
     }
-  }, [chatId, lastMessageCount, isOpen, formatMessageFromAPI, apiFetch]);
+  }, [apiFetch, formatMessageFromAPI, isOpen, lastMessageCount]);
 
   // Init guest session ID
   useEffect(() => {
@@ -245,14 +245,15 @@ export function LiveChat() {
         };
         setMessages((prev) => [...prev, userMsg]);
 
-        // Sinkron lastMessageCount dari server (termasuk AI response yg sudah di-DB)
+        // Sinkron lastMessageCount dari server (SUDAH termasuk AI response di DB)
+        // Jangan increment lagi — messageCount dari server adalah jumlah sebenarnya di DB
         if (data.messageCount !== undefined) {
           setLastMessageCount(data.messageCount);
         } else {
           setLastMessageCount((prev) => prev + 1);
         }
 
-        // Jika AI merespon langsung
+        // Jika AI merespon langsung — tampilkan secara lokal tanpa mengubah lastMessageCount
         if (data.aiResponse) {
           setIsTyping(true);
           await new Promise((resolve) => setTimeout(resolve, 800));
@@ -267,7 +268,7 @@ export function LiveChat() {
             }),
           };
           setMessages((prev) => [...prev, botMsg]);
-          setLastMessageCount((prev) => prev + 1);
+          // TIDAK increment lastMessageCount — sudah dihitung oleh messageCount server
         }
 
         // Update handledBy

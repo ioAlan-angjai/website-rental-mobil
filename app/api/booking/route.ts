@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Cek ketersediaan: overlap interval [start, end) dengan booking aktif
+    // Status yang dianggap aktif: PENDING, WAITING_DP, DP_CONFIRMED, IN_PROGRESS
     const existingBookings = await prisma.booking.findMany({
       where: {
         carId,
@@ -193,11 +194,17 @@ export async function POST(req: NextRequest) {
       bookingData.user = { connect: { id: userIdToConnect } };
     }
 
-    // Buat booking
-    const booking = await prisma.booking.create({
-      data: bookingData,
-      include: { car: true, user: { select: { name: true, email: true } } },
-    });
+    // Buat booking + update car.status dalam 1 transaksi
+    const [booking] = await prisma.$transaction([
+      prisma.booking.create({
+        data: bookingData,
+        include: { car: true, user: { select: { name: true, email: true } } },
+      }),
+      prisma.car.update({
+        where: { id: carId },
+        data: { status: "BOOKED" },
+      }),
+    ]);
 
     // Buat payment record untuk DP jika ada paymentMethod
     if (paymentMethod) {

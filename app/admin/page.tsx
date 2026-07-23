@@ -218,7 +218,7 @@ export default function AdminDashboard() {
     return name.includes(query) || type.includes(query);
   });
 
-  const handleVerify = async (action: 'APPROVE' | 'REJECT') => {
+  const handleVerify = async (action: 'APPROVE' | 'REJECT', paymentType: 'DP' | 'FULL_PAYMENT' = 'DP') => {
     if (!selectedBooking) return;
     if (action === 'REJECT' && !rejectReason.trim()) {
       alert('Silakan isi alasan penolakan terlebih dahulu.');
@@ -232,6 +232,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
+          paymentType,
           rejectReason: action === 'REJECT' ? rejectReason : undefined,
         }),
       });
@@ -1599,11 +1600,10 @@ export default function AdminDashboard() {
                     <motion.div
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 border ${
-                        driverFeeMsg.type === 'success'
+                      className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 border ${driverFeeMsg.type === 'success'
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-250'
                           : 'bg-rose-50 text-rose-800 border-rose-250'
-                      }`}
+                        }`}
                     >
                       {driverFeeMsg.type === 'success' ? <Check size={16} className="text-emerald-600" /> : <AlertCircle size={16} className="text-rose-600" />}
                       {driverFeeMsg.text}

@@ -67,8 +67,13 @@ export async function POST(
     }
 
     const finalTotal = booking.totalPrice + penaltyAmount;
-    const alreadyPaid = booking.dpAmount;
-    const remainingAmount = Math.max(0, finalTotal - alreadyPaid);
+
+    // Hitung total pembayaran VERIFIED dari tabel Payment (SUM, bukan dpAmount tunggal)
+    const verifiedPayments = await prisma.payment.findMany({
+      where: { bookingId, status: "VERIFIED" },
+    });
+    const totalVerifiedPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const remainingAmount = Math.max(0, finalTotal - totalVerifiedPaid);
 
     const isFullyPaidNow = remainingAmount === 0;
 
