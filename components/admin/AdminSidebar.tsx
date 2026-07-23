@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   GripVertical,
-  MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { signOut } from 'next-auth/react';
@@ -23,7 +22,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-export type TabType = 'overview' | 'bookings' | 'cars' | 'drivers' | 'livechat';
+export type TabType = 'overview' | 'bookings' | 'cars' | 'drivers';
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -74,16 +73,11 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
     { id: 'bookings' as TabType, label: 'Pemesanan', icon: CalendarCheck },
     { id: 'cars' as TabType, label: 'Armada', icon: Car },
     { id: 'drivers' as TabType, label: 'Driver', icon: Users },
-    { id: 'livechat' as TabType, label: 'Live Chat CS', icon: MessageSquare },
   ];
 
   const handleNavigate = (tab: TabType) => {
-    if (tab === 'livechat') {
-      router.push('/livechat-cs');
-    } else {
-      onNavigate(tab);
-      router.push('/admin');
-    }
+    onNavigate(tab);
+    router.push('/admin');
   };
 
   const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (

@@ -3,14 +3,8 @@ import './globals.css';
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from '@/components/Providers';
-import dynamic from 'next/dynamic';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-
-// Dynamic import LiveChat to avoid SSR issues with localStorage
-const LiveChat = dynamic(() => import('@/components/livechat/LiveChat').then(mod => ({ default: mod.LiveChat })), {
-  ssr: false,
-});
 
 export const metadata: Metadata = {
   title: 'Sewa Mobil Jogja | Lepas Kunci & Include Driver - RentalMobil',
@@ -57,7 +51,6 @@ export default function RootLayout({
       <body className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white antialiased">
         <Providers>
           {children}
-          <LiveChat />
         </Providers>
       </body>
     </html>

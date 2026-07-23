@@ -26,7 +26,7 @@ import { usePathname } from 'next/navigation';
 const navItems = [
   { label: 'Beranda', href: '/' },
   { label: 'Armada', href: '/armada', isDropdown: true },
-  { label: 'Layanan', href: '/#layanan' },
+  { label: 'Layanan', href: '/layanan' },
   { label: 'Tentang Kami', href: '/tentang-kami' },
   { label: 'Kontak', href: '/kontak' },
 ];
