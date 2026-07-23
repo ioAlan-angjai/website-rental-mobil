@@ -69,7 +69,7 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
   }, [isResizing, resize, stopResizing]);
 
   const navItems = [
-    { id: 'overview' as TabType, label: 'Dasbor', icon: LayoutDashboard },
+    { id: 'overview' as TabType, label: 'Dasbhboard', icon: LayoutDashboard },
     { id: 'bookings' as TabType, label: 'Pemesanan', icon: CalendarCheck },
     { id: 'cars' as TabType, label: 'Armada', icon: Car },
     { id: 'drivers' as TabType, label: 'Driver', icon: Users },

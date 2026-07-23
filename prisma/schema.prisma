@@ -332,3 +332,22 @@ model Setting {
 
   @@map("settings")
 }
+
+// ==================== DRIVERS ====================
+
+model Driver {
+  id                String   @id @default(cuid())
+  name              String
+  phone             String
+  address           String?
+  initialExperience Int      @default(0)
+  status            String   @default("READY") // READY | ON_DUTY | INACTIVE
+  rating            Float    @default(5.0)
+  activeCar         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("drivers")
+}
+
