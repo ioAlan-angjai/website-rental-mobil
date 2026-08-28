@@ -47,18 +47,18 @@ export function DashboardKPIs({ bookings, cars, drivers }: DashboardKPIsProps) {
   const activeDrivers = drivers.filter(d => d.status === 'ON_DUTY').length;
 
   const kpis = [
-    { title: 'Total Booking', value: totalBookings, icon: CalendarCheck, color: 'text-blue-500', bg: 'bg-blue-100/50' },
-    { title: 'Booking Today', value: bookingsToday, icon: Clock, color: 'text-cyan-500', bg: 'bg-cyan-100/50' },
-    { title: 'Booking This Month', value: bookingsThisMonth, icon: CalendarCheck, color: 'text-indigo-500', bg: 'bg-indigo-100/50' },
-    { title: 'Revenue Today', value: `Rp ${revenueToday.toLocaleString('id-ID')}`, icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-100/50' },
-    { title: 'Revenue This Month', value: `Rp ${revenueThisMonth.toLocaleString('id-ID')}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-100/50' },
-    { title: 'Active Rentals', value: activeRentals, icon: Key, color: 'text-amber-500', bg: 'bg-amber-100/50' },
-    { title: 'Available Cars', value: availableCars, icon: Car, color: 'text-teal-500', bg: 'bg-teal-100/50' },
-    { title: 'In Maintenance', value: maintenanceCars, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-100/50' },
-    { title: 'Waiting Verify', value: waitingVerification, icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-100/50' },
-    { title: 'Waiting Final Pay', value: waitingFinalPayment, icon: Wallet, color: 'text-yellow-500', bg: 'bg-yellow-100/50' },
-    { title: 'Total Customers', value: totalCustomers, icon: Users, color: 'text-purple-500', bg: 'bg-purple-100/50' },
-    { title: 'Active Drivers', value: activeDrivers, icon: UserCheck, color: 'text-rose-500', bg: 'bg-rose-100/50' },
+    { title: 'Total Booking', value: totalBookings, icon: CalendarCheck },
+    { title: 'Booking Today', value: bookingsToday, icon: Clock },
+    { title: 'Booking This Month', value: bookingsThisMonth, icon: CalendarCheck },
+    { title: 'Revenue Today', value: `Rp ${revenueToday.toLocaleString('id-ID')}`, icon: Wallet },
+    { title: 'Revenue This Month', value: `Rp ${revenueThisMonth.toLocaleString('id-ID')}`, icon: TrendingUp },
+    { title: 'Active Rentals', value: activeRentals, icon: Key },
+    { title: 'Available Cars', value: availableCars, icon: Car },
+    { title: 'In Maintenance', value: maintenanceCars, icon: AlertCircle },
+    { title: 'Waiting Verify', value: waitingVerification, icon: AlertCircle },
+    { title: 'Waiting Final Pay', value: waitingFinalPayment, icon: Wallet },
+    { title: 'Total Customers', value: totalCustomers, icon: Users },
+    { title: 'Active Drivers', value: activeDrivers, icon: UserCheck },
   ];
 
   return (
@@ -66,21 +66,19 @@ export function DashboardKPIs({ bookings, cars, drivers }: DashboardKPIsProps) {
       {kpis.map((kpi, idx) => (
         <motion.div
           key={kpi.title}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: idx * 0.05 }}
+          transition={{ duration: 0.25, delay: idx * 0.03 }}
         >
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">{kpi.title}</CardTitle>
-              <div className={`p-2 rounded-lg ${kpi.bg}`}>
-                <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+          <div className="bg-white border border-zinc-200/80 hover:border-zinc-300 hover:shadow-md transition-all rounded-3xl p-5 shadow-xs flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-xs font-bold text-zinc-500 truncate">{kpi.title}</span>
+              <div className="p-2 rounded-xl bg-zinc-100 border border-zinc-200/70 text-zinc-800">
+                <kpi.icon className="h-4 w-4 text-zinc-800" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold tracking-tight">{kpi.value}</div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="text-xl font-extrabold tracking-tight text-zinc-950 mt-1">{kpi.value}</div>
+          </div>
         </motion.div>
       ))}
     </div>

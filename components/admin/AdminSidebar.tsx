@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   Car,
   Users,
+  MessageSquare,
   LogOut,
   CarFront,
   Menu,
@@ -22,7 +23,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-export type TabType = 'overview' | 'bookings' | 'cars' | 'drivers';
+export type TabType = 'overview' | 'bookings' | 'cars' | 'drivers' | 'chat';
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -33,8 +34,28 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizing, setIsResizing] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Polling unread chat count
+  const fetchUnreadChat = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/chat');
+      const data = await res.json();
+      if (data.success && typeof data.totalUnread === 'number') {
+        setUnreadChatCount(data.totalUnread);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadChat();
+    const interval = setInterval(fetchUnreadChat, 4000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadChat]);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,6 +94,7 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
     { id: 'bookings' as TabType, label: 'Pemesanan', icon: CalendarCheck },
     { id: 'cars' as TabType, label: 'Armada', icon: Car },
     { id: 'drivers' as TabType, label: 'Driver', icon: Users },
+    { id: 'chat' as TabType, label: 'Live Chat', icon: MessageSquare, badge: unreadChatCount },
   ];
 
   const handleNavigate = (tab: TabType) => {
@@ -132,8 +154,22 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
                   collapsed && "justify-center px-0"
                 )}
               >
-                <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-white" : "text-zinc-500")} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                <div className="relative shrink-0">
+                  <item.icon className={cn("h-5 w-5", isActive ? "text-white" : "text-zinc-500")} />
+                  {collapsed && item.badge && item.badge > 0 ? (
+                    <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+                  ) : null}
+                </div>
+                {!collapsed && (
+                  <div className="flex items-center justify-between flex-1 min-w-0">
+                    <span className="truncate">{item.label}</span>
+                    {item.badge && item.badge > 0 ? (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
               </button>
             );
 
@@ -141,8 +177,13 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
               return (
                 <Tooltip key={item.id}>
                   <TooltipTrigger className="w-full">{buttonContent}</TooltipTrigger>
-                  <TooltipContent side="right" className="font-semibold text-xs">
+                  <TooltipContent side="right" className="font-semibold text-xs flex items-center gap-1.5">
                     {item.label}
+                    {item.badge && item.badge > 0 ? (
+                      <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -150,8 +191,6 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
 
             return buttonContent;
           })}
-          
-
         </div>
 
         {/* Profile & Footer */}

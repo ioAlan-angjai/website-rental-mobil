@@ -83,42 +83,46 @@ export function RecentActivity({ bookings }: RecentActivityProps) {
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest actions across your dashboard</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-6">
-            {activities.map((booking, idx) => {
-              const details = getActivityDetails(booking);
-              const dateObj = parseISO(booking.updatedAt || booking.createdAt);
-              
-              return (
-                <motion.div 
-                  key={`${booking.id}-${booking.updatedAt}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="flex items-start gap-4"
-                >
-                  <div className={`p-2 rounded-full mt-1 ${details.bg}`}>
-                    <details.icon className={`w-4 h-4 ${details.color}`} />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{details.title}</p>
-                    <p className="text-sm text-muted-foreground">{details.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(dateObj, { addSuffix: true })}
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })}
+    <div className="bg-white border border-zinc-200/80 rounded-3xl p-6 shadow-xs text-zinc-950 flex flex-col h-full">
+      <div className="mb-4">
+        <h3 className="text-base font-extrabold text-zinc-950">Aktivitas Terbaru</h3>
+        <p className="text-xs text-zinc-500">Log perubahan status dan transaksi sewa terkini</p>
+      </div>
+      <div className="h-[340px] overflow-y-auto pr-2 divide-y divide-zinc-100">
+        {activities.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-xs text-zinc-400">
+            Belum ada aktivitas baru tercatat.
           </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+        ) : (
+          activities.map((booking, idx) => {
+            const details = getActivityDetails(booking);
+            const dateObj = parseISO(booking.updatedAt || booking.createdAt);
+
+            return (
+              <motion.div 
+                key={`${booking.id}-${booking.updatedAt}`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.04 }}
+                className="py-3 flex items-start gap-3"
+              >
+                <div className="p-2 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-900 shrink-0 mt-0.5">
+                  <details.icon className="w-4 h-4 text-zinc-800" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-zinc-900 truncate">{details.title}</p>
+                    <span className="text-[10px] text-zinc-400 shrink-0">
+                      {formatDistanceToNow(dateObj, { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-500 truncate mt-0.5">{details.description}</p>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }

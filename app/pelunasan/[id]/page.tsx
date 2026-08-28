@@ -120,7 +120,14 @@ export default function PelunasanPage() {
         const txData = await txRes.json();
         if (txData.isGatewayActive && txData.token) {
           await openSnapPayment(txData.token, {
-            onSuccess: () => {
+            onSuccess: async (result) => {
+              try {
+                await fetch('/api/payment/confirm', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ bookingId, paymentType: 'FULL_PAYMENT', result }),
+                });
+              } catch (err) {}
               setSubmitted(true);
             },
             onPending: () => {

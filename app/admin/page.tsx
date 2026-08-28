@@ -17,6 +17,7 @@ import { FleetSummary } from '@/components/admin/dashboard/FleetSummary';
 import { BookingsTable } from '@/components/admin/bookings/BookingsTable';
 import { BookingCalendar } from '@/components/admin/bookings/BookingCalendar';
 import { ImageUploader } from '@/components/admin/ImageUploader';
+import { AdminChatPanel } from '@/components/admin/chat/AdminChatPanel';
 import { formatDuration } from '@/lib/utils';
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-250',
@@ -554,7 +555,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-muted/40">
+    <div className="flex min-h-screen w-full bg-zinc-50/70 text-zinc-950 light admin-theme">
       <AdminSidebar activeTab={activeTab} onNavigate={setActiveTab} />
       <div className="flex flex-col sm:gap-4 sm:pb-4 flex-1 w-full overflow-hidden">
         <AdminHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
@@ -828,6 +829,12 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'chat' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full">
+              <AdminChatPanel />
             </motion.div>
           )}
         </main>
@@ -1298,6 +1305,17 @@ export default function AdminDashboard() {
                       className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"
                     >
                       Kembalikan Mobil & Pelunasan
+                    </button>
+                  )}
+
+                  {selectedBooking.status === 'WAITING_PAYMENT' && (
+                    <button
+                      type="button"
+                      disabled={isVerifying}
+                      onClick={() => handleVerify('APPROVE', 'FULL_PAYMENT')}
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-sm"
+                    >
+                      {isVerifying ? 'Memproses...' : 'Konfirmasi Pelunasan (Lunas & Selesai)'}
                     </button>
                   )}
                 </div>

@@ -222,7 +222,7 @@ function BookingForm() {
 
   // Clear submitError when dates change
   useEffect(() => {
-    if (submitError) setSubmitError('');
+    setSubmitError('');
   }, [date, endDate]);
 
   const nextStep = () => {
@@ -402,7 +402,14 @@ function BookingForm() {
 
           if (txData.isGatewayActive && txData.token) {
             await openSnapPayment(txData.token, {
-              onSuccess: () => {
+              onSuccess: async (result) => {
+                try {
+                  await fetch('/api/payment/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: data.booking.id, paymentType: 'DP', result }),
+                  });
+                } catch (err) {}
                 router.push('/riwayat-booking?success=1');
               },
               onPending: () => {

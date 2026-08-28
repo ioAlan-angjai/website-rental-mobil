@@ -58,10 +58,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between">
 
         {/* Logo */}
-        <a href="#home" className="flex items-center gap-2.5 group shrink-0">
-          <div className="p-2 bg-gradient-to-br from-sky-400 to-amber-400 rounded-xl group-hover:shadow-lg group-hover:shadow-sky-400/40 transition-all duration-300 group-hover:scale-105">
-            <Car size={22} className="text-slate-900" />
-          </div>
+        <a href="#home" className="flex items-center group shrink-0">
           <span className="text-xl font-black bg-gradient-to-r from-sky-400 to-amber-400 bg-clip-text text-transparent tracking-tight">
             RentalMobil
           </span>

@@ -71,12 +71,12 @@ export function AdminHeader({ searchQuery, onSearchChange }: AdminHeaderProps) {
   };
 
   return (
-    <header className="flex h-14 lg:h-[60px] items-center justify-between gap-4 border-b bg-background px-6 pl-16 md:pl-6">
+    <header className="flex h-14 lg:h-[60px] items-center justify-between gap-4 border-b border-zinc-200/80 bg-white px-6 pl-16 md:pl-6 text-zinc-900">
       <div className="flex-1" />
 
       {/* Notification Panel */}
       <DropdownMenu onOpenChange={(o) => { if (o) fetchNotifications(); }}>
-        <DropdownMenuTrigger className="relative inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 w-10">
+        <DropdownMenuTrigger className="relative inline-flex items-center justify-center rounded-xl text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 h-10 w-10 border border-zinc-200/80 bg-white shadow-xs transition-colors">
           <Bell className="h-5 w-5" />
           <AnimatePresence>
             {unread > 0 && (
@@ -92,13 +92,13 @@ export function AdminHeader({ searchQuery, onSearchChange }: AdminHeaderProps) {
           </AnimatePresence>
           <span className="sr-only">Notifikasi</span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-80">
-          <div className="flex items-center justify-between px-4 py-2 border-b">
-            <span className="font-semibold text-sm">Notifikasi</span>
+        <DropdownMenuContent align="end" className="w-80 bg-white border border-zinc-200 shadow-xl rounded-2xl text-zinc-900 p-1">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100">
+            <span className="font-bold text-sm text-zinc-900">Notifikasi</span>
             {unread > 0 && (
-              <Button variant="ghost" size="sm" onClick={markAllRead} className="h-auto p-0 text-xs text-primary">
+              <button onClick={markAllRead} className="text-xs font-bold text-zinc-900 hover:underline bg-transparent border-0 cursor-pointer">
                 Tandai semua dibaca
-              </Button>
+              </button>
             )}
           </div>
           <div className="max-h-[300px] overflow-y-auto">

@@ -374,16 +374,16 @@ function ArmadaContent() {
                     viewport={{ once: true, margin: '-50px' }}
                     transition={{ duration: 0.5, delay: (idx % 2) * 0.08 }}
                   >
-                    <div className="group bg-[#1b1838] border border-[#2a2548] rounded-2xl overflow-hidden hover:border-[#f97316]/30 hover:-translate-y-1.5 transition-all duration-400 flex flex-col">
+                    <div className="group bg-[#1b1838] border border-[#2a2548] rounded-2xl overflow-hidden hover:border-[#f97316]/30 hover:-translate-y-1.5 transition-all duration-400 flex flex-col justify-between">
                       {/* Image */}
-                      <div className="relative h-48 bg-[#13112a] overflow-hidden">
+                      <div className="relative h-38 sm:h-44 md:h-48 bg-[#13112a] overflow-hidden">
                         <img
                           src={car.images[0]}
                           alt={car.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1b1838]/80 via-transparent to-transparent" />
-                        {/* Category badge — NOT orange, informational style */}
+                        {/* Category badge */}
                         <div className="absolute top-3 left-3">
                           <span className="bg-black/40 backdrop-blur-md text-white/90 font-semibold text-[10px] px-2.5 py-1 rounded-lg capitalize border border-white/10">
                             {car.category}
@@ -392,50 +392,50 @@ function ArmadaContent() {
                       </div>
 
                       {/* Content */}
-                      <div className="p-5 flex flex-col flex-1">
+                      <div className="p-4 sm:p-5 flex flex-col flex-1">
                         <p className="text-[10px] text-white/40 uppercase tracking-wider font-semibold mb-1">
                           {car.brand} &bull; {car.year}
                         </p>
-                        <h3 className="text-base font-bold text-white mb-3 leading-tight">
+                        <h3 className="text-sm sm:text-base font-bold text-white mb-3 leading-snug line-clamp-1">
                           {car.name}
                         </h3>
 
-                        {/* Specs — bigger icons, better contrast */}
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                          <div className="flex flex-col items-center py-2 rounded-lg bg-[#13112a] text-center">
-                            <Users size={15} strokeWidth={2.5} className="text-[#f97316] mb-1" />
-                            <span className="text-[11px] text-white/80 font-medium">{car.seats} Kursi</span>
+                        {/* Specs */}
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                          <div className="flex flex-col items-center py-1.5 sm:py-2 rounded-lg bg-[#13112a] text-center">
+                            <Users size={14} strokeWidth={2.5} className="text-[#f97316] mb-0.5 sm:mb-1" />
+                            <span className="text-[10px] sm:text-[11px] text-white/80 font-medium">{car.seats} Kursi</span>
                           </div>
-                          <div className="flex flex-col items-center py-2 rounded-lg bg-[#13112a] text-center">
-                            <Zap size={15} strokeWidth={2.5} className="text-[#f97316] mb-1" />
-                            <span className="text-[11px] text-white/80 font-medium truncate px-1">{car.transmission}</span>
+                          <div className="flex flex-col items-center py-1.5 sm:py-2 rounded-lg bg-[#13112a] text-center">
+                            <Zap size={14} strokeWidth={2.5} className="text-[#f97316] mb-0.5 sm:mb-1" />
+                            <span className="text-[10px] sm:text-[11px] text-white/80 font-medium truncate px-1">{car.transmission}</span>
                           </div>
-                          <div className="flex flex-col items-center py-2 rounded-lg bg-[#13112a] text-center">
-                            <Fuel size={15} strokeWidth={2.5} className="text-[#f97316] mb-1" />
-                            <span className="text-[11px] text-white/80 font-medium">{car.fuelType}</span>
+                          <div className="flex flex-col items-center py-1.5 sm:py-2 rounded-lg bg-[#13112a] text-center">
+                            <Fuel size={14} strokeWidth={2.5} className="text-[#f97316] mb-0.5 sm:mb-1" />
+                            <span className="text-[10px] sm:text-[11px] text-white/80 font-medium">{car.fuelType}</span>
                           </div>
                         </div>
 
-                        {/* Price — dominant */}
-                        <div className="mt-auto pt-3 border-t border-[#2a2548]/50">
-                          <div className="flex items-end justify-between mb-3">
+                        {/* Price */}
+                        <div className="mt-auto pt-2.5 sm:pt-3 border-t border-[#2a2548]/50">
+                          <div className="flex items-end justify-between mb-2.5 sm:mb-3">
                             <div>
-                              <p className="text-[10px] text-white/60 uppercase font-bold tracking-wider mb-0.5">Per Hari</p>
-                              <p className="text-xl font-black text-[#f97316] leading-none">{formatCurrency(car.pricePerDay)}</p>
+                              <p className="text-[9px] sm:text-[10px] text-white/60 uppercase font-bold tracking-wider mb-0.5">Per Hari</p>
+                              <p className="text-lg sm:text-xl font-black text-[#f97316] leading-none">{formatCurrency(car.pricePerDay)}</p>
                             </div>
                           </div>
                           {/* Split CTAs */}
                           <div className="flex items-center gap-2">
                             <Link href={`/armada/${car.id}`} className="flex-1">
-                              <button className="w-full flex items-center justify-center gap-1.5 h-9 text-xs font-semibold rounded-xl border border-white/15 text-white/70 hover:bg-white/5 hover:text-white transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f97316]/50">
-                                <Eye size={13} />
+                              <button className="w-full flex items-center justify-center gap-1.5 h-8.5 sm:h-9 text-xs font-semibold rounded-xl border border-white/15 text-white/70 hover:bg-white/5 hover:text-white transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f97316]/50">
+                                <Eye size={12} />
                                 Detail
                               </button>
                             </Link>
                             <Link href={buildBookingUrl(car.id)} className="flex-1">
-                              <button className="w-full flex items-center justify-center gap-1.5 h-9 text-xs font-bold rounded-xl bg-[#f97316] hover:bg-[#ea580c] text-white transition-all shadow-lg shadow-[#f97316]/20 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f97316]/50">
+                              <button className="w-full flex items-center justify-center gap-1.5 h-8.5 sm:h-9 text-xs font-bold rounded-xl bg-[#f97316] hover:bg-[#ea580c] text-white transition-all shadow-lg shadow-[#f97316]/20 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f97316]/50">
                                 Booking
-                                <ArrowRight size={13} />
+                                <ArrowRight size={12} />
                               </button>
                             </Link>
                           </div>

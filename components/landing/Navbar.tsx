@@ -61,11 +61,8 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between" style={{ height: '84px' }}>
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <div className="p-2 bg-[#f97316] rounded-xl transition-all duration-300 group-hover:scale-105 shadow-lg shadow-[#f97316]/30">
-            <Car size={20} className="text-white" />
-          </div>
-          <span className="text-xl font-black text-white tracking-tight">
+        <Link href="/" className="flex items-center group shrink-0">
+          <span className="text-xl font-black text-white tracking-tight hover:text-[#f97316] transition-colors">
             RentalMobil
           </span>
         </Link>
@@ -194,12 +191,7 @@ export function Navbar() {
             >
               <SheetHeader className="px-5 pt-5 pb-4 border-b border-white/10 shrink-0">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-[#f97316] rounded-xl">
-                      <Car size={18} className="text-white" />
-                    </div>
-                    <SheetTitle className="text-base font-black text-white">RentalMobil</SheetTitle>
-                  </div>
+                  <SheetTitle className="text-base font-black text-white">RentalMobil</SheetTitle>
                   <SheetClose className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all duration-200 bg-transparent border-0 cursor-pointer" aria-label="Tutup menu">
                     <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
                       <path d="M1 1L17 17M17 1L1 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>

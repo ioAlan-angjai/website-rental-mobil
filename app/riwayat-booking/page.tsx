@@ -27,7 +27,7 @@ function getPaidAmount(booking: any): number {
     ?.filter((p: any) => p.status === 'VERIFIED')
     .reduce((sum: number, p: any) => sum + p.amount, 0) ?? 0;
   if (verifiedPaymentTotal > 0) return verifiedPaymentTotal;
-  if (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT'].includes(booking.status)) {
+  if (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_RETURN', 'WAITING_PAYMENT'].includes(booking.status) || booking.dpPaid) {
     return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
   }
   const hasProof = !!(booking.paymentProof || booking.payments?.some((p: any) => p.proofImage));
@@ -40,7 +40,7 @@ function getPaidAmount(booking: any): number {
 function getOutstanding(booking: any): number {
   if (['COMPLETED'].includes(booking.status) || booking.fullPaid) return 0;
   const paid = getPaidAmount(booking);
-  return Math.max(0, booking.totalPrice - paid);
+  return Math.max(0, (booking.totalPrice + (booking.penaltyAmount || 0)) - paid);
 }
 
 export default function RiwayatBookingPage() {
@@ -86,7 +86,14 @@ export default function RiwayatBookingPage() {
       const data = await res.json();
       if (data.isGatewayActive && data.token) {
         await openSnapPayment(data.token, {
-          onSuccess: () => {
+          onSuccess: async (result) => {
+            try {
+              await fetch('/api/payment/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId, paymentType: 'DP', result }),
+              });
+            } catch (err) {}
             fetchBookings();
           },
           onPending: () => {
@@ -101,6 +108,45 @@ export default function RiwayatBookingPage() {
       }
     } catch (e) {
       setPayError('Terjadi kesalahan saat memproses pembayaran.');
+    } finally {
+      setPayingBookingId(null);
+    }
+  };
+
+  const handlePayPelunasan = async (bookingId: string) => {
+    setPayingBookingId(bookingId);
+    setPayError(null);
+    try {
+      const res = await fetch('/api/payment/create-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId, paymentType: 'FULL_PAYMENT' }),
+      });
+      const data = await res.json();
+      if (data.isGatewayActive && data.token) {
+        await openSnapPayment(data.token, {
+          onSuccess: async (result) => {
+            try {
+              await fetch('/api/payment/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId, paymentType: 'FULL_PAYMENT', result }),
+              });
+            } catch (err) {}
+            fetchBookings();
+          },
+          onPending: () => {
+            fetchBookings();
+          },
+          onError: () => {
+            setPayError('Pembayaran pelunasan gagal atau dibatalkan.');
+          },
+        });
+      } else {
+        router.push(`/pelunasan/${bookingId}`);
+      }
+    } catch (e) {
+      setPayError('Terjadi kesalahan saat memproses pelunasan.');
     } finally {
       setPayingBookingId(null);
     }
@@ -125,13 +171,13 @@ export default function RiwayatBookingPage() {
 
   const filteredBookings = bookings.filter((b) => {
     if (filterStatus === 'all') return true;
-    if (filterStatus === 'active') return ['PENDING', 'WAITING_DP', 'DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT'].includes(b.status);
+    if (filterStatus === 'active') return ['PENDING', 'WAITING_DP', 'DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_RETURN', 'WAITING_PAYMENT'].includes(b.status);
     if (filterStatus === 'completed') return b.status === 'COMPLETED';
     if (filterStatus === 'cancelled') return ['CANCELLED', 'REJECTED'].includes(b.status);
     return b.status === filterStatus;
   });
 
-  const activeCount = bookings.filter(b => ['PENDING', 'WAITING_DP', 'DP_CONFIRMED', 'IN_PROGRESS'].includes(b.status)).length;
+  const activeCount = bookings.filter(b => ['PENDING', 'WAITING_DP', 'DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_PAYMENT'].includes(b.status)).length;
   const pendingPayCount = bookings.filter(b => getOutstanding(b) > 0 && !['CANCELLED', 'REJECTED', 'COMPLETED'].includes(b.status)).length;
 
   // ─── Status Timeline Component ───
@@ -146,10 +192,8 @@ export default function RiwayatBookingPage() {
         <div className="relative flex items-center justify-between mb-8 mt-2">
           {STATUS_STEPS.map((step, idx) => {
             const stepNum = idx + 1;
-            const isCompleted = activeStep > stepNum;
-            const isCurrent = activeStep === stepNum;
-            // For COMPLETED booking, the last step shows as completed
-            const isFinalCompleted = isCompleted || (activeStep === 7 && idx === STATUS_STEPS.length - 1);
+            const isCompleted = booking.status === 'COMPLETED' ? true : activeStep > stepNum;
+            const isCurrent = booking.status === 'COMPLETED' ? (idx === STATUS_STEPS.length - 1) : (activeStep === stepNum);
 
             return (
               <div key={step.key} className="flex flex-col items-center flex-1 relative">
@@ -157,7 +201,7 @@ export default function RiwayatBookingPage() {
                 {idx < STATUS_STEPS.length - 1 && (
                   <div
                     className={`absolute top-4 left-[55%] w-full h-0.5 -z-0 transition-colors duration-500 ${
-                      isCancelled ? 'bg-red-500/20' : isFinalCompleted ? 'bg-emerald-500/60' : 'bg-[#2a2548]'
+                      isCancelled ? 'bg-red-500/20' : (isCompleted || booking.status === 'COMPLETED') ? 'bg-emerald-500/60' : 'bg-[#2a2548]'
                     }`}
                   />
                 )}
@@ -167,7 +211,7 @@ export default function RiwayatBookingPage() {
                   className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                     isCancelled
                       ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                      : isFinalCompleted
+                      : isCompleted
                         ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                         : isCurrent
                           ? 'bg-[#1b1838] border-amber-500 text-amber-400 shadow-sm shadow-amber-500/10'
@@ -176,7 +220,7 @@ export default function RiwayatBookingPage() {
                 >
                   {isCancelled ? (
                     <XCircle size={14} />
-                  ) : isFinalCompleted ? (
+                  ) : isCompleted ? (
                     <CheckCircle2 size={16} />
                   ) : isCurrent ? (
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
@@ -190,9 +234,11 @@ export default function RiwayatBookingPage() {
                   className={`text-[10px] mt-2 text-center font-medium leading-tight max-w-[60px] ${
                     isCancelled
                       ? 'text-red-400'
-                      : isFinalCompleted || isCurrent
-                        ? meta.color
-                        : 'text-zinc-500'
+                      : isCompleted
+                        ? 'text-emerald-400 font-semibold'
+                        : isCurrent
+                          ? meta.color + ' font-semibold'
+                          : 'text-zinc-500'
                   }`}
                 >
                   {step.label}
@@ -530,7 +576,7 @@ export default function RiwayatBookingPage() {
 
                   {/* ── Action Banners ── */}
 
-                  {/* DP Pending — bukti sudah upload */}
+                  {/* 1. DP Pending — bukti sudah upload */}
                   {['PENDING', 'WAITING_DP'].includes(booking.status) && (() => {
                     const proofUrl = booking.paymentProof || booking.payments?.find((p: any) => p.proofImage)?.proofImage;
                     if (proofUrl) {
@@ -545,7 +591,7 @@ export default function RiwayatBookingPage() {
                                 Bukti DP ({formatRupiah(booking.dpAmount)}) Berhasil Diunggah
                               </p>
                               <p className="text-[10px] text-zinc-300 mt-0.5">
-                                Sedang diverifikasi oleh admin. Status berubah setelah disetujui.
+                                Sedang diverifikasi oleh admin. Status akan berubah otomatis setelah disetujui.
                               </p>
                             </div>
                           </div>
@@ -563,7 +609,7 @@ export default function RiwayatBookingPage() {
                     return null;
                   })()}
 
-                  {/* DP Pending — belum upload */}
+                  {/* 1b. DP Pending — belum bayar */}
                   {['PENDING', 'WAITING_DP'].includes(booking.status) && !(booking.paymentProof || booking.payments?.some((p: any) => p.proofImage)) && (
                     <div className="mt-4 p-4 bg-[#13112a] border border-[#2a2548] rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-start gap-3">
@@ -575,7 +621,7 @@ export default function RiwayatBookingPage() {
                             Transfer DP sebesar <span className="font-black text-amber-300">{formatRupiah(booking.dpAmount)}</span> untuk konfirmasi pesanan
                           </p>
                           <p className="text-[10px] text-zinc-300 mt-0.5">
-                            Metode: Transfer Bank ({booking.paymentMethod || 'BCA'})
+                            Metode: Pembayaran Instan Gateway (MIDTRANS) / Transfer Bank
                           </p>
                         </div>
                       </div>
@@ -593,42 +639,103 @@ export default function RiwayatBookingPage() {
                     </div>
                   )}
 
-                  {/* Pelunasan Banner */}
-                  {outstanding > 0 && ['WAITING_PAYMENT', 'IN_PROGRESS', 'DP_CONFIRMED'].includes(booking.status) && (
-                    <div className="mt-4 p-4 bg-[#13112a] border border-[#2a2548] rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  {/* 2. DP Confirmed — Menunggu Pengambilan / Penyerahan Mobil */}
+                  {booking.status === 'DP_CONFIRMED' && (
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/15 flex items-center justify-center shrink-0">
-                          <Wallet size={13} className="text-amber-400" />
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                          <CheckCircle2 size={14} className="text-emerald-400" />
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-white">
-                            Tagihan pelunasan tersedia sebesar <span className="font-black text-amber-300">{formatRupiah(outstanding)}</span>
+                            DP Berhasil Dikonfirmasi ({formatRupiah(booking.dpAmount)}) — Pesanan Telah Disetujui (ACC)
                           </p>
                           <p className="text-[10px] text-zinc-300 mt-0.5">
-                            {booking.penaltyAmount > 0
-                              ? `Termasuk denda keterlambatan ${formatRupiah(booking.penaltyAmount)}.`
-                              : 'Mobil telah dikembalikan. Silakan lakukan pelunasan.'}
+                            Silakan ambil kendaraan sesuai jadwal sewa. Admin akan menyerahkan unit saat waktu sewa dimulai.
                           </p>
                         </div>
                       </div>
-                      <Link href={`/pelunasan/${booking.id}`}>
-                        <button className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-[#13112a] font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm shadow-amber-500/20 whitespace-nowrap">
-                          Bayar Pelunasan
-                          <ArrowRight size={12} />
-                        </button>
-                      </Link>
+                      <span className="text-[10px] font-bold text-emerald-400 px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20 shrink-0">
+                        Siap Digunakan
+                      </span>
                     </div>
                   )}
 
-                  {/* Invoice (Completed) */}
+                  {/* 3. In Progress — Mobil Sedang Digunakan */}
+                  {booking.status === 'IN_PROGRESS' && (
+                    <div className="mt-4 p-4 bg-sky-500/10 border border-sky-500/20 rounded-xl flex items-center justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
+                          <Car size={14} className="text-sky-400" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-white">
+                            Mobil Sedang Digunakan (Masa Sewa Aktif)
+                          </p>
+                          <p className="text-[10px] text-zinc-300 mt-0.5">
+                            Selamat menikmati perjalanan Anda! Saat masa sewa berakhir, admin akan memproses pengembalian unit & menerbitkan tagihan pelunasan.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-sky-400 px-3 py-1 bg-sky-500/10 rounded-lg border border-sky-500/20 shrink-0">
+                        Sewa Berjalan
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 4. Waiting Payment — Mobil Dikembalikan & Menunggu Pelunasan */}
+                  {(booking.status === 'WAITING_PAYMENT' || (outstanding > 0 && ['WAITING_RETURN', 'WAITING_PAYMENT'].includes(booking.status))) && (
+                    <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+                          <Wallet size={14} className="text-amber-400" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-white">
+                            Mobil Telah Dikembalikan — Tagihan Pelunasan: <span className="font-black text-amber-300">{formatRupiah(outstanding)}</span>
+                          </p>
+                          <p className="text-[10px] text-zinc-300 mt-0.5">
+                            {booking.penaltyAmount > 0
+                              ? `Termasuk denda keterlambatan ${formatRupiah(booking.penaltyAmount)}. Silakan selesaikan pelunasan.`
+                              : 'Pengembalian mobil telah dikonfirmasi admin. Silakan selesaikan sisa pelunasan untuk menyelesaikan transaksi.'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handlePayPelunasan(booking.id)}
+                        disabled={payingBookingId === booking.id}
+                        className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-[#13112a] font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm shadow-amber-500/20 whitespace-nowrap disabled:opacity-50"
+                      >
+                        {payingBookingId === booking.id ? (
+                          <><Loader2 size={12} className="animate-spin" /> Membuka Pembayaran...</>
+                        ) : (
+                          <><CreditCard size={12} /> Bayar Pelunasan Sekarang <ArrowRight size={12} /></>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 5. Completed — Invoice */}
                   {booking.status === 'COMPLETED' && (
-                    <div className="mt-4 pt-4 border-t border-[#2a2548]/50 flex items-center justify-between">
-                      <p className="text-[10px] text-zinc-400">Pemesanan selesai</p>
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                          <CheckCircle2 size={14} className="text-emerald-400" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-white">
+                            Transaksi Sewa Selesai & Lunas Sepenuhnya
+                          </p>
+                          <p className="text-[10px] text-zinc-300 mt-0.5">
+                            Terima kasih telah mempercayakan perjalanan Anda kepada RentalMobil Jogja!
+                          </p>
+                        </div>
+                      </div>
                       <Link
                         href={`/invoice?bookingId=${booking.id}`}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-zinc-200 hover:text-amber-400 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-white text-zinc-900 px-3.5 py-2 rounded-xl hover:bg-zinc-100 transition-colors shadow-sm shrink-0"
                       >
-                        <FileText size={12} />
+                        <FileText size={13} />
                         Unduh Invoice
                       </Link>
                     </div>

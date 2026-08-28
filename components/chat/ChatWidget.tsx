@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { MessageSquare, X, Send, Loader2, User, Headset, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ export function ChatWidget() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (status !== 'authenticated') return;
     try {
       const res = await fetch('/api/chat');
@@ -26,18 +26,18 @@ export function ChatWidget() {
     } catch {
       // ignore
     }
-  };
+  }, [status]);
 
   useEffect(() => {
     if (isOpen && status === 'authenticated') {
       setLoadingMessages(true);
       fetchMessages().finally(() => setLoadingMessages(false));
 
-      // Polling every 5 seconds while open
-      const interval = setInterval(fetchMessages, 5000);
+      // Polling every 3 seconds while open
+      const interval = setInterval(fetchMessages, 3000);
       return () => clearInterval(interval);
     }
-  }, [isOpen, status]);
+  }, [isOpen, status, fetchMessages]);
 
   useEffect(() => {
     if (isOpen) {
@@ -163,16 +163,22 @@ export function ChatWidget() {
               ) : (
                 messages.map((msg, idx) => {
                   const isUser = msg.senderType === 'USER';
+                  const isAdmin = msg.senderType === 'ADMIN';
                   return (
                     <div
                       key={idx}
-                      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                     >
+                      {!isUser && (
+                        <span className="text-[10px] text-white/50 mb-1 flex items-center gap-1 font-medium">
+                          <Headset size={11} className="text-[#f97316]" /> {isAdmin ? 'Admin CS Rental' : 'Customer Service'}
+                        </span>
+                      )}
                       <div
                         className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
                           isUser
-                            ? 'bg-[#f97316] text-white rounded-br-none shadow-sm'
-                            : 'bg-[#13112a] border border-[#2a2548] text-white/90 rounded-bl-none shadow-sm'
+                            ? 'bg-[#f97316] text-white rounded-br-none shadow-sm font-medium'
+                            : 'bg-[#13112a] border border-[#2a2548] text-white/95 rounded-bl-none shadow-sm'
                         }`}
                       >
                         <p className="whitespace-pre-wrap break-words">{msg.message}</p>

@@ -82,104 +82,122 @@ export function DashboardCharts({ bookings, cars }: DashboardChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       {/* Revenue Area Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Revenue (Last 6 Months)</CardTitle>
-          <CardDescription>Confirmed and completed bookings</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[300px]">
+      <div className="bg-white border border-zinc-200/80 rounded-3xl p-6 shadow-xs text-zinc-950 flex flex-col">
+        <div className="mb-4">
+          <h3 className="text-base font-extrabold text-zinc-950">Pendapatan Sewa (6 Bulan Terakhir)</h3>
+          <p className="text-xs text-zinc-500">Total pendapatan dari booking terkonfirmasi dan selesai</p>
+        </div>
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={last6Months} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <AreaChart data={last6Months} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#18181b" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#18181b" stopOpacity={0.02}/>
                 </linearGradient>
               </defs>
-              <XAxis dataKey="month" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+              <XAxis dataKey="month" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis 
-                stroke="#888888" 
-                fontSize={12} 
+                stroke="#a1a1aa" 
+                fontSize={11} 
                 tickLine={false} 
                 axisLine={false}
-                tickFormatter={(value) => `Rp ${(value / 1000000)}M`}
+                tickFormatter={(value) => {
+                  if (value === 0) return 'Rp 0';
+                  if (value >= 1000000) return `Rp ${(value / 1000000).toFixed(1)}jt`;
+                  return `Rp ${(value / 1000).toFixed(0)}rb`;
+                }}
               />
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
               <RechartsTooltip 
-                formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, 'Revenue']}
+                formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, 'Pendapatan']}
+                contentStyle={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
               />
-              <Area type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={1} fill="url(#colorRevenue)" />
+              <Area type="monotone" dataKey="revenue" stroke="#18181b" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
             </AreaChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Booking Trend Bar Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Booking Trend (Last 7 Days)</CardTitle>
-          <CardDescription>Daily booking volume</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[300px]">
+      <div className="bg-white border border-zinc-200/80 rounded-3xl p-6 shadow-xs text-zinc-950 flex flex-col">
+        <div className="mb-4">
+          <h3 className="text-base font-extrabold text-zinc-950">Tren Pemesanan (7 Hari Terakhir)</h3>
+          <p className="text-xs text-zinc-500">Volume pemesanan armada harian</p>
+        </div>
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={last7Days} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey="day" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis allowDecimals={false} stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <RechartsTooltip cursor={{ fill: 'transparent' }} />
-              <Bar dataKey="bookings" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <BarChart data={last7Days} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+              <XAxis dataKey="date" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
+              <RechartsTooltip 
+                cursor={{ fill: '#f4f4f5' }} 
+                formatter={(value: number) => [`${value} Pesanan`, 'Total']}
+                contentStyle={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+              />
+              <Bar dataKey="bookings" fill="#18181b" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Most Rented Cars Bar Chart (Horizontal) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top 5 Most Rented Cars</CardTitle>
-          <CardDescription>By total number of bookings</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[300px]">
+      <div className="bg-white border border-zinc-200/80 rounded-3xl p-6 shadow-xs text-zinc-950 flex flex-col">
+        <div className="mb-4">
+          <h3 className="text-base font-extrabold text-zinc-950">Top 5 Armada Paling Sering Disewa</h3>
+          <p className="text-xs text-zinc-500">Berdasarkan total pesanan unit</p>
+        </div>
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={mostRentedCars} layout="vertical" margin={{ top: 10, right: 30, left: 40, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-              <XAxis type="number" allowDecimals={false} stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis dataKey="name" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={100} />
-              <RechartsTooltip cursor={{ fill: 'transparent' }} />
-              <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+            <BarChart data={mostRentedCars} layout="vertical" margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f4f4f5" />
+              <XAxis type="number" allowDecimals={false} stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis dataKey="name" type="category" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} width={120} />
+              <RechartsTooltip 
+                cursor={{ fill: '#f4f4f5' }} 
+                formatter={(value: number) => [`${value} Kali`, 'Total Sewa']}
+                contentStyle={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+              />
+              <Bar dataKey="count" fill="#27272a" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Booking Status Pie Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Booking Status Distribution</CardTitle>
-          <CardDescription>Current status breakdown</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[300px]">
+      <div className="bg-white border border-zinc-200/80 rounded-3xl p-6 shadow-xs text-zinc-950 flex flex-col">
+        <div className="mb-4">
+          <h3 className="text-base font-extrabold text-zinc-950">Distribusi Status Pemesanan</h3>
+          <p className="text-xs text-zinc-500">Proporsi status pesanan aktif saat ini</p>
+        </div>
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={pieData}
+                data={pieData.length > 0 ? pieData : [{ name: 'Belum Ada', value: 1 }]}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
+                outerRadius={85}
+                paddingAngle={4}
                 dataKey="value"
               >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
+                {pieData.map((entry, index) => {
+                  const monochromePalette = ['#18181b', '#3f3f46', '#71717a', '#a1a1aa', '#d4d4d8', '#10b981', '#f59e0b'];
+                  return (
+                    <Cell key={`cell-${index}`} fill={monochromePalette[index % monochromePalette.length]} />
+                  );
+                })}
               </Pie>
-              <RechartsTooltip />
+              <RechartsTooltip 
+                contentStyle={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+              />
               <Legend verticalAlign="bottom" height={36} />
             </PieChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
