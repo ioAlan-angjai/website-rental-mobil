@@ -192,23 +192,22 @@ export async function PATCH(
       }
 
       if (targetType === "DP") {
+        // Reject DP → kembali ke PENDING agar user bisa upload ulang
+        // (bukan REJECTED — yang berarti pembatalan total)
         await prisma.booking.update({
           where: { id: bookingId },
-          data: { status: "REJECTED", notes: rejectReason }
+          data: {
+            status: "PENDING",
+            rejectReason: rejectReason, // simpan alasan penolakan
+          }
         });
-        // Set car back to AVAILABLE
-        if (booking.carId) {
-          await prisma.car.update({
-            where: { id: booking.carId },
-            data: { status: "AVAILABLE" }
-          });
-        }
+        // Mobil tetap BOOKED — booking masih aktif, hanya menunggu bukti baru
         if (booking.userId) {
           await prisma.notification.create({
             data: {
               userId: booking.userId,
-              title: "Pembayaran DP Ditolak",
-              message: `Pembayaran DP ditolak: ${rejectReason}. Silakan upload bukti baru.`,
+              title: "Bukti DP Ditolak — Upload Ulang",
+              message: `Bukti pembayaran DP Anda ditolak. Alasan: ${rejectReason}. Silakan upload bukti transfer yang valid.`,
               type: "BOOKING_REJECTED"
             }
           });

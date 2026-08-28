@@ -23,12 +23,18 @@ export async function POST(req: NextRequest) {
       data: { email, token, expires },
     });
 
+    // In production, send via email provider (e.g. Resend)
+    // Log in development console only
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[AUTH] Password reset requested for ${email}. Token: ${token}`);
+    }
+
     return NextResponse.json({ 
       success: true, 
-      message: "Token reset password berhasil dibuat",
-      token // Untuk testing
+      message: "Instruksi reset password telah dikirim jika email terdaftar."
     });
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Forgot password error:", error);
+    return NextResponse.json({ error: "Terjadi kesalahan pada server" }, { status: 500 });
   }
 }

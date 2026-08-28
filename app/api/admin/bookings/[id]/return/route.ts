@@ -44,9 +44,9 @@ export async function POST(
       );
     }
 
-    if (booking.status !== "IN_PROGRESS") {
+    if (booking.status !== "IN_PROGRESS" && booking.status !== "WAITING_RETURN") {
       return NextResponse.json(
-        { error: "Mobil harus berstatus Sedang Berjalan (IN_PROGRESS) untuk dikembalikan" },
+        { error: "Mobil harus berstatus Sedang Berjalan (IN_PROGRESS) atau Menunggu Pengembalian (WAITING_RETURN) untuk dikembalikan" },
         { status: 400 }
       );
     }
@@ -85,6 +85,7 @@ export async function POST(
         data: {
           penaltyAmount: penaltyAmount,
           totalPrice: finalTotal,
+          remainingAmount: remainingAmount,
           status: isFullyPaidNow ? "COMPLETED" : "WAITING_PAYMENT",
           fullPaid: isFullyPaidNow,
           notes: penaltyAmount > 0

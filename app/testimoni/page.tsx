@@ -1,139 +1,137 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { mockTestimonialsJogja } from '@/lib/mock-data-jogja';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, Quote, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
 import { motion } from 'framer-motion';
 
 export default function TestimoniPage() {
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/testimonials')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) {
+          setTestimonials(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden">
+    <div className="min-h-screen bg-[#13112a]">
       <Navbar />
-      <BackgroundOrnaments />
 
       {/* Header Banner */}
-      <section className="relative py-20 px-4 overflow-hidden border-b border-zinc-200 bg-white">
-        {/* Background Decorative Elements */}
+      <section className="relative pt-28 pb-10 px-4 border-b border-[#2a2548]/50">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[200px] bg-zinc-200/30 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#f97316]/[0.02] rounded-full blur-[120px]" />
         </div>
-
         <div className="max-w-7xl mx-auto relative z-10 text-center space-y-4">
-          <div className="flex justify-center items-center gap-2 text-xs text-zinc-500">
-            <Link href="/" className="hover:text-zinc-950 transition-colors">Beranda</Link>
+          <div className="flex justify-center items-center gap-2 text-xs text-white/40">
+            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
             <span>/</span>
-            <span className="text-zinc-950 font-bold">Testimoni</span>
+            <span className="text-white font-bold">Testimoni</span>
           </div>
-
-          <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-zinc-950">
+          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
             Testimoni Pelanggan
           </h1>
-          <p className="text-zinc-600 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-            Dengar langsung pengalaman mereka yang telah mempercayakan perjalanan bersama kami
+          <p className="text-white/50 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
+            Dengar langsung pengalaman mereka yang telah mempercayakan perjalanan bersama kami di Yogyakarta
           </p>
         </div>
       </section>
 
       {/* Intro Card */}
       <section className="py-12 px-4 max-w-7xl mx-auto">
-        <div className="bg-white p-8 md:p-12 rounded-3xl border border-zinc-200 text-center max-w-4xl mx-auto shadow-sm">
-          <div className="w-16 h-16 rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center mx-auto mb-6">
-            <MessageSquare size={28} className="text-zinc-900" />
+        <div className="bg-[#1b1838] p-8 md:p-12 rounded-2xl border border-[#2a2548] text-center max-w-4xl mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-[#13112a] border border-[#2a2548] flex items-center justify-center mx-auto mb-6">
+            <MessageSquare size={28} className="text-[#f97316]" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 font-serif mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
             Kepuasan Pelanggan Adalah Prioritas Kami
           </h2>
-          <p className="text-zinc-650 max-w-2xl mx-auto leading-relaxed">
-            Kami bangga melayani ribuan pelanggan dari berbagai daerah. Berikut sebagian testimoni mereka yang telah merasakan pelayanan terbaik RentalMobil Jogja.
+          <p className="text-white/50 max-w-2xl mx-auto leading-relaxed">
+            Kami bangga melayani ribuan pelanggan dari berbagai daerah. Berikut testimoni mereka yang telah merasakan pelayanan terbaik RentalMobil Jogja.
           </p>
         </div>
       </section>
 
       {/* Testimonials Grid */}
-      <section className="py-12 px-4 max-w-7xl mx-auto relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockTestimonialsJogja.map((t, idx) => {
-            const initials = t.name.split(' ').map(n => n[0]).join('');
-            return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: idx % 3 * 0.1, ease: "easeOut" }}
-              >
-                <div
-                  className="group relative p-8 rounded-3xl bg-white border border-zinc-200 hover:border-zinc-900 transition-all duration-500 flex flex-col justify-between h-full hover:shadow-2xl hover:shadow-zinc-950/10 hover:-translate-y-2"
-                >
-                  {/* Quote Icon watermark */}
-                  <Quote size={32} className="absolute top-6 right-6 text-zinc-200 group-hover:text-zinc-300 transition-colors duration-300" />
-
-                  <div className="space-y-5">
-                    {/* Rating Stars */}
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          size={16}
-                          className={
-                            i < t.rating
-                              ? 'text-zinc-900 fill-zinc-900'
-                              : 'text-zinc-200 fill-zinc-200'
-                          }
-                        />
-                      ))}
-                    </div>
-
-                    {/* Testimony Text */}
-                    <p className="text-zinc-700 text-base leading-relaxed">
-                      {t.text}
-                    </p>
-                  </div>
-
-                  {/* Author Info */}
-                  <div className="flex items-center gap-4 pt-6 border-t border-zinc-100 mt-6 shrink-0">
-                    <Avatar className="w-12 h-12 border-2 border-zinc-200">
-                      <AvatarImage src={t.avatar} alt={t.name} />
-                      <AvatarFallback className="bg-zinc-100 text-zinc-750 font-bold text-sm">{initials}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-base font-bold text-zinc-900 group-hover:text-zinc-950 transition-colors duration-300">{t.name}</p>
-                      <p className="text-xs text-zinc-550 mt-0.5">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 px-4 bg-white border-t border-zinc-200">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <h2 className="text-2xl md:text-4xl font-bold text-zinc-900 font-serif">
-            Ingin Berbagi Pengalaman Anda?
-          </h2>
-          <p className="text-zinc-650 max-w-xl mx-auto leading-relaxed">
-            Masukan dan testimoni Anda sangat berarti bagi kami untuk terus meningkatkan kualitas layanan
-          </p>
-          <div className="pt-4">
-            <Link 
-              href="https://wa.me/6281234567890" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-block"
-            >
-              <button className="px-8 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl transition-all duration-200 hover:scale-105 active:scale-95">
-                Hubungi Kami via WhatsApp
-              </button>
-            </Link>
+      <section className="py-12 pb-20 px-4 max-w-7xl mx-auto">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-60 rounded-2xl bg-[#1b1838]/60 border border-[#2a2548] animate-pulse p-6" />
+            ))}
           </div>
-        </div>
+        ) : testimonials.length === 0 ? (
+          <div className="text-center py-12 text-white/40 text-sm">
+            Belum ada testimoni di database.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {testimonials.map((t, idx) => {
+              const initials = t.name
+                .split(' ')
+                .map((n: string) => n[0])
+                .join('')
+                .slice(0, 2);
+
+              return (
+                <motion.div
+                  key={t.id || idx}
+                  initial={{ opacity: 0, y: 25 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ duration: 0.5, delay: (idx % 3) * 0.08 }}
+                >
+                  <div className="group relative p-6 rounded-2xl bg-[#1b1838] border border-[#2a2548] hover:border-[#f97316]/30 transition-all duration-300 flex flex-col justify-between h-full hover:-translate-y-1">
+                    <Quote size={28} className="absolute top-5 right-5 text-white/[0.04] group-hover:text-[#f97316]/10 transition-colors duration-300" />
+
+                    <div className="space-y-4">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={15}
+                            className={
+                              i < t.rating
+                                ? 'text-[#f97316] fill-[#f97316]'
+                                : 'text-white/20 fill-white/20'
+                            }
+                          />
+                        ))}
+                      </div>
+                      <p className="text-white/80 text-sm leading-relaxed italic">
+                        "{t.comment || t.text}"
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-5 border-t border-[#2a2548]/50 mt-5 shrink-0">
+                      <Avatar className="w-10 h-10 border border-[#2a2548]">
+                        {t.avatar && <AvatarImage src={t.avatar} alt={t.name} />}
+                        <AvatarFallback className="bg-[#13112a] text-[#f97316] font-bold text-xs">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-bold text-white">{t.name}</p>
+                        <p className="text-xs text-white/50 mt-0.5">{t.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <Footer />

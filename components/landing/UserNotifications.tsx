@@ -7,11 +7,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
 import { useRouter } from 'next/navigation';
 
 interface NotificationItem {
@@ -25,27 +22,27 @@ interface NotificationItem {
 }
 
 function NotificationIcon({ type }: { type: string }) {
-  const iconClass = "w-4 h-4 shrink-0";
+  const cls = 'w-4 h-4 shrink-0';
   switch (type) {
     case 'BOOKING_CREATED':
     case 'BOOKING_CREATED_ADMIN':
-      return <FileText className={cn(iconClass, "text-blue-500")} />;
+      return <FileText className={cn(cls, 'text-blue-400')} />;
     case 'PAYMENT_VERIFIED':
-      return <CheckCircle2 className={cn(iconClass, "text-emerald-500")} />;
+      return <CheckCircle2 className={cn(cls, 'text-emerald-400')} />;
     case 'BOOKING_REJECTED':
-      return <XCircle className={cn(iconClass, "text-rose-500")} />;
+      return <XCircle className={cn(cls, 'text-rose-400')} />;
     case 'RENTAL_STARTED':
-      return <Car className={cn(iconClass, "text-sky-500")} />;
+      return <Car className={cn(cls, 'text-sky-400')} />;
     case 'RENTAL_NEAR_EXPIRY':
     case 'RENTAL_EXPIRED':
-      return <Clock className={cn(iconClass, "text-orange-500")} />;
+      return <Clock className={cn(cls, 'text-orange-400')} />;
     case 'SETTLEMENT_DUE':
     case 'PAYMENT_RECEIVED':
-      return <CreditCard className={cn(iconClass, "text-amber-500")} />;
+      return <CreditCard className={cn(cls, 'text-amber-400')} />;
     case 'RENTAL_COMPLETED':
-      return <PartyPopper className={cn(iconClass, "text-indigo-500")} />;
+      return <PartyPopper className={cn(cls, 'text-indigo-400')} />;
     default:
-      return <CreditCard className={cn(iconClass, "text-zinc-550")} />;
+      return <CreditCard className={cn(cls, 'text-white/40')} />;
   }
 }
 
@@ -64,14 +61,12 @@ export function UserNotifications() {
         setItems(data.data || []);
         setUnread(data.unreadCount || 0);
       }
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
   }, []);
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // refresh tiap 30s
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
@@ -81,49 +76,34 @@ export function UserNotifications() {
       await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}), // no id = mark all
+        body: JSON.stringify({}),
       });
       setItems((prev) => prev.map((i) => ({ ...i, isRead: true })));
       setUnread(0);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* silent */ }
+    finally { setLoading(false); }
   };
 
   const handleItemClick = async (item: NotificationItem) => {
-    // Mark read locally immediately for snappy UX
     if (!item.isRead) {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isRead: true } : i)));
       setUnread((prev) => Math.max(0, prev - 1));
-      // Persist to DB so it stays read across page navigations
       try {
         await fetch('/api/notifications', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: item.id }),
         });
-      } catch {
-        // silent — local state already updated
-      }
+      } catch { /* silent */ }
     }
-
     setOpen(false);
-
-    if (item.link) {
-      router.push(item.link);
-    } else if (item.type === 'SETTLEMENT_DUE') {
-      router.push('/riwayat-booking');
-    } else {
-      router.push('/riwayat-booking');
-    }
+    router.push(item.link || '/riwayat-booking');
   };
 
   return (
     <DropdownMenu open={open} onOpenChange={(o) => { setOpen(o); if (o) fetchNotifications(); }}>
       <DropdownMenuTrigger
-        className="relative p-2.5 rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-100 transition-all duration-200 active:scale-95 bg-transparent cursor-pointer"
+        className="relative p-2.5 rounded-xl border border-[#2a2548] text-white/70 hover:bg-white/5 hover:text-white transition-all active:scale-95 bg-transparent cursor-pointer"
         aria-label="Notifikasi"
       >
         <Bell size={18} />
@@ -135,15 +115,15 @@ export function UserNotifications() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-80 max-h-[70vh] overflow-y-auto bg-white border-zinc-200 p-0"
+        className="w-80 max-h-[70vh] overflow-y-auto bg-[#1b1838] border-[#2a2548] p-0"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 sticky top-0 bg-white z-10">
-          <span className="font-bold text-zinc-900 text-sm">Notifikasi</span>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2548] sticky top-0 bg-[#1b1838] z-10">
+          <span className="font-bold text-white text-sm">Notifikasi</span>
           {unread > 0 && (
             <button
               onClick={markAllRead}
               disabled={loading}
-              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
+              className="text-xs font-semibold text-white/50 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
             >
               <CheckCheck size={13} /> Tandai dibaca
             </button>
@@ -152,8 +132,8 @@ export function UserNotifications() {
 
         {items.length === 0 ? (
           <div className="px-4 py-10 text-center">
-            <Bell size={28} className="text-zinc-300 mx-auto mb-2" />
-            <p className="text-xs text-zinc-400">Belum ada notifikasi</p>
+            <Bell size={28} className="text-white/20 mx-auto mb-2" />
+            <p className="text-xs text-white/40">Belum ada notifikasi</p>
           </div>
         ) : (
           items.map((item) => (
@@ -161,19 +141,21 @@ export function UserNotifications() {
               key={item.id}
               onClick={() => handleItemClick(item)}
               className={cn(
-                'flex gap-3 px-4 py-3 border-b border-zinc-50 cursor-pointer focus:bg-zinc-100 hover:bg-zinc-50 transition-colors',
-                !item.isRead && 'bg-zinc-50/80 font-medium'
+                'flex gap-3 px-4 py-3 border-b border-[#2a2548]/40 cursor-pointer focus:bg-[#13112a] hover:bg-[#13112a]/80 transition-colors rounded-none',
+                !item.isRead && 'bg-[#f97316]/[0.04] font-medium'
               )}
             >
               <NotificationIcon type={item.type} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold text-zinc-900 truncate">{item.title}</p>
+                  <p className={cn('text-xs font-bold truncate', !item.isRead ? 'text-white' : 'text-white/60')}>
+                    {item.title}
+                  </p>
                   {!item.isRead && (
-                    <CircleDot size={8} className="text-blue-500 shrink-0" />
+                    <CircleDot size={8} className="text-[#f97316] shrink-0" />
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-600 mt-0.5 leading-snug">{item.message}</p>
+                <p className="text-[11px] text-white/50 mt-0.5 leading-snug">{item.message}</p>
               </div>
             </DropdownMenuItem>
           ))

@@ -1,119 +1,71 @@
-// lib/api.ts - API client wrapper untuk mock data Phase 1
+// lib/api.ts - Real API client for Next.js frontend
 
-import type { Car, Customer, Order, ChatMessage, ApiResponse } from '@/types';
-import { mockCars, mockCustomers, mockOrders, mockMessages } from './mock-data';
+import type { ApiResponse } from '@/types';
 
 class ApiClient {
-  constructor(_baseUrl: string = '') {
-    // baseUrl reserved for Phase 2 backend integration
-  }
+  private baseUrl: string;
 
-  // Simulate API delay
-  private async delay(ms: number = 500) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  constructor(baseUrl: string = '') {
+    this.baseUrl = baseUrl;
   }
 
   // Cars API
-  async getCars(): Promise<ApiResponse<Car[]>> {
-    await this.delay();
-    return {
-      success: true,
-      data: mockCars,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  async getCarById(id: string): Promise<ApiResponse<Car>> {
-    await this.delay();
-    const car = mockCars.find((c) => c.id === id);
-    if (!car) {
+  async getCars(status: string = 'AVAILABLE'): Promise<ApiResponse<any[]>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/cars?status=${status}`);
+      const data = await res.json();
+      return {
+        success: res.ok,
+        data: data.data || [],
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Mobil tidak ditemukan',
+        error: error.message || 'Gagal memuat data mobil',
         timestamp: new Date().toISOString(),
       };
     }
-    return {
-      success: true,
-      data: car,
-      timestamp: new Date().toISOString(),
-    };
   }
 
-  // Customers API
-  async getCustomerById(id: string): Promise<ApiResponse<Customer>> {
-    await this.delay();
-    const customer = mockCustomers.find((c) => c.id === id);
-    if (!customer) {
+  async getCarById(id: string): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/cars/${id}`);
+      const data = await res.json();
+      return {
+        success: res.ok,
+        data: data.data || null,
+        error: data.error,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Pelanggan tidak ditemukan',
+        error: error.message || 'Gagal memuat data mobil',
         timestamp: new Date().toISOString(),
       };
     }
-    return {
-      success: true,
-      data: customer,
-      timestamp: new Date().toISOString(),
-    };
   }
 
-  // Orders API
-  async getOrders(): Promise<ApiResponse<Order[]>> {
-    await this.delay();
-    return {
-      success: true,
-      data: mockOrders,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  async getOrderById(id: string): Promise<ApiResponse<Order>> {
-    await this.delay();
-    const order = mockOrders.find((o) => o.id === id);
-    if (!order) {
+  // Bookings API
+  async getBookings(): Promise<ApiResponse<any[]>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/booking`);
+      const data = await res.json();
+      return {
+        success: res.ok,
+        data: data.data || [],
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Pesanan tidak ditemukan',
+        error: error.message || 'Gagal memuat riwayat booking',
         timestamp: new Date().toISOString(),
       };
     }
-    return {
-      success: true,
-      data: order,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  async getOrdersByCustomerId(customerId: string): Promise<ApiResponse<Order[]>> {
-    await this.delay();
-    const orders = mockOrders.filter((o) => o.customerId === customerId);
-    return {
-      success: true,
-      data: orders,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  // Chat API
-  async getMessages(orderId: string): Promise<ApiResponse<ChatMessage[]>> {
-    await this.delay();
-    const messages = mockMessages.filter((m) => m.orderId === orderId);
-    return {
-      success: true,
-      data: messages,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  async sendMessage(message: ChatMessage): Promise<ApiResponse<ChatMessage>> {
-    await this.delay(300);
-    return {
-      success: true,
-      data: message,
-      timestamp: new Date().toISOString(),
-    };
   }
 }
 
-export const apiClient = new ApiClient();
+export const api = new ApiClient();
+export default api;

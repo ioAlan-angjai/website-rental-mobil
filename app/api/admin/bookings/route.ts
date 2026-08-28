@@ -52,7 +52,15 @@ export async function GET(_req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, data: bookings });
+    const mappedBookings = bookings.map((b) => {
+      const proofPayment = b.payments?.find((p: any) => p.proofImage);
+      return {
+        ...b,
+        paymentProof: proofPayment?.proofImage || null,
+      };
+    });
+
+    return NextResponse.json({ success: true, data: mappedBookings });
   } catch (error) {
     console.error("Get admin bookings error:", error);
     return NextResponse.json(

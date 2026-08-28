@@ -13,25 +13,55 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ value, onChange, maxFiles = 5 }: ImageUploaderProps) {
   const [urlInput, setUrlInput] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // ── File drop handler ──
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const remaining = maxFiles - value.length;
     if (remaining <= 0) return;
 
     const files = acceptedFiles.slice(0, remaining);
-    const readers: Promise<string>[] = files.map(
-      (f) =>
-        new Promise((resolve) => {
+    setIsUploading(true);
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const f of files) {
+        const formData = new FormData();
+        formData.append('file', f);
+        formData.append('subfolder', 'cars');
+
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.url) {
+              uploadedUrls.push(data.url);
+              continue;
+            }
+          }
+        } catch {
+          // fallback to data url
+        }
+
+        // Fallback to FileReader if API fails
+        const fallbackUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target?.result as string);
           reader.readAsDataURL(f);
-        })
-    );
+        });
+        uploadedUrls.push(fallbackUrl);
+      }
 
-    Promise.all(readers).then((dataUrls) => {
-      onChange([...value, ...dataUrls]);
-    });
+      onChange([...value, ...uploadedUrls]);
+    } catch (err) {
+      console.error('Upload error in ImageUploader:', err);
+    } finally {
+      setIsUploading(false);
+    }
   }, [value, onChange, maxFiles]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -102,11 +132,15 @@ export function ImageUploader({ value, onChange, maxFiles = 5 }: ImageUploaderPr
           ) : (
             <>
               <p className="text-sm font-bold text-zinc-900">
-                {isDragActive ? 'Lepaskan file di sini' : 'Seret & lepas atau klik untuk memilih'}
+                {isUploading
+                  ? 'Sedang mengunggah file...'
+                  : isDragActive
+                    ? 'Lepaskan file di sini'
+                    : 'Seret & lepas atau klik untuk memilih'}
               </p>
               <p className="text-xs text-zinc-500">JPG, PNG, WEBP — Maks 10 MB per file</p>
               <p className="text-xs text-zinc-400">
-                Tersisa {maxFiles - value.length} dari {maxFiles} slot
+                {isUploading ? 'Menyimpan gambar ke server...' : `Tersisa ${maxFiles - value.length} dari ${maxFiles} slot`}
               </p>
             </>
           )}

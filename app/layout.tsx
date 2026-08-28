@@ -3,6 +3,7 @@ import './globals.css';
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from '@/components/Providers';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -43,14 +44,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
+    <html lang="id" suppressHydrationWarning className={cn("dark font-sans", inter.variable)}>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white antialiased">
+      <body className="bg-[#13112a] text-white antialiased">
         <Providers>
           {children}
+          <ChatWidget />
         </Providers>
       </body>
     </html>

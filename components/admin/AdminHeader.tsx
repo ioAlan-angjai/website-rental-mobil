@@ -129,6 +129,7 @@ export function AdminHeader({ searchQuery, onSearchChange }: AdminHeaderProps) {
                 </DropdownMenuItem>
               ))
             )}
+            
           </div>
         </DropdownMenuContent>
       </DropdownMenu>

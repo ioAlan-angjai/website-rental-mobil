@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Removed invalid api configuration – bodyParser settings should be defined per API route
   images: {
     remotePatterns: [
       {

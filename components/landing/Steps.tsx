@@ -1,9 +1,9 @@
 'use client';
 
-import { mockStepsMovus } from '@/lib/mock-data-movus';
-import { ArrowRight, Send, CheckSquare, Search, FileText, Gift, Lightbulb } from 'lucide-react';
+import { stepsJogja } from '@/lib/site-content';
+import { ArrowRight, Calendar, CreditCard, Car, Lightbulb } from 'lucide-react';
 
-const STEP_ICONS = [Send, CheckSquare, FileText, Search, Gift];
+const STEP_ICONS = [Calendar, CreditCard, Car];
 
 export function Steps() {
   return (
@@ -16,29 +16,29 @@ export function Steps() {
         {/* Section Header */}
         <div className="text-center mb-16 space-y-3">
           <span className="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
-            <Lightbulb className="w-3 h-3 inline-block mr-1" /> Alur Pengajuan
+            <Lightbulb className="w-3 h-3 inline-block mr-1" /> Alur Pemesanan
           </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-            Bagaimana Cara{' '}
+            Cara Booking{' '}
             <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-              Mendaftar?
+              Sangat Mudah
             </span>
           </h2>
           <p className="text-slate-400 max-w-xl mx-auto text-base">
-            Proses mudah dan transparan. Ikuti 5 langkah sederhana ini untuk mendapatkan mobil impian Anda.
+            Proses cepat dan transparan. Ikuti 3 langkah sederhana untuk sewa mobil di Jogja.
           </p>
         </div>
 
         {/* Steps Horizontal / Grid Flow */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 lg:gap-4 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-4 relative">
           
-          {mockStepsMovus.map((step, idx) => {
-            const Icon = STEP_ICONS[idx];
+          {stepsJogja.map((step, idx) => {
+            const Icon = STEP_ICONS[idx] || Car;
             return (
               <div key={idx} className="relative group">
                 
                 {/* Connector arrow (desktop only) */}
-                {idx < mockStepsMovus.length - 1 && (
+                {idx < stepsJogja.length - 1 && (
                   <div className="hidden md:block absolute top-12 -right-3 z-20 text-slate-700 group-hover:text-blue-500 transition-colors duration-300">
                     <ArrowRight size={18} />
                   </div>
@@ -49,7 +49,7 @@ export function Steps() {
                     {/* Number Badge */}
                     <div className="flex items-center justify-between">
                       <span className="text-3xl font-black bg-gradient-to-b from-blue-500/80 to-indigo-500/80 bg-clip-text text-transparent">
-                        {step.step}
+                        {step.number}
                       </span>
                       <div className="w-9 h-9 rounded-xl bg-slate-950 border border-white/5 flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                         <Icon size={16} />

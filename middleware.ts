@@ -6,7 +6,17 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = request.nextUrl;
 
-  // Protect admin routes: must be logged in as ADMIN
+  // Protect admin API routes: must be logged in as ADMIN
+  if (pathname.startsWith('/api/admin')) {
+    if (!token || token.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Akses Ditolak: Memerlukan Sesi Admin' },
+        { status: 401 }
+      );
+    }
+  }
+
+  // Protect admin page routes: must be logged in as ADMIN
   if (pathname.startsWith('/admin') || pathname === '/admin') {
     if (!token || token.role !== 'ADMIN') {
       const loginUrl = new URL('/login', request.url);
@@ -34,5 +44,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*', '/account', '/account/:path*', '/riwayat-booking', '/riwayat-booking/:path*', '/login', '/register'],
+  matcher: [
+    '/admin',
+    '/admin/:path*',
+    '/api/admin/:path*',
+    '/account',
+    '/account/:path*',
+    '/riwayat-booking',
+    '/riwayat-booking/:path*',
+    '/login',
+    '/register',
+  ],
 };

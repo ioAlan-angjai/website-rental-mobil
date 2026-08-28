@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "bookingId diperlukan" }, { status: 400 });
     }
 
-    const invoice = await prisma.invoice.findUnique({
+    let invoice = await prisma.invoice.findUnique({
       where: { bookingId },
       include: {
         booking: {
@@ -31,13 +31,61 @@ export async function GET(req: Request) {
     });
 
     if (!invoice) {
-      return NextResponse.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
+      // Check if booking exists
+      const booking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          car: true,
+          payments: true,
+          user: { select: { name: true, email: true, phone: true, address: true, city: true, province: true } },
+        },
+      });
+
+      if (!booking) {
+        return NextResponse.json({ error: "Booking tidak ditemukan" }, { status: 404 });
+      }
+
+      const currentUserId = (session.user as any).id;
+      const isAdmin = (session.user as any).role === "ADMIN";
+      if (!isAdmin && booking.userId && booking.userId !== currentUserId) {
+        return NextResponse.json({ error: "Akses ditolak" }, { status: 403 });
+      }
+
+      // Generate invoice
+      const invoiceNumber = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${booking.id.slice(-6).toUpperCase()}`;
+      const totalAmount = booking.totalPrice + (booking.penaltyAmount || 0);
+      const isPaid = booking.status === 'COMPLETED' || booking.fullPaid;
+
+      invoice = await prisma.invoice.create({
+        data: {
+          bookingId: booking.id,
+          invoiceNumber,
+          subtotal: booking.totalPrice,
+          penalty: booking.penaltyAmount || 0,
+          total: totalAmount,
+          paymentStatus: isPaid ? 'PAID' : 'PARTIAL',
+          dueDate: booking.endDateTime || new Date(),
+        },
+        include: {
+          booking: {
+            include: {
+              car: true,
+              payments: true,
+              user: { select: { name: true, email: true, phone: true, address: true, city: true, province: true } },
+            },
+          },
+        },
+      });
+    }
+
+    if (!invoice) {
+      return NextResponse.json({ error: "Gagal membuat data invoice" }, { status: 500 });
     }
 
     // Cek akses
     const currentUserId = (session.user as any).id;
     const isAdmin = (session.user as any).role === "ADMIN";
-    if (!isAdmin && invoice.booking.userId && invoice.booking.userId !== currentUserId) {
+    if (!isAdmin && invoice.booking?.userId && invoice.booking.userId !== currentUserId) {
       return NextResponse.json({ error: "Akses ditolak" }, { status: 403 });
     }
 

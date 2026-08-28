@@ -1080,16 +1080,17 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Bukti Pembayaran DP */}
-                {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (
-                  selectedBooking.paymentProof ? (
+                {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (() => {
+                  const dpProofUrl = selectedBooking.paymentProof || selectedBooking.payments?.find((p: any) => p.proofImage)?.proofImage;
+                  return dpProofUrl ? (
                     <div className="space-y-2">
                       <h4 className="font-bold text-zinc-900 text-sm">Bukti Pembayaran DP</h4>
                       <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 flex items-center justify-center p-2">
                         <img
-                          src={selectedBooking.paymentProof}
+                          src={dpProofUrl}
                           alt="Bukti Transfer"
                           className="max-h-80 w-auto object-contain rounded-xl hover:scale-[1.02] transition-transform cursor-pointer"
-                          onClick={() => window.open(selectedBooking.paymentProof)}
+                          onClick={() => window.open(dpProofUrl)}
                           title="Klik untuk memperbesar"
                         />
                       </div>
@@ -1098,8 +1099,8 @@ export default function AdminDashboard() {
                     <div className="p-4 bg-zinc-50 text-zinc-500 text-center text-sm rounded-2xl border border-dashed">
                       Belum ada bukti pembayaran DP yang diunggah.
                     </div>
-                  )
-                )}
+                  );
+                })()}
 
                 {/* Dokumen Identitas Penyewa */}
                 {(selectedBooking.ktpBookingImage || selectedBooking.simBookingImage) && (
@@ -1256,7 +1257,7 @@ export default function AdminDashboard() {
                     Tutup
                   </button>
 
-                  {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && selectedBooking.paymentProof && !showRejectForm && (
+                  {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && !showRejectForm && (
                     <>
                       <button
                         type="button"

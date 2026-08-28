@@ -6,13 +6,16 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
-  CATALOG: '/catalog',
-  PROFILE: '/profile',
-  ORDERS: '/orders',
-  ADMIN_DASHBOARD: '/admin/dashboard',
-  ADMIN_VERIFICATION: '/admin/dashboard/verification',
-  ADMIN_CHAT: '/admin/dashboard/chat',
-  ADMIN_ANALYTICS: '/admin/dashboard/analytics',
+  ARMADA: '/armada',
+  BOOKING: '/booking',
+  ACCOUNT: '/account',
+  ORDERS: '/riwayat-booking',
+  ADMIN_DASHBOARD: '/admin',
+  FAQ: '/faq',
+  KONTAK: '/kontak',
+  LAYANAN: '/layanan',
+  TESTIMONI: '/testimoni',
+  TENTANG_KAMI: '/tentang-kami',
 };
 
 export const STUDENT_DISCOUNT_PERCENTAGE = {

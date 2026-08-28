@@ -1,6 +1,6 @@
 'use client';
 
-import { mockServicesJogja } from '@/lib/mock-data-jogja';
+import { servicesJogja } from '@/lib/site-content';
 import { Key, Users, Plane, CheckCircle } from 'lucide-react';
 
 const SERVICE_ICONS = [Key, Users, Plane];
@@ -31,7 +31,7 @@ export function ServicesSection() {
 
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockServicesJogja.map((service, idx) => {
+          {servicesJogja.map((service, idx) => {
             const Icon = SERVICE_ICONS[idx];
             return (
               <div

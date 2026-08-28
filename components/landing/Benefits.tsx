@@ -1,7 +1,6 @@
-'use client';
 import { motion } from 'framer-motion';
-import { Gift } from 'lucide-react';
-import { mockBenefitsMovus } from '@/lib/mock-data-movus';
+import { Gift, ShieldCheck } from 'lucide-react';
+import { benefitsJogja } from '@/lib/site-content';
 
 export function Benefits() {
   return (
@@ -29,29 +28,17 @@ export function Benefits() {
         </div>
 
         {/* Benefits Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockBenefitsMovus.map((benefit, idx) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {benefitsJogja.map((benefit, idx) => (
             <div
               key={idx}
               className="group relative p-8 rounded-3xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/60 hover:border-blue-500/20 transition-all duration-300 flex flex-col gap-4"
             >
-              {/* Icon Bubble */}
-              <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/25 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300">
-                {benefit.icon}
+              <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/25 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                <ShieldCheck size={24} />
               </div>
-
-              {/* Text Content */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors duration-300">
-                  {benefit.title}
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  {benefit.description}
-                </p>
-              </div>
-
-              {/* Gradient border bottom */}
-              <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-blue-500/0 via-blue-500/20 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+              <h3 className="text-xl font-bold">{benefit.title}</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">{benefit.description}</p>
             </div>
           ))}
         </div>

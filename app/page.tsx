@@ -3,606 +3,429 @@
 import { useState } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { FAQ } from '@/components/landing/FAQ';
+import { FleetPreview } from '@/components/landing/FleetPreview';
 import { motion } from 'framer-motion';
-import { Car, Shield, Sparkles, ArrowRight, Star, ChevronRight, CheckCircle2, HelpCircle } from 'lucide-react';
+import {
+  ArrowRight, Star, ChevronRight, HelpCircle, CalendarDays, Search,
+} from 'lucide-react';
+import {
+  Reports as IconPrice,
+  Car as IconCar,
+  UserStar as IconDriver,
+  CalendarCheck as IconBooking,
+  Headset as IconSupport,
+  ShieldCheck as IconShield,
+} from 'iconoir-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BackgroundOrnaments } from '@/components/landing/BackgroundOrnaments';
+import { Button } from '@/components/ui/button';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+};
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.1 } } };
+
+const steps = [
+  { num: '01', title: 'Pilih Armada', desc: 'Pilih kendaraan sesuai kebutuhan perjalanan Anda.' },
+  { num: '02', title: 'Isi Form Rental', desc: 'Tentukan tanggal, durasi, dan lokasi penjemputan.' },
+  { num: '03', title: 'Konfirmasi Pembayaran', desc: 'Lakukan pembayaran DP atau pelunasan.' },
+  { num: '04', title: 'Mobil Siap Digunakan', desc: 'Armada siap digunakan sesuai jadwal.' },
+];
+
+const reasons = [
+  { icon: IconPrice, title: 'Harga Transparan', desc: 'Tidak ada biaya tersembunyi.' },
+  { icon: IconCar, title: 'Armada Terawat', desc: 'Diservis berkala dan selalu siap jalan.' },
+  { icon: IconDriver, title: 'Driver Berpengalaman', desc: 'Profesional, ramah, dan hafal rute Jogja.' },
+  { icon: IconBooking, title: 'Booking Mudah', desc: 'Pesan hanya dalam beberapa menit.' },
+  { icon: IconSupport, title: 'Customer Support 24/7', desc: 'Respon cepat kapan saja.' },
+  { icon: IconShield, title: 'Asuransi Perjalanan', desc: 'Perjalanan lebih aman dan nyaman.' },
+];
 
 export default function Home() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
-  const handleSearchArmada = () => {
-    const params = new URLSearchParams();
-    if (selectedCategory && selectedCategory !== 'all') {
-      params.set('category', selectedCategory);
-    }
-    if (startDate) params.set('startDate', startDate);
-    if (endDate) params.set('endDate', endDate);
-    router.push(`/armada${params.toString() ? `?${params.toString()}` : ''}`);
-  };
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const buildBookingUrl = () => {
-    const params = new URLSearchParams();
-    if (startDate) params.set('startDate', startDate);
-    if (endDate) params.set('endDate', endDate);
-    return `/booking${params.toString() ? `?${params.toString()}` : ''}`;
+    const p = new URLSearchParams();
+    if (startDate) p.set('startDate', startDate);
+    if (endDate) p.set('endDate', endDate);
+    return `/booking${p.toString() ? `?${p.toString()}` : ''}`;
   };
 
   return (
-    <main className="relative min-h-screen bg-white overflow-x-hidden">
-
+    <main className="relative min-h-screen bg-[#13112a] overflow-x-hidden font-sans">
       <Navbar />
 
-      {/* Hero Section - Split Layout Monochrome */}
-      <section className="relative pt-24 pb-16 px-6 min-h-screen flex items-center bg-slate-50 overflow-hidden">
-        {/* Background Decorative Elements */}
-        <BackgroundOrnaments />
+      {/* ════════════ HERO ════════════ */}
+      <section className="relative w-full min-h-screen flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-cover bg-center scale-110"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1604999333679-b86d54738315?w=1920&q=80')" }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#13112a]/95 via-[#13112a]/80 to-[#13112a]/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#13112a]/90 via-transparent to-[#13112a]/40" />
+        </div>
 
-        <div className="max-w-7xl mx-auto w-full relative z-20">
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-0">
+          <div className="grid md:grid-cols-12 gap-8 md:gap-12 items-center min-h-[75vh]">
 
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-
-            {/* LEFT COLUMN - Text & Search Form */}
+            {/* ── LEFT ── */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              variants={stagger} initial="hidden" animate="visible"
+              className="md:col-span-7 text-center md:text-left"
             >
-              {/* Headline */}
-              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-zinc-900 leading-[1.1] mb-6 tracking-tight">
-                Sewa Mobil Jogja.
-                <br />
-                Perjalanan Nyaman,
-                <br />
-                Unit Terawat.
-              </h1>
+              <motion.h1
+                variants={fadeUp}
+                className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight max-w-[700px]"
+              >
+                Sewa Mobil Jogja.<br />
+                Perjalanan Nyaman,<br />
+                <span className="text-[#f97316]">Unit Terawat.</span>
+              </motion.h1>
 
-              {/* Sub-headline */}
-              <p className="text-lg md:text-xl text-zinc-600 mb-10 leading-relaxed max-w-xl">
-                Temukan armada terbaik untuk perjalanan Anda di Yogyakarta dengan layanan lepas kunci atau dengan sopir.
-              </p>
+              <motion.p
+                variants={fadeUp}
+                className="text-sm sm:text-base text-white/50 leading-relaxed max-w-[540px] mx-auto md:mx-0 mt-4 mb-6"
+              >
+                Temukan armada terbaik untuk perjalanan Anda di Yogyakarta dengan layanan lepas kunci atau include driver.
+              </motion.p>
 
-              {/* Quick Search Form */}
-              <div className="bg-white rounded-2xl shadow-lg shadow-zinc-900/5 p-6 md:p-8 border border-zinc-100">
-                <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wide mb-5">
+              <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-3 justify-center md:justify-start">
+                <Link href={buildBookingUrl()}>
+                  <Button className="bg-[#f97316] hover:bg-[#ea580c] text-white font-bold text-sm px-7 py-4 rounded-full shadow-xl shadow-[#f97316]/20 hover:scale-105 active:scale-95 transition-all duration-300">
+                    Booking Sekarang <ArrowRight size={16} className="ml-1.5" />
+                  </Button>
+                </Link>
+                <Link href="/armada">
+                  <Button variant="outline" className="text-white/90 border-[#2a2548] bg-[#1b1838] hover:bg-[#2a2548] hover:border-[#f97316]/50 hover:text-white font-medium text-sm px-7 py-4 rounded-full transition-all duration-300 shadow-md">
+                    Lihat Armada
+                  </Button>
+                </Link>
+              </motion.div>
+            </motion.div>
+
+            {/* ── RIGHT: Search Card ── */}
+            <motion.div
+              variants={stagger} initial="hidden" animate="visible"
+              className="md:col-span-5 mt-6 md:mt-0"
+            >
+              <motion.div
+                variants={fadeUp}
+                className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-5 md:p-6 shadow-2xl"
+              >
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <CalendarDays size={15} className="text-[#f97316]" />
                   Cari Armada Tersedia
                 </h3>
 
-                <div className="space-y-4">
-                  {/* Car Type Dropdown */}
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-2">
-                      Jenis Mobil
-                    </label>
+                    <label className="block text-xs font-semibold text-white/50 mb-1.5">Jenis Mobil</label>
                     <select
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all cursor-pointer"
+                      onChange={e => setSelectedCategory(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#13112a] border border-[#2a2548] rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]/50 focus:border-[#f97316]/50 transition-all cursor-pointer"
                     >
                       <option value="all">Semua Kategori</option>
                       <option value="hatchback">Hatchback / City Car</option>
                       <option value="suv">SUV</option>
                       <option value="mpv">MPV / Minivan</option>
                       <option value="sedan">Sedan</option>
-                      <option value="elf">ELF / Bus Mini</option>
                     </select>
                   </div>
 
-                  {/* Date Inputs */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-2">
-                        Mulai Sewa
-                      </label>
+                      <label className="block text-xs font-semibold text-white/50 mb-1.5">Mulai Sewa</label>
                       <input
-                        type="date"
-                        min={todayStr}
-                        value={startDate}
-                        onChange={(e) => {
-                          setStartDate(e.target.value);
-                          if (endDate && e.target.value > endDate) setEndDate('');
-                        }}
-                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
-                      />
+                        type="date" min={todayStr} value={startDate}
+                        onChange={e => { setStartDate(e.target.value); if (endDate && e.target.value > endDate) setEndDate(''); }}
+                        className="w-full px-3.5 py-2.5 bg-[#13112a] border border-[#2a2548] rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]/50 focus:border-[#f97316]/50 transition-all [color-scheme:dark]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-2">
-                        Selesai Sewa
-                      </label>
+                      <label className="block text-xs font-semibold text-white/50 mb-1.5">Selesai Sewa</label>
                       <input
-                        type="date"
-                        min={startDate || todayStr}
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-zinc-200 rounded-lg text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
-                      />
+                        type="date" min={startDate || todayStr} value={endDate}
+                        onChange={e => setEndDate(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-[#13112a] border border-[#2a2548] rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]/50 focus:border-[#f97316]/50 transition-all [color-scheme:dark]" />
                     </div>
                   </div>
 
-                  {/* Search Button */}
                   <button
-                    onClick={handleSearchArmada}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300 group"
+                    onClick={() => {
+                      const p = new URLSearchParams();
+                      if (selectedCategory && selectedCategory !== 'all') p.set('category', selectedCategory);
+                      if (startDate) p.set('startDate', startDate);
+                      if (endDate) p.set('endDate', endDate);
+                      router.push(`/armada${p.toString() ? `?${p.toString()}` : ''}`);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#f97316] hover:bg-[#ea580c] text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-[#f97316]/20"
                   >
-                    Cari Armada
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <Search size={16} /> Cari Armada
                   </button>
                 </div>
-              </div>
-            </motion.div>
-
-            {/* RIGHT COLUMN - Floating Mockup Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="relative lg:h-[600px] flex items-center justify-center"
-            >
-              {/* Main Mockup Card */}
-              <div className="relative group/mockup">
-                {/* Floating Card - Available Car */}
-                <div className="bg-white rounded-3xl shadow-xl shadow-zinc-900/5 hover:shadow-2xl hover:shadow-zinc-950/15 p-8 border border-zinc-150 max-w-md transform hover:-translate-y-3 transition-all duration-500 ease-out">
-
-                  {/* Status Badge */}
-                  {/* <div className="flex items-center justify-between mb-6">
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-semibold rounded-full border border-emerald-250">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                      Available Now
-                    </span>
-                    <Sparkles className="w-5 h-5 text-zinc-400 group-hover/mockup:text-zinc-900 transition-colors duration-300" />
-                  </div> */}
-
-                  {/* Car Image Placeholder */}
-                  <div className="bg-gradient-to-br from-zinc-100 to-zinc-200 rounded-2xl h-48 mb-6 flex items-center justify-center overflow-hidden relative">
-                    <Car className="w-24 h-24 text-zinc-400 group-hover/mockup:scale-110 group-hover/mockup:rotate-3 transition-transform duration-500 ease-out" />
-                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/mockup:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                  </div>
-
-                  {/* Car Info */}
-                  <h3 className="text-2xl font-bold text-zinc-900 mb-2">
-                    Toyota Avanza 2023
-                  </h3>
-                  <p className="text-sm text-zinc-500 mb-6">
-                    7 Penumpang • Manual • Bensin
-                  </p>
-
-                  {/* Price */}
-                  <div className="flex items-end gap-2 mb-6">
-                    <span className="text-4xl font-bold text-zinc-900">
-                      Rp 250K
-                    </span>
-                    <span className="text-zinc-500 mb-1">/hari</span>
-                  </div>
-
-                  {/* Features List */}
-                  <div className="space-y-3 mb-8 pb-8 border-b border-zinc-100">
-                    <div className="flex items-center gap-3 text-sm text-zinc-600">
-                      <Shield className="w-4 h-4 text-zinc-400" />
-                      <span>Asuransi Lengkap</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-zinc-600">
-                      <Star className="w-4 h-4 text-zinc-400" />
-                      <span>Unit Terawat & Bersih</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-zinc-600">
-                      <Car className="w-4 h-4 text-zinc-400" />
-                      <span>Lepas Kunci / Dengan Sopir</span>
-                    </div>
-                  </div>
-
-                  {/* Booking Button */}
-                  <Link
-                    href={buildBookingUrl()}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl transition-all duration-300"
-                  >
-                    Booking Sekarang
-                    <ChevronRight className="w-5 h-5" />
-                  </Link>
-                </div>
-
-                {/* Small Floating Badge */}
-                {/* <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.6 }}
-                  className="absolute -bottom-8 -left-8 bg-zinc-900 text-white px-6 py-4 rounded-2xl shadow-xl"
-                >
-                  <div className="text-xs text-zinc-400 uppercase tracking-wide mb-1">
-                    Ready to Rent
-                  </div>
-                  <div className="text-2xl font-bold">15+ Units</div>
-                </motion.div> */}
-              </div>
+              </motion.div>
             </motion.div>
 
           </div>
         </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#13112a] to-transparent z-10" />
       </section>
 
-      {/* Kategori Armada - Bento Grid */}
-      <section className="relative py-24 px-6 bg-white">
+      {/* ════════════ ARMADA REKOMENDASI ════════════ */}
+      <FleetPreview />
+
+      {/* ════════════ KENAPA PILIH KAMI ════════════ */}
+      <section className="relative py-24 sm:py-28 px-4 bg-[#13112a]">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/3 right-0 w-[600px] h-[600px] bg-[#f97316]/[0.02] rounded-full blur-[150px]" />
+        </div>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16 sm:mb-20"
+          >
+            <p className="text-xs font-bold tracking-[0.15em] text-[#f97316] mb-3">KENAPA PILIH KAMI</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
+              Alasan ribuan pelanggan{' '}
+              <span className="text-[#f97316]">mempercayai kami</span>
+            </h2>
+            <p className="text-white/50 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+              Alasan ribuan pelanggan mempercayakan perjalanan mereka kepada Rental Mobil Jogja.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {reasons.map((r, i) => (
+              <motion.div
+                key={r.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.5, delay: 0.06 * i }}
+                className="group bg-[#1b1838] border border-[#2a2548] rounded-2xl p-6 sm:p-7 hover:border-[#f97316]/40 hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="w-12 h-12 bg-[#2a2548] rounded-xl flex items-center justify-center mb-5 group-hover:bg-[#f97316]/10 group-hover:scale-110 transition-all duration-300">
+                  <r.icon strokeWidth={1.5} className="w-6 h-6 text-[#f97316]" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2.5">{r.title}</h3>
+                <p className="text-white/50 text-sm leading-relaxed">{r.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════ CARA BOOKING ════════════ */}
+      <section className="relative py-24 sm:py-28 px-4 bg-[#13112a] border-t border-[#2a2548]/50">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-16 sm:mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 mb-4">
-              Pilih Kategori Armada
+            <p className="text-xs font-bold tracking-[0.15em] text-[#f97316] mb-3">CARA BOOKING</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
+              Proses rental cepat dan mudah{' '}
+              <span className="text-[#f97316]">hanya 4 langkah</span>
             </h2>
-            <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
-              Dari ekonomis hingga premium, kami punya mobil yang sempurna untuk setiap kebutuhan Anda
+            <p className="text-white/50 max-w-xl mx-auto text-sm sm:text-base">
+              Proses rental cepat dan mudah hanya dalam beberapa langkah.
             </p>
           </motion.div>
 
-          {/* Bento Grid - 3 Column Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
+          {/* Desktop Timeline */}
+          <div className="hidden lg:grid lg:grid-cols-4 gap-6 relative">
+            <div className="absolute top-16 left-[12.5%] right-[12.5%] h-[2px] bg-[#2a2548] z-0" />
 
-            {/* Card 1: Economy */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-              className="group relative bg-zinc-50 rounded-2xl p-8 border border-zinc-200 hover:border-zinc-900 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-900/5 transition-all duration-500 flex flex-col justify-between"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/0 to-zinc-950/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              <div className="relative">
-                <div className="w-14 h-14 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                  <Car className="w-7 h-7 text-white" />
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.num}
+                initial={{ opacity: 0, y: 25 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.5, delay: 0.15 * i }}
+                className="relative z-10 text-center group"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-[#1b1838] border border-[#2a2548] flex items-center justify-center mx-auto mb-5 group-hover:border-[#f97316]/60 group-hover:shadow-lg group-hover:shadow-[#f97316]/10 transition-all duration-300">
+                  <span className="text-lg font-extrabold text-[#f97316]">{step.num}</span>
                 </div>
-
-                <h3 className="text-2xl font-bold text-zinc-900 mb-3">
-                  Ekonomis & Hemat
-                </h3>
-
-                <p className="text-zinc-600 mb-6 leading-relaxed">
-                  Mobil city car dan compact yang irit BBM, cocok untuk perjalanan dalam kota dengan budget terbatas.
-                </p>
-
-                <div className="mb-6 space-y-2">
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mulai dari Rp 150.000/hari</div>
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Hemat BBM</div>
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mudah parkir</div>
+                <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-6 group-hover:border-[#f97316]/30 transition-all duration-300">
+                  <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{step.desc}</p>
                 </div>
-              </div>
+              </motion.div>
+            ))}
+          </div>
 
-              <div className="relative z-10 pt-4">
-                <Link
-                  href="/armada?kategori=ekonomis"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full bg-transparent hover:bg-zinc-900 text-zinc-900 hover:text-white font-medium rounded-lg border border-zinc-900 transition-all duration-300 group-hover:shadow-md"
-                >
-                  Lihat Mobil
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Card 2: Comfort */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-              className="group relative bg-zinc-50 rounded-2xl p-8 border border-zinc-200 hover:border-zinc-900 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-900/5 transition-all duration-500 flex flex-col justify-between"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/0 to-zinc-950/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              <div className="relative">
-                <div className="w-14 h-14 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                  <Shield className="w-7 h-7 text-white" />
+          {/* Tablet / Mobile Timeline */}
+          <div className="lg:hidden space-y-6">
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.num}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 * i }}
+                className="flex gap-5 items-start group"
+              >
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-[#1b1838] border border-[#2a2548] flex items-center justify-center group-hover:border-[#f97316]/60 transition-all duration-300">
+                  <span className="text-base font-extrabold text-[#f97316]">{step.num}</span>
                 </div>
-
-                <h3 className="text-2xl font-bold text-zinc-900 mb-3">
-                  Kenyamanan Maksimal
-                </h3>
-
-                <p className="text-zinc-600 mb-6 leading-relaxed">
-                  Sedan dan MPV dengan interior nyaman, ideal untuk perjalanan jauh atau rombongan keluarga.
-                </p>
-
-                <div className="mb-6 space-y-2">
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mulai dari Rp 250.000/hari</div>
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> AC dingin & audio premium</div>
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Kapasitas 5-7 penumpang</div>
+                <div className="bg-[#1b1838] border border-[#2a2548] rounded-xl p-4 flex-1 group-hover:border-[#f97316]/30 transition-all duration-300">
+                  <h3 className="text-sm font-bold text-white mb-1">{step.title}</h3>
+                  <p className="text-white/50 text-xs leading-relaxed">{step.desc}</p>
                 </div>
-              </div>
-
-              <div className="relative z-10 pt-4">
-                <Link
-                  href="/armada?kategori=comfort"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full bg-transparent hover:bg-zinc-900 text-zinc-900 hover:text-white font-medium rounded-lg border border-zinc-900 transition-all duration-300 group-hover:shadow-md"
-                >
-                  Lihat Mobil
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Card 3: Premium */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-              className="group relative bg-zinc-50 rounded-2xl p-8 border border-zinc-200 hover:border-zinc-900 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-900/5 transition-all duration-500 flex flex-col justify-between"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/0 to-zinc-950/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              <div className="relative">
-                <div className="w-14 h-14 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                  <Sparkles className="w-7 h-7 text-white" />
-                </div>
-
-                <h3 className="text-2xl font-bold text-zinc-900 mb-3">
-                  Premium & Mewah
-                </h3>
-
-                <p className="text-zinc-600 mb-6 leading-relaxed">
-                  SUV dan mobil premium untuk kebutuhan bisnis, acara spesial, atau perjalanan dengan gaya.
-                </p>
-
-                <div className="mb-6 space-y-2">
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Mulai dari Rp 400.000/hari</div>
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Fitur lengkap & teknologi terkini</div>
-                  <div className="text-sm text-zinc-700 flex items-center gap-2"><CheckCircle2 size={14} /> Performa & kenyamanan terbaik</div>
-                </div>
-              </div>
-
-              <div className="relative z-10 pt-4">
-                <Link
-                  href="/armada?kategori=premium"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full bg-transparent hover:bg-zinc-900 text-zinc-900 hover:text-white font-medium rounded-lg border border-zinc-900 transition-all duration-300 group-hover:shadow-md"
-                >
-                  Lihat Mobil
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </motion.div>
-
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimoni" className="relative py-24 px-6 bg-[#F5F3EF]">
+      {/* ════════════ TESTIMONIALS ════════════ */}
+      <section className="relative py-20 sm:py-24 px-4 border-t border-[#2a2548]/50">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center max-w-2xl mx-auto mb-12 sm:mb-14 lg:mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Kata Mereka yang Sudah Percaya
+            <p className="text-xs font-bold tracking-[0.15em] text-[#f97316] mb-3">TESTIMONI</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
+              Kata Mereka yang Sudah <span className="text-[#f97316]">Percaya</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Ribuan mahasiswa Jogja telah mempercayai kami untuk kebutuhan rental mobil mereka
-            </p>
+            <p className="text-white/50 text-sm sm:text-base">Ribuan mahasiswa Jogja telah mempercayai kami untuk kebutuhan rental mobil mereka</p>
           </motion.div>
 
-          {/* Testimonial Grid */}
-          <div className="grid md:grid-cols-3 gap-8">
-
-            {/* Testimonial 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white rounded-2xl p-8 shadow-sm"
-            >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                "Pelayanan sangat memuaskan! Mobilnya bersih dan terawat. Proses booking juga cepat, cocok banget buat mahasiswa yang butuh mobilitas tinggi."
-              </p>
-
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white font-bold">
-                  AR
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              { name: 'Andi Raharjo', role: 'Mahasiswa UGM', text: 'Pelayanan sangat memuaskan! Mobilnya bersih dan terawat. Proses booking juga cepat, cocok banget buat mahasiswa yang butuh mobilitas tinggi.', initial: 'AR' },
+              { name: 'Siti Pratiwi', role: 'Mahasiswa UNY', text: 'Harga terjangkau dan ada diskon mahasiswa! Puas banget sama pelayanannya. Ownernya baik dan responsif. Recommended!', initial: 'SP' },
+              { name: 'Budi Wijaya', role: 'Mahasiswa UII', text: 'Pertama kali rental mobil dan pengalamannya sangat smooth. Mobilnya nyaman untuk trip ke Dieng. Worth it banget!', initial: 'BW' },
+            ].map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.08 * i + 0.15 }}
+                className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-5 sm:p-6 hover:border-[#2a2548]/80 transition-all duration-300"
+              >
+                <div className="flex items-center gap-1 mb-3">
+                  {[...Array(5)].map((_, si) => <Star key={si} className="w-3.5 h-3.5 fill-[#f97316] text-[#f97316]" />)}
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Andi Raharjo</div>
-                  <div className="text-sm text-gray-500">Mahasiswa UGM</div>
+                <p className="text-white/70 mb-5 leading-relaxed text-sm">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-[#f97316] rounded-xl flex items-center justify-center text-white font-bold text-sm">{t.initial}</div>
+                  <div>
+                    <div className="font-bold text-white text-sm">{t.name}</div>
+                    <div className="text-xs text-white/50">{t.role}</div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-
-            {/* Testimonial 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white rounded-2xl p-8 shadow-sm"
-            >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                "Harga terjangkau dan ada diskon mahasiswa! Puas banget sama pelayanannya. Ownernya baik dan responsif. Recommended!"
-              </p>
-
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
-                  SP
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Siti Pratiwi</div>
-                  <div className="text-sm text-gray-500">Mahasiswa UNY</div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Testimonial 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white rounded-2xl p-8 shadow-sm"
-            >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                "Pertama kali rental mobil dan pengalamannya sangat smooth. Mobilnya nyaman untuk trip ke Dieng. Worth it banget!"
-              </p>
-
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-400 rounded-full flex items-center justify-center text-white font-bold">
-                  BW
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Budi Wijaya</div>
-                  <div className="text-sm text-gray-500">Mahasiswa UII</div>
-                </div>
-              </div>
-            </motion.div>
-
+              </motion.div>
+            ))}
           </div>
 
-          {/* CTA Link */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center mt-12"
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-center mt-8 sm:mt-10"
           >
-            <Link
-              href="/testimoni"
-              className="inline-flex items-center gap-2 text-gray-900 font-medium hover:text-blue-600 transition-colors"
-            >
-              Lihat Semua Testimoni
-              <ChevronRight className="w-5 h-5" />
+            <Link href="/testimoni" className="inline-flex items-center gap-2 text-white/50 hover:text-white font-medium transition-colors text-sm">
+              Lihat Semua Testimoni <ChevronRight size={14} />
             </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section id="faq" className="relative py-24 px-6 bg-white">
-        <div className="max-w-4xl mx-auto">
+      {/* ════════════ FAQ ════════════ */}
+      <section className="relative py-20 sm:py-24 px-4">
+        <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-10 sm:mb-12"
           >
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-zinc-100 rounded-2xl">
-                <HelpCircle size={24} className="text-zinc-900" />
+              <div className="p-3 bg-[#1b1838] border border-[#2a2548] rounded-2xl">
+                <HelpCircle size={22} className="text-[#f97316]" />
               </div>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 mb-4">
-              Pertanyaan Umum
-            </h2>
-            <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
-              Temukan jawaban untuk pertanyaan yang sering diajukan
-            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">Pertanyaan Umum</h2>
+            <p className="text-white/50 text-sm sm:text-base">Temukan jawaban untuk pertanyaan yang sering diajukan</p>
           </motion.div>
           <FAQ />
         </div>
       </section>
 
-      {/* Footer CTA */}
-      <section className="relative py-20 px-6 bg-zinc-900">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* ════════════ CTA BANNER ════════════ */}
+      <section className="relative py-16 sm:py-20 px-4 bg-[#1b1838] border-t border-[#2a2548]/50">
+        <div className="max-w-3xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Siap Memulai Perjalanan Anda?
-            </h2>
-            <p className="text-xl text-zinc-400 mb-10 max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">Siap Memulai Perjalanan Anda?</h2>
+            <p className="text-white/50 text-sm sm:text-base mb-8 max-w-xl mx-auto">
               Booking mobil impian Anda sekarang dan nikmati pengalaman rental yang berbeda
             </p>
-            <Link
-              href={buildBookingUrl()}
-              className="inline-flex items-center gap-2 px-10 py-5 bg-white hover:bg-zinc-100 text-zinc-900 text-lg font-semibold rounded-xl transition-all"
-            >
-              Mulai Booking
-              <ArrowRight className="w-6 h-6" />
+            <Link href={buildBookingUrl()}>
+              <Button className="bg-[#f97316] hover:bg-[#ea580c] text-white font-bold text-base px-9 py-5 rounded-full shadow-xl shadow-[#f97316]/20 hover:scale-105 active:scale-95 transition-all duration-300">
+                Mulai Booking <ArrowRight size={18} />
+              </Button>
             </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative py-12 px-6 bg-zinc-950 border-t border-zinc-800">
+      {/* ════════════ FOOTER ════════════ */}
+      <footer className="relative py-10 sm:py-12 px-4 border-t border-[#2a2548]/50">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Car className="w-6 h-6 text-white" />
+                <div className="p-2 bg-[#f97316] rounded-xl"><IconCar strokeWidth={1.5} className="w-5 h-5 text-white" /></div>
                 <span className="text-lg font-bold text-white">RentalMobil</span>
               </div>
-              <p className="text-sm text-zinc-400">
-                Solusi rental mobil terpercaya untuk mahasiswa Yogyakarta
-              </p>
+              <p className="text-sm text-white/50 leading-relaxed">Solusi rental mobil terpercaya untuk mahasiswa Yogyakarta</p>
             </div>
-
-            <div>
-              <h4 className="text-white font-semibold mb-4">Layanan</h4>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li><Link href="/armada" className="hover:text-white transition-colors">Armada</Link></li>
-                <li><Link href="/layanan" className="hover:text-white transition-colors">Layanan</Link></li>
-                <li><Link href="/booking" className="hover:text-white transition-colors">Booking</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-semibold mb-4">Perusahaan</h4>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li><Link href="/tentang-kami" className="hover:text-white transition-colors">Tentang Kami</Link></li>
-                <li><Link href="/testimoni" className="hover:text-white transition-colors">Testimoni</Link></li>
-                <li><Link href="/kontak" className="hover:text-white transition-colors">Kontak</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-semibold mb-4">Kontak</h4>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>WhatsApp: +62 812-3456-7890</li>
-                <li>Email: info@rentalmobil.com</li>
-                <li>Yogyakarta, Indonesia</li>
-              </ul>
-            </div>
+            {[
+              { title: 'Layanan', links: [{ label: 'Armada', href: '/armada' }, { label: 'Layanan', href: '/layanan' }, { label: 'Booking', href: '/booking' }] },
+              { title: 'Perusahaan', links: [{ label: 'Tentang Kami', href: '/tentang-kami' }, { label: 'Testimoni', href: '/testimoni' }, { label: 'Kontak', href: '/kontak' }] },
+              { title: 'Kontak', links: [{ label: 'WhatsApp: +62 812-3456-7890', href: '#' }, { label: 'Email: info@rentalmobil.com', href: '#' }, { label: 'Yogyakarta, Indonesia', href: '#' }] },
+            ].map(col => (
+              <div key={col.title}>
+                <h4 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">{col.title}</h4>
+                <ul className="space-y-2 text-sm text-white/50">
+                  {col.links.map(link => (
+                    <li key={link.label}><Link href={link.href} className="hover:text-white transition-colors">{link.label}</Link></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-
-          <div className="pt-8 border-t border-zinc-800 text-center text-sm text-zinc-500">
-            © 2026 RentalMobil Premium. All rights reserved.
+          <div className="pt-8 border-t border-[#2a2548]/50 text-center text-sm text-white/40">
+            &copy; {new Date().getFullYear()} RentalMobil Premium. Hak Cipta Dilindungi.
           </div>
         </div>
       </footer>
-
     </main>
   );
 }

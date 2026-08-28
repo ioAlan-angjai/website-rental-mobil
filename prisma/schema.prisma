@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -148,18 +148,22 @@ model Booking {
   basePrice      Int
   discountAmount Int @default(0)
   penaltyAmount  Int @default(0)
+  extraCost      Int @default(0) // biaya tambahan (kerusakan, dll)
   totalPrice     Int
   dpAmount       Int
+  remainingAmount Int @default(0) // sisa tagihan akhir (setelah DP + denda + extra)
   dpPaid         Boolean @default(false)
   fullPaid       Boolean @default(false)
 
   // Status
   status String @default("PENDING")
-  // PENDING | WAITING_DP | DP_CONFIRMED | IN_PROGRESS | WAITING_PAYMENT | COMPLETED | CANCELLED | REJECTED
+  // PENDING | WAITING_DP | DP_CONFIRMED | IN_PROGRESS | WAITING_RETURN | WAITING_PAYMENT | COMPLETED | CANCELLED | REJECTED | DENIED
+
+  // Deny / reject reason
+  rejectReason String?
 
   // Payment Details
   paymentMethod     String?  // QRIS | BCA_TRANSFER | BNI_TRANSFER | MANDIRI_TRANSFER
-  paymentProof      String?  // URL to uploaded proof
   paymentVerifiedAt DateTime?
   paymentVerifiedBy String?
 
@@ -350,4 +354,22 @@ model Driver {
 
   @@map("drivers")
 }
+
+// ==================== TESTIMONIALS ====================
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   // e.g. "Wisatawan Jakarta", "Mahasiswa UGM"
+  avatar    String?
+  rating    Int      @default(5)
+  comment   String
+  carUsed   String?  // e.g. "Toyota Avanza", "Honda Brio"
+  featured  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@map("testimonials")
+}
+
 

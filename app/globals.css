@@ -4,65 +4,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --primary: 221.2 83.2% 23%; /* Deep Blue #1E3A5F */
-    --primary-foreground: 210 40% 98%;
- 
-    --secondary: 215.4 16.3% 46.9%; /* Warm Gray #4A5568 */
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --accent: 43 65% 50%; /* Gold #C9A84C */
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
- 
-    --radius: 1rem;
-  }
- 
-  .dark {
-    --background: 222.2 84% 4.9%; /* Rich Dark */
+    --background: 245 34% 12%;
     --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
+    --card: 245 34% 16%;
     --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
+    --popover: 245 34% 14%;
     --popover-foreground: 210 40% 98%;
- 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 215 20.2% 65.1%;
     --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 245 34% 18%;
     --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 43 65% 50%; /* Gold #C9A84C */
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 245 34% 22%;
+    --input: 245 34% 22%;
+    --ring: 24 95% 53%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 245 34% 12%;
+    --foreground: 210 40% 98%;
+    --card: 245 34% 16%;
+    --card-foreground: 210 40% 98%;
+    --popover: 245 34% 14%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 20.2% 65.1%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 245 34% 18%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 245 34% 22%;
+    --input: 245 34% 22%;
+    --ring: 24 95% 53%;
   }
 }
 
@@ -76,30 +59,6 @@
   }
 }
 
-/* Glassmorphism custom classes */
-.glass-panel {
-  @apply bg-white/70 dark:bg-slate-950/40 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40;
-}
-
-.glass-card {
-  @apply bg-white/40 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/35 transition-all duration-300;
-}
-
-/* Custom styling for Bento Grid item */
-.bento-card {
-  @apply glass-card rounded-3xl p-8 hover:shadow-lg transition-all duration-300 hover:border-blue-500/20 dark:hover:border-blue-500/30;
-}
-
-/* Geometric glow under elements */
-.geometric-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
 }

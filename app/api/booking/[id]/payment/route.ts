@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { saveBase64Image } from "@/lib/upload";
 
 export async function POST(
   req: NextRequest,
@@ -22,6 +23,9 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Convert Base64 if needed into physical file
+    const savedProofUrl = await saveBase64Image(proofImage, "payments");
 
     // Validate payment method
     const validMethods = ['QRIS', 'BCA_TRANSFER', 'BNI_TRANSFER', 'MANDIRI_TRANSFER'];
@@ -70,8 +74,8 @@ export async function POST(
       );
     }
 
-    // Check status
-    if (booking.status !== "PENDING") {
+    // Check status — allow upload ulang setelah REJECTED balik ke WAITING_DP
+    if (booking.status !== "PENDING" && booking.status !== "WAITING_DP") {
       return NextResponse.json(
         { error: "Booking sudah diproses atau dibatalkan" },
         { status: 400 }
@@ -91,7 +95,7 @@ export async function POST(
       await prisma.payment.update({
         where: { id: existingPayment.id },
         data: {
-          proofImage,
+          proofImage: savedProofUrl,
           method: paymentMethod,
           uploadedAt: new Date(),
           status: "PENDING"
@@ -105,20 +109,19 @@ export async function POST(
           amount: booking.dpAmount,
           type: "DP",
           method: paymentMethod,
-          proofImage,
+          proofImage: savedProofUrl,
           uploadedAt: new Date(),
           status: "PENDING"
         }
       });
     }
 
-    // Update booking status
+    // Update booking status — paymentProof sudah dihapus dari schema, simpan di Payment saja
     await prisma.booking.update({
       where: { id: bookingId },
       data: {
         status: "WAITING_DP",
         paymentMethod: paymentMethod,
-        paymentProof: proofImage
       }
     });
 

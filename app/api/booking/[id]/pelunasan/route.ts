@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { saveBase64Image } from "@/lib/upload";
 
 export async function GET(
   req: Request,
@@ -128,22 +129,42 @@ export async function POST(
       data: {
         status: "WAITING_PAYMENT",
         paymentMethod: paymentMethod || booking.paymentMethod,
-        paymentProof: paymentProof || booking.paymentProof,
         notes: notes ? `${booking.notes || ''} | Pelunasan: ${notes}` : booking.notes,
       },
     });
 
-    // Create payment record untuk pelunasan (PENDING — menunggu verifikasi admin)
-    await prisma.payment.create({
-      data: {
-        bookingId: booking.id,
-        amount: remainingAmount,
-        type: "FULL_PAYMENT",
-        method: paymentMethod || "BCA_TRANSFER",
-        status: "PENDING",
-        proofImage: paymentProof || null,
-      },
+    // Simpan file bukti pelunasan fisik ke disk
+    const savedProofUrl = await saveBase64Image(paymentProof, "payments");
+
+    // Create / update payment record untuk pelunasan — cegah duplikat
+    const existingPendingPayment = await prisma.payment.findFirst({
+      where: { bookingId: booking.id, type: "FULL_PAYMENT", status: "PENDING" },
     });
+
+    if (existingPendingPayment) {
+      // Update bukti yang sudah ada (user upload ulang setelah reject)
+      await prisma.payment.update({
+        where: { id: existingPendingPayment.id },
+        data: {
+          amount: remainingAmount,
+          method: paymentMethod || "BCA_TRANSFER",
+          proofImage: savedProofUrl,
+          uploadedAt: new Date(),
+        },
+      });
+    } else {
+      // Buat record baru
+      await prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: remainingAmount,
+          type: "FULL_PAYMENT",
+          method: paymentMethod || "BCA_TRANSFER",
+          status: "PENDING",
+          proofImage: savedProofUrl,
+        },
+      });
+    }
 
     // Notifikasi admin bahwa user mengirim bukti pelunasan
     const adminUsers = await prisma.user.findMany({

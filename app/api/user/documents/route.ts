@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { saveUploadedFile } from "@/lib/upload";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -44,13 +45,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Konversi file ke base64
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64Image = `data:${file.type};base64,${buffer.toString("base64")}`;
+    // Simpan file fisik ke public/uploads/documents
+    const fileUrl = await saveUploadedFile(file, "documents", file.name);
 
-    // Simpan ke database
-    const updateData = type === "ktp" ? { ktpImage: base64Image } : { simImage: base64Image };
+    // Simpan path ke database
+    const updateData = type === "ktp" ? { ktpImage: fileUrl } : { simImage: fileUrl };
 
     await prisma.user.update({
       where: { email: session.user.email },
@@ -60,6 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `${type === "ktp" ? "KTP" : "SIM"} berhasil diupload`,
+      url: fileUrl,
     });
   } catch (error) {
     console.error("Upload document error:", error);

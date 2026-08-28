@@ -57,11 +57,14 @@ export async function POST(req: NextRequest) {
     // Hapus password dari response
     const { password: _, ...userWithoutPassword } = user;
 
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[AUTH] User registered: ${email}. Verification token: ${token}`);
+    }
+
     return NextResponse.json(
       {
-        message: "Registrasi berhasil. Silakan cek email untuk verifikasi.",
+        message: "Registrasi berhasil. Silakan login.",
         user: userWithoutPassword,
-        verificationToken: token, // Untuk testing (tanpa email server)
       },
       { status: 201 }
     );

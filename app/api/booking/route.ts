@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 import { updateInProgressBookings } from "@/lib/booking-utils";
+import { saveBase64Image } from "@/lib/upload";
 
 // GET: Ambil semua booking milik user yang sedang login
 export async function GET(_req: NextRequest) {
@@ -34,12 +35,20 @@ export async function GET(_req: NextRequest) {
           },
         },
         payments: {
-          select: { id: true, amount: true, type: true, status: true },
+          select: { id: true, amount: true, type: true, status: true, method: true, proofImage: true, uploadedAt: true },
         },
       },
     });
 
-    return NextResponse.json({ success: true, data: bookings });
+    const mappedBookings = bookings.map((b) => {
+      const proofPayment = b.payments?.find((p: any) => p.proofImage);
+      return {
+        ...b,
+        paymentProof: proofPayment?.proofImage || null,
+      };
+    });
+
+    return NextResponse.json({ success: true, data: mappedBookings });
   } catch (error) {
     console.error("Get bookings error:", error);
     return NextResponse.json(
@@ -53,6 +62,14 @@ export async function GET(_req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Anda harus login terlebih dahulu untuk melakukan reservasi mobil." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
 
     const {
@@ -176,11 +193,11 @@ export async function POST(req: NextRequest) {
       guestName,
       guestEmail,
       guestPhone,
-      ktpBookingImage: ktpBookingImage || null,
-      simBookingImage: simBookingImage || null,
+      ktpBookingImage: await saveBase64Image(ktpBookingImage, "documents"),
+      simBookingImage: await saveBase64Image(simBookingImage, "documents"),
     };
 
-    // Hubungkan ke user jika sedang login (deteksi ID atau via Email)
+    // Hubungkan ke user (deteksi ID atau via Email)
     let userIdToConnect = (session?.user as any)?.id;
     if (!userIdToConnect && session?.user?.email) {
       const dbUser = await prisma.user.findUnique({
@@ -190,9 +207,14 @@ export async function POST(req: NextRequest) {
       if (dbUser) userIdToConnect = dbUser.id;
     }
 
-    if (userIdToConnect) {
-      bookingData.user = { connect: { id: userIdToConnect } };
+    if (!userIdToConnect) {
+      return NextResponse.json(
+        { error: "Akun pengguna tidak ditemukan. Silakan login ulang." },
+        { status: 401 }
+      );
     }
+
+    bookingData.user = { connect: { id: userIdToConnect } };
 
     // Buat booking + update car.status dalam 1 transaksi
     const [booking] = await prisma.$transaction([
