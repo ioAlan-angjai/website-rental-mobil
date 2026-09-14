@@ -54,9 +54,6 @@ export function Features() {
         
         {/* Section Header */}
         <div className="text-center mb-16 space-y-3">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 uppercase tracking-wider">
-            <Star className="w-3.5 h-3.5" /> Keunggulan Utama
-          </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Mengapa Memilih{' '}
             <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">

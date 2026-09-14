@@ -1,11 +1,23 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Manrope } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from '@/components/Providers';
 import { ChatWidget } from '@/components/chat/ChatWidget';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+});
 
 export const metadata: Metadata = {
   title: 'Sewa Mobil Jogja | Lepas Kunci & Include Driver - RentalMobil',
@@ -44,12 +56,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" suppressHydrationWarning className={cn("dark font-sans", inter.variable)}>
+    <html lang="id" suppressHydrationWarning className={cn(plusJakarta.variable, manrope.variable, "font-sans")}>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="bg-[#13112a] text-white antialiased">
+      <body className="min-h-screen bg-background text-foreground antialiased font-sans">
         <Providers>
           {children}
           <ChatWidget />

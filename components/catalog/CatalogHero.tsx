@@ -2,9 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { BackgroundBeams } from '@/components/ui/background-beams';
-import { HeroHighlight, Highlight } from '@/components/ui/hero-highlight';
 import { ArrowRight, Star, ShieldCheck, Clock, Car, MapPin } from 'lucide-react';
+import Link from 'next/link';
 
 function AnimatedCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -42,12 +41,12 @@ function AnimatedCounter({ target, duration = 2000 }: { target: number; duration
 
 const containerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.18, delayChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.15, delayChildren: 0.1 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
 const stats = [
@@ -59,121 +58,71 @@ const stats = [
 const badges = [
   { icon: Star, text: 'Rating 4.9/5' },
   { icon: ShieldCheck, text: 'Terverifikasi Resmi' },
-  { icon: Clock, text: 'Support 24/7' },
+  { icon: Clock, text: 'Layanan 24/7' },
 ];
 
 export function CatalogHero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center py-32 px-4 overflow-hidden bg-slate-900">
-      {/* Aceternity BackgroundBeams — full section */}
-      <BackgroundBeams className="opacity-60" />
-
-      {/* Subtle radial vignette to keep text readable */}
-      <div
-        className="absolute inset-0 pointer-events-none z-[1]"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% 50%, transparent 30%, rgba(15,23,42,0.85) 100%)',
-        }}
-      />
-
-      {/* HeroHighlight — tracks mouse on the entire hero */}
-      <HeroHighlight
-        containerClassName="absolute inset-0 z-[2] pointer-events-none"
-        className="hidden"
-      >
-        <></>
-      </HeroHighlight>
-
-      {/* Content */}
+    <section className="relative py-24 px-4 bg-background text-foreground border-b border-border">
       <motion.div
         className="relative z-10 max-w-5xl mx-auto text-center"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        {/* Trust badges */}
-        <motion.div variants={itemVariants} className="flex flex-wrap justify-center gap-3 mb-8">
-          {badges.map(({ icon: Icon, text }) => (
-            <span
-              key={text}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-sky-400/10 border border-sky-400/25 text-sky-300 backdrop-blur-sm"
-            >
-              <Icon size={13} className="text-sky-400" />
-              {text}
-            </span>
-          ))}
-        </motion.div>
-
-        {/* Main Headline — with Aceternity Highlight on key phrase */}
-        <motion.div variants={itemVariants} className="mb-6">
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-tight mb-4">
-            <span className="text-white">Sewa Mobil </span>
-            <br className="hidden md:block" />
-            <Highlight className="text-white">
-              <span className="bg-gradient-to-r from-sky-300 via-sky-400 to-amber-400 bg-clip-text text-transparent">
-                Premium Luxury
-              </span>
-            </Highlight>
+        {/* Main Headline */}
+        <motion.div variants={itemVariants} className="mb-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-foreground">
+            Sewa Mobil Nyaman di Yogyakarta
           </h1>
         </motion.div>
 
         {/* Subheadline */}
         <motion.p
           variants={itemVariants}
-          className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto mb-8 leading-relaxed"
         >
-          Armada lengkap dengan{' '}
-          <span className="text-sky-400 font-semibold">harga khusus mahasiswa</span>, proses
-          verifikasi cepat, dan customer support 24/7 untuk perjalanan Anda di Yogyakarta.
+          Armada lengkap, proses pemesanan praktis dan cepat, serta customer support responsif untuk menemani seluruh perjalanan Anda.
         </motion.p>
 
         {/* CTA Buttons */}
         <motion.div
           variants={itemVariants}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14"
         >
-          <button
-            onClick={() => document.getElementById('katalog')?.scrollIntoView({ behavior: 'smooth' })}
-            className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-sky-400 to-amber-400 text-slate-900 font-bold text-base rounded-xl overflow-hidden hover:shadow-[0_0_30px_rgba(56,189,248,0.45)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
+          <Link
+            href="/armada"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-bold text-sm rounded-xl hover:bg-foreground/90 transition-all shadow-xs"
           >
-            <span>Lihat Katalog Mobil</span>
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-200" />
-          </button>
-          <button
-            onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-sky-400/40 text-sky-300 font-semibold text-base hover:bg-sky-400/10 hover:border-sky-400/70 active:scale-[0.98] transition-all duration-200"
+            <span>Lihat Semua Mobil</span>
+            <ArrowRight size={16} />
+          </Link>
+          <Link
+            href="/tentang-kami"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-background transition-all"
           >
             Tentang Kami
-          </button>
+          </Link>
         </motion.div>
 
         {/* Stats */}
         <motion.div
           variants={itemVariants}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-5"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
         >
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="group relative p-6 rounded-2xl overflow-hidden border border-sky-400/15 hover:border-sky-400/40 transition-all duration-300"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(56,189,248,0.06) 0%, rgba(251,191,36,0.04) 100%)',
-              }}
+              className="p-5 rounded-2xl border border-border bg-card shadow-xs"
             >
-              {/* Glow on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-sky-400/5 to-amber-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-              <div className="relative z-10">
-                <span className="text-sky-400 mb-2 block">
-                  <stat.icon size={24} />
-                </span>
-                <div className="text-3xl md:text-4xl font-black bg-gradient-to-r from-sky-400 to-amber-400 bg-clip-text text-transparent mb-1">
-                  <AnimatedCounter target={stat.value} />
-                  {stat.suffix}
-                </div>
-                <p className="text-sm text-slate-400 font-medium">{stat.label}</p>
+              <span className="text-foreground/70 mb-2 inline-block">
+                <stat.icon size={22} />
+              </span>
+              <div className="text-3xl font-black text-foreground mb-0.5">
+                <AnimatedCounter target={stat.value} />
+                {stat.suffix}
               </div>
+              <p className="text-xs text-foreground/60 font-medium">{stat.label}</p>
             </div>
           ))}
         </motion.div>

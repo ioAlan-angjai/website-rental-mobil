@@ -4,8 +4,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, LogOut, AlertCircle, CheckCircle2, Loader2, Save, Edit3, X } from 'lucide-react';
+import { User, Mail, Phone, Loader2, Save, Edit3, X, ArrowLeft } from 'lucide-react';
 import { Navbar } from '@/components/landing/Navbar';
+import { Footer } from '@/components/landing/Footer';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,77 +65,106 @@ export default function AccountPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#13112a] flex items-center justify-center">
-      <Loader2 className="animate-spin text-[#f97316]" size={32} />
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="animate-spin text-foreground mx-auto mb-2" size={28} />
+        <p className="text-xs text-foreground/60">Memuat data akun...</p>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#13112a]">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-secondary selection:text-foreground">
       <Navbar />
-      <div className="pt-28 pb-8 px-4 max-w-4xl mx-auto space-y-8">
+
+      <div className="flex-1 pt-32 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full space-y-6">
         {/* Profile Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-6 bg-[#1b1838] border border-[#2a2548] rounded-2xl">
-          <Avatar className="w-16 h-16 border-2 border-[#2a2548]">
-            <AvatarImage src={profile?.image} alt={profile?.name} />
-            <AvatarFallback className="bg-[#13112a] text-white font-bold">{profile?.name?.[0] || 'U'}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-white">{profile?.name}</h1>
-            <p className="text-sm text-white/50 flex items-center gap-1.5 mt-0.5">
-              <Mail size={12} /> {profile?.email}
-            </p>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 p-4 sm:p-6 bg-card border border-border rounded-2xl shadow-xs"
+        >
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            <Avatar className="w-14 h-14 sm:w-16 sm:h-16 border-2 border-border shadow-xs shrink-0">
+              <AvatarImage src={profile?.image} alt={profile?.name} />
+              <AvatarFallback className="bg-foreground text-background font-bold text-base sm:text-lg">
+                {profile?.name?.[0] || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl font-extrabold text-foreground truncate">{profile?.name}</h1>
+              <p className="text-xs text-foreground/60 flex items-center gap-1.5 mt-0.5 font-medium truncate">
+                <Mail size={13} className="text-foreground/50 shrink-0" /> <span className="truncate">{profile?.email}</span>
+              </p>
+            </div>
           </div>
-          <Link href="/" className="text-xs text-white/40 hover:text-white transition-colors">Kembali</Link>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-foreground/60 hover:text-foreground transition-colors font-medium sm:ml-auto"
+          >
+            <ArrowLeft size={13} />
+            Beranda
+          </Link>
         </motion.div>
 
         {/* Info Card */}
-        <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl shadow-2xl overflow-hidden">
-          <div className="flex justify-between items-center px-6 py-4 border-b border-[#2a2548]">
-            <h2 className="font-bold text-white text-sm">Informasi Akun</h2>
+        <div className="bg-card border border-border rounded-2xl shadow-xs overflow-hidden">
+          <div className="flex justify-between items-center px-4 sm:px-6 py-3.5 sm:py-4 border-b border-border bg-card/60">
+            <h2 className="font-bold text-foreground text-xs sm:text-sm tracking-wide">Informasi Profil Akun</h2>
             {!editing ? (
-              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}
-                className="text-[#f97316] hover:text-white hover:bg-[#f97316]/10 text-xs h-8">
-                <Edit3 size={13} className="mr-1.5" /> Edit
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(true)}
+                className="border-border bg-background text-foreground hover:bg-secondary text-xs h-7 sm:h-8 rounded-xl cursor-pointer"
+              >
+                <Edit3 size={12} className="mr-1 sm:mr-1.5" /> Edit Profil
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}
-                  className="text-white/50 hover:text-white text-xs h-8">
-                  <X size={13} className="mr-1.5" /> Batal
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditing(false)}
+                  className="text-foreground/60 hover:text-foreground text-xs h-7 sm:h-8 rounded-xl cursor-pointer"
+                >
+                  <X size={12} className="mr-1 sm:mr-1.5" /> Batal
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={saving}
-                  className="bg-[#f97316] hover:bg-[#ea580c] text-white text-xs h-8">
-                  {saving ? <Loader2 className="animate-spin" size={13} /> : <Save size={13} className="mr-1.5" />} Simpan
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-foreground hover:bg-foreground/90 text-background text-xs h-7 sm:h-8 rounded-xl shadow-xs cursor-pointer font-bold"
+                >
+                  {saving ? <Loader2 className="animate-spin" size={12} /> : <Save size={12} className="mr-1 sm:mr-1.5" />} Simpan
                 </Button>
               </div>
             )}
           </div>
 
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-5">
             {[
-              { label: 'Nama', name: 'name', icon: User },
-              { label: 'Telepon', name: 'phone', icon: Phone },
-              { label: 'Alamat', name: 'address' },
-              { label: 'Kota', name: 'city' },
+              { label: 'Nama Lengkap', name: 'name', icon: User },
+              { label: 'Nomor Telepon / WhatsApp', name: 'phone', icon: Phone },
+              { label: 'Alamat Domisili', name: 'address' },
+              { label: 'Kota / Kabupaten', name: 'city' },
               { label: 'Provinsi', name: 'province' },
               { label: 'Kode Pos', name: 'postalCode' },
             ].map((field) => (
               <div key={field.name} className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-white/40">
-                  {field.icon && <field.icon size={11} className="inline mr-1" />}
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">
+                  {field.icon && <field.icon size={11} className="inline mr-1 text-foreground/50" />}
                   {field.label}
                 </Label>
                 {editing ? (
                   <Input
                     value={(formData as any)[field.name]}
                     onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                    className="bg-[#13112a] border-[#2a2548] text-white placeholder:text-white/20 rounded-xl h-10 text-sm focus:border-[#f97316]/50 focus:ring-0"
+                    className="bg-background border-border text-foreground placeholder:text-foreground/30 rounded-xl h-9 sm:h-10 text-xs sm:text-sm focus:border-foreground/50"
                   />
                 ) : (
-                  <p className="text-sm font-semibold text-white h-10 p-2.5 bg-[#13112a] rounded-xl border border-[#2a2548]">
-                    {profile?.[field.name] || <span className="text-white/30">-</span>}
+                  <p className="text-xs sm:text-sm font-semibold text-foreground h-9 sm:h-10 px-3 py-2 bg-background rounded-xl border border-border flex items-center truncate">
+                    {profile?.[field.name] || <span className="text-foreground/30 font-normal">Belum diisi</span>}
                   </p>
                 )}
               </div>
@@ -142,6 +172,8 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
   CalendarIcon, Clock, MapPin, User, Mail, Phone, Car,
   ChevronRight, ChevronLeft, CheckCircle2, CreditCard,
   Upload, ImageIcon, X, Building2, Copy, Check, AlertCircle, Landmark, AlertTriangle,
-  FileText, ShieldCheck, ClipboardList, CircleDot, Search, Package, QrCode, Sparkles, Zap, Wallet,
+  FileText, ShieldCheck, ClipboardList, Search, Package, QrCode, Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -24,17 +24,16 @@ import { id as localeId } from 'date-fns/locale';
 import { BcaLogo } from '@/components/ui/bca-logo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { formatCurrency, getStatusMeta } from '@/lib/booking-status';
 import { openSnapPayment } from '@/lib/snap';
 
-// Bank info (in real app: from env/API)
+// Bank info
 const BANK_ACCOUNTS = [
   {
     id: 'BCA',
     name: 'BCA',
     fullName: 'Bank Central Asia',
     number: process.env.NEXT_PUBLIC_BANK_BCA_NUMBER || '1234567890',
-    accountName: process.env.NEXT_PUBLIC_BANK_BCA_NAME || 'PT RentalMobil Jogja',
+    accountName: process.env.NEXT_PUBLIC_BANK_BCA_NAME || 'PT Rental Mobil Jogja',
     color: 'bg-transparent',
     logo: <BcaLogo />,
   },
@@ -43,18 +42,18 @@ const BANK_ACCOUNTS = [
     name: 'BNI',
     fullName: 'Bank Negara Indonesia',
     number: process.env.NEXT_PUBLIC_BANK_BNI_NUMBER || '0987654321',
-    accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT RentalMobil Jogja',
-    color: 'bg-orange-600',
-    logo: <Landmark className="w-5 h-5 text-white" />,
+    accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT Rental Mobil Jogja',
+    color: 'bg-secondary',
+    logo: <Landmark className="w-5 h-5 text-foreground" />,
   },
   {
     id: 'MANDIRI',
     name: 'Mandiri',
     fullName: 'Bank Mandiri',
     number: process.env.NEXT_PUBLIC_BANK_MANDIRI_NUMBER || '1122334455',
-    accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT RentalMobil Jogja',
-    color: 'bg-yellow-600',
-    logo: <Building2 className="w-5 h-5 text-white" />,
+    accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT Rental Mobil Jogja',
+    color: 'bg-secondary',
+    logo: <Building2 className="w-5 h-5 text-foreground" />,
   },
 ];
 
@@ -73,11 +72,12 @@ function CopyButton({ text }: { text: string }) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
-      className="p-1.5 rounded-lg hover:bg-[#2a2548] transition-colors text-white/40 hover:text-white"
+      className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-foreground/50 hover:text-foreground cursor-pointer"
       aria-label="Salin nomor rekening"
     >
-      {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+      {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
     </button>
   );
 }
@@ -93,14 +93,13 @@ const STEPS = [
   { num: 7, key: 'pembayaran', label: 'Pembayaran DP', icon: CreditCard, desc: 'Bayar DP 50%' },
 ];
 
-// ─── Animated step content wrapper — animates ONLY on step change ───
 function StepWrapper({ step, children }: { step: number; children: React.ReactNode }) {
   return (
     <motion.div
       key={step}
-      initial={{ opacity: 0, x: 16 }}
+      initial={{ opacity: 0, x: 14 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
+      exit={{ opacity: 0, x: -14 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       className="space-y-6"
     >
@@ -109,9 +108,8 @@ function StepWrapper({ step, children }: { step: number; children: React.ReactNo
   );
 }
 
-// ─── Section divider ───
 function SectionDivider() {
-  return <div className="border-t border-[#2a2548] my-6" />;
+  return <div className="border-t border-border my-6" />;
 }
 
 // Form booking
@@ -283,7 +281,6 @@ function BookingForm() {
     }
   }, []);
 
-  // Native file input handler for payment proof (consistent with KTP/SIM approach)
   const handlePaymentProofUpload = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -315,7 +312,6 @@ function BookingForm() {
     setUploadedPreview(null);
   };
 
-  // KTP & SIM upload handlers using native input
   const handleDocumentUpload = (type: 'ktp' | 'sim') => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -458,11 +454,10 @@ function BookingForm() {
     }
   };
 
-  // ─── Helper: Check if current step data is valid for navigation ───
   const canProceed = () => {
     switch (step) {
       case 1: return !!formData.serviceType && !!formData.carId && !!date && !!endDate;
-      case 2: return true; // Optional fields
+      case 2: return true;
       case 3: return true;
       case 4: return !!formData.name && !!formData.phone;
       case 5: return !!ktpPreview && !!simPreview;
@@ -476,8 +471,8 @@ function BookingForm() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-[#13112a] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#f97316] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
       </div>
     );
   }
@@ -485,26 +480,26 @@ function BookingForm() {
   if (status === 'unauthenticated' || !session) {
     const callbackUrl = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : '/booking';
     return (
-      <div className="min-h-screen bg-[#13112a] relative overflow-hidden flex flex-col justify-between">
+      <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col justify-between selection:bg-secondary selection:text-foreground">
         <Navbar />
-        <div className="py-24 px-4 max-w-md mx-auto text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-[#f97316]/10 border border-[#f97316]/20 flex items-center justify-center mx-auto text-[#f97316]">
-            <User size={32} />
+        <div className="py-32 px-4 max-w-md mx-auto text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-secondary/50 border border-border flex items-center justify-center mx-auto text-foreground shadow-xs">
+            <User size={30} />
           </div>
-          <h2 className="text-2xl font-bold text-white">Login Diperlukan</h2>
-          <p className="text-sm text-white/60 leading-relaxed">
-            Anda harus login ke akun Anda terlebih dahulu sebelum dapat membuat reservasi mobil. Booking tanpa login (Guest) tidak diperbolehkan.
+          <h2 className="text-2xl font-extrabold text-foreground">Login Diperlukan</h2>
+          <p className="text-xs sm:text-sm text-foreground/60 leading-relaxed">
+            Anda harus masuk ke akun Anda terlebih dahulu sebelum dapat membuat reservasi mobil. Booking tanpa login tidak diperbolehkan.
           </p>
           <div className="flex flex-col gap-3 pt-2">
             <Link
               href={`/login?callbackUrl=${callbackUrl}`}
-              className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold h-12 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-[#f97316]/20"
+              className="bg-foreground hover:bg-foreground/90 text-background font-bold h-12 rounded-xl flex items-center justify-center transition-all shadow-xs text-xs sm:text-sm"
             >
               Login Sekarang
             </Link>
             <Link
               href={`/register?callbackUrl=${callbackUrl}`}
-              className="bg-[#1b1838] hover:bg-[#2a2548] text-white/80 font-semibold h-12 rounded-xl flex items-center justify-center border border-[#2a2548] transition-all"
+              className="bg-card hover:bg-secondary text-foreground font-semibold h-12 rounded-xl flex items-center justify-center border border-border transition-all text-xs sm:text-sm"
             >
               Daftar Akun Baru
             </Link>
@@ -516,41 +511,41 @@ function BookingForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#13112a] relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col selection:bg-secondary selection:text-foreground">
       <Navbar />
 
       {/* Header Banner */}
-      <section className="relative py-20 px-4 overflow-hidden border-b border-[#2a2548] bg-[#1b1838]">
-        <div className="max-w-7xl mx-auto relative z-10 text-center space-y-4">
-          <div className="flex justify-center items-center gap-2 text-xs text-white/50">
-            <Link href="/" className="hover:text-[#f97316] transition-colors">Beranda</Link>
+      <section className="relative pt-32 pb-10 px-4 overflow-hidden border-b border-border/80 bg-card/50">
+        <div className="max-w-4xl mx-auto relative z-10 text-center space-y-3">
+          <div className="flex justify-center items-center gap-2 text-xs text-foreground/50 font-medium">
+            <Link href="/" className="hover:text-foreground transition-colors">Beranda</Link>
             <span>/</span>
-            <span className="text-white font-bold">Booking</span>
+            <span className="text-foreground font-semibold">Booking</span>
           </div>
-          <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-white">
-            Form Booking
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
+            Form Pemesanan Sewa Mobil
           </h1>
-          <p className="text-white/60 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-            Lengkapi 7 langkah mudah untuk reservasi mobil Anda
+          <p className="text-foreground/60 max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
+            Lengkapi 7 langkah mudah dan transparan untuk mereservasi unit mobil pilihan Anda
           </p>
         </div>
       </section>
 
       {/* Form Section */}
-      <section className="py-10 px-4 max-w-4xl mx-auto">
+      <section className="py-10 px-4 sm:px-6 max-w-4xl mx-auto w-full flex-1">
 
-        {/* Premium 7-Step Stepper */}
-        <div className="mb-10 max-w-4xl mx-auto">
+        {/* 7-Step Stepper */}
+        <div className="mb-8 max-w-4xl mx-auto">
           {/* Desktop: horizontal stepper */}
           <div className="hidden lg:flex justify-between items-start relative">
             {/* Progress bar background */}
-            <div className="absolute top-6 left-0 right-0 h-[3px] bg-[#2a2548] z-0 rounded-full" />
+            <div className="absolute top-5 left-0 right-0 h-[2px] bg-border z-0" />
             {/* Progress bar fill */}
             <motion.div
-              className="absolute top-6 left-0 h-[3px] bg-gradient-to-r from-[#f97316] via-[#f97316] to-[#f97316]/60 z-0 rounded-full"
+              className="absolute top-5 left-0 h-[2px] bg-foreground z-0"
               style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
               animate={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              transition={{ duration: 0.4, ease: 'easeInOut' }}
             />
 
             {STEPS.map((s) => {
@@ -562,84 +557,77 @@ function BookingForm() {
                 <div key={s.key} className="relative z-10 flex flex-col items-center">
                   {/* Step Circle */}
                   <div className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-500',
+                    'w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all duration-300',
                     isCompleted
-                      ? 'bg-[#f97316] border-[#f97316] text-white shadow-lg shadow-[#f97316]/30'
+                      ? 'bg-foreground border-foreground text-background shadow-xs'
                       : isCurrent
-                      ? 'bg-[#f97316] border-[#f97316] text-white ring-4 ring-[#f97316]/30 shadow-lg shadow-[#f97316]/20'
-                      : 'bg-[#1b1838] border-[#2a2548] text-white/40 group-hover:border-[#f97316]/50'
+                      ? 'bg-background border-foreground text-foreground ring-4 ring-foreground/15 shadow-xs'
+                      : 'bg-card border-border text-foreground/40'
                   )}>
                     {isCompleted ? (
-                      <CheckCircle2 size={18} className="text-white" />
+                      <CheckCircle2 size={16} />
                     ) : (
-                      <Icon size={16} className={isCurrent ? 'text-white' : 'text-white/40'} />
+                      <Icon size={14} />
                     )}
                   </div>
 
                   {/* Step Label */}
-                  <div className="mt-2.5 text-center">
+                  <div className="mt-2 text-center">
                     <span className={cn(
-                      'block text-[11px] font-bold transition-colors duration-300',
-                      isCompleted ? 'text-[#f97316]' : isCurrent ? 'text-white' : 'text-white/40'
+                      'block text-[11px] font-bold transition-colors duration-200',
+                      isCompleted ? 'text-foreground' : isCurrent ? 'text-foreground' : 'text-foreground/40'
                     )}>
                       {s.label}
                     </span>
                     <span className={cn(
-                      'block text-[9px] mt-0.5 transition-colors duration-300',
-                      isCurrent ? 'text-white/50' : 'text-white/20'
+                      'block text-[9px] mt-0.5 transition-colors duration-200',
+                      isCurrent ? 'text-foreground/70' : 'text-foreground/30'
                     )}>
                       {s.desc}
                     </span>
                   </div>
-
-                  {/* Step number badge */}
-                  {isCurrent && (
-                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#f97316] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
-                      {s.num}
-                    </span>
-                  )}
                 </div>
               );
             })}
           </div>
 
           {/* Mobile/Tablet: compact stepper */}
-          <div className="flex lg:hidden items-center gap-3">
+          <div className="flex lg:hidden items-center gap-3 bg-card border border-border p-3 rounded-2xl shadow-xs">
             <button
               onClick={prevStep}
               disabled={step === 1}
-              className="p-2 rounded-xl bg-[#1b1838] border border-[#2a2548] text-white/60 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#2a2548] transition-colors shrink-0"
+              className="p-1.5 rounded-xl bg-background border border-border text-foreground/60 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary transition-colors shrink-0"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <div className="flex-1 relative">
-              <div className="h-2 bg-[#2a2548] rounded-full overflow-hidden">
+              <div className="h-2 bg-border rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-[#f97316] to-[#f97316]/70 rounded-full"
+                  className="h-full bg-foreground rounded-full"
                   animate={{ width: `${(step / STEPS.length) * 100}%` }}
-                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
                 />
               </div>
             </div>
             <button
               onClick={nextStep}
               disabled={!canProceed()}
-              className="p-2 rounded-xl bg-[#f97316] text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#f97316]/90 transition-colors shrink-0"
+              className="p-1.5 rounded-xl bg-foreground text-background disabled:opacity-30 disabled:cursor-not-allowed hover:bg-foreground/90 transition-colors shrink-0"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
-            <span className="text-xs font-bold text-white/60 shrink-0 min-w-[4rem] text-right">
+            <span className="text-xs font-bold text-foreground shrink-0 min-w-[3.5rem] text-right">
               {step} / {STEPS.length}
             </span>
           </div>
 
           {/* Step Title Indicator (Mobile) */}
-          <div className="lg:hidden text-center mt-3">
-            <span className="text-sm font-bold text-white">
+          <div className="lg:hidden text-center mt-2.5">
+            <span className="text-xs font-bold text-foreground">
               {STEPS[step - 1].label}
             </span>
-            <span className="text-xs text-white/40 ml-2">
-              — {STEPS[step - 1].desc}
+            <span className="text-[11px] text-foreground/50 ml-1.5">
+              &bull; {STEPS[step - 1].desc}
             </span>
           </div>
         </div>
@@ -647,65 +635,64 @@ function BookingForm() {
         {/* Success State */}
         {bookingSuccess ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1b1838] border border-[#2a2548] rounded-3xl shadow-sm p-12 text-center relative z-10"
+            className="bg-card border border-border rounded-3xl shadow-xs p-8 sm:p-12 text-center relative z-10"
           >
-            <div className="flex justify-center mb-6">
-              <div className="p-5 bg-green-500/10 rounded-full">
-                <CheckCircle2 size={48} className="text-green-400" />
+            <div className="flex justify-center mb-5">
+              <div className="w-16 h-16 rounded-full bg-secondary/70 flex items-center justify-center text-foreground">
+                <CheckCircle2 size={36} />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Booking Terkirim!</h2>
-            <p className="text-white/50 mb-1 text-sm">
-              Pesanan Anda untuk <strong>{selectedCarDetails?.name}</strong> telah kami terima.
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">Booking Berhasil Dikirim!</h2>
+            <p className="text-foreground/70 mb-1 text-xs sm:text-sm">
+              Pesanan armada <strong>{selectedCarDetails?.name}</strong> telah berhasil didaftarkan.
             </p>
-            <p className="text-white/50 text-sm mb-8">
-              Tim kami akan menghubungi Anda via WhatsApp dalam 1×24 jam untuk konfirmasi.
+            <p className="text-foreground/50 text-xs sm:text-sm mb-8">
+              Tim kami akan memverifikasi pembayaran DP dan menghubungi Anda via WhatsApp secepatnya.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/">
-                <Button className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold px-8 h-12 rounded-xl">
-                  Kembali ke Beranda
+              <Link href="/riwayat-booking">
+                <Button className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl text-xs shadow-xs">
+                  Lihat Riwayat Booking
                 </Button>
               </Link>
               <Link href="/armada">
-                <Button className="bg-transparent border border-[#2a2548] text-white/60 hover:bg-[#2a2548] font-bold px-8 h-12 rounded-xl">
+                <Button variant="outline" className="border-border text-foreground hover:bg-secondary font-bold px-6 h-11 rounded-xl text-xs">
                   Lihat Armada Lain
                 </Button>
               </Link>
             </div>
           </motion.div>
         ) : (
-          <Card className="bg-[#1b1838] border border-[#2a2548] rounded-3xl overflow-hidden shadow-sm relative z-10">
-            <CardHeader className="bg-[#13112a] border-b border-[#2a2548] p-8">
+          <Card className="bg-card border border-border rounded-3xl overflow-hidden shadow-xs relative z-10">
+            <CardHeader className="bg-card/70 border-b border-border p-6 sm:p-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-white font-serif">
+                  <CardTitle className="text-xl sm:text-2xl font-extrabold text-foreground">
                     {STEPS[step - 1].label}
                   </CardTitle>
-                  <p className="text-sm text-white/50 mt-2">
+                  <p className="text-xs sm:text-sm text-foreground/60 mt-1">
                     {step === 1 && 'Pilih jenis layanan, unit mobil, dan tentukan tanggal sewa Anda.'}
                     {step === 2 && 'Atur jam pengambilan, jam pengembalian, dan lokasi penjemputan.'}
                     {step === 3 && 'Periksa data rental yang sudah Anda pilih.'}
                     {step === 4 && 'Isi data diri Anda untuk keperluan verifikasi.'}
                     {step === 5 && 'Upload foto KTP dan SIM untuk verifikasi identitas.'}
                     {step === 6 && 'Review semua detail pesanan sebelum melakukan pembayaran.'}
-                    {step === 7 && 'Transfer DP 50% dan upload bukti pembayaran.'}
+                    {step === 7 && 'Pilih metode pembayaran DP 50% untuk konfirmasi pemesanan.'}
                   </p>
                 </div>
                 {/* Step badge */}
-                <div className="hidden sm:flex items-center gap-2 bg-[#1b1838] border border-[#2a2548] rounded-xl px-4 py-2">
-                  <span className="text-xs text-white/40">Langkah</span>
-                  <span className="text-lg font-bold text-[#f97316]">{step}</span>
-                  <span className="text-xs text-white/40">/ {STEPS.length}</span>
+                <div className="hidden sm:flex items-center gap-1.5 bg-background border border-border rounded-xl px-3.5 py-1.5">
+                  <span className="text-[11px] text-foreground/50">Langkah</span>
+                  <span className="text-sm font-bold text-foreground">{step}</span>
+                  <span className="text-[11px] text-foreground/50">/ {STEPS.length}</span>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="p-6">
+            <CardContent className="p-6 sm:p-8">
               <AnimatePresence mode="wait">
-
                 {/* ═══════════════════════════════════════════════════════
                    STEP 1: Pilih Armada
                    ═══════════════════════════════════════════════════════ */}
@@ -713,45 +700,51 @@ function BookingForm() {
                   <StepWrapper step={step}>
                     {/* Service Type */}
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-white flex items-center gap-2">
-                        <Car size={14} className="text-[#f97316]" /> Jenis Layanan <span className="text-red-500">*</span>
+                      <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                        <Car size={13} className="text-foreground/70" /> Jenis Layanan <span className="text-red-600">*</span>
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         {[
-                          { value: 'lepas-kunci', label: 'Sewa Lepas Kunci', desc: 'Tanpa driver, bawa sendiri', icon: Car },
-                          { value: 'dengan-driver', label: 'Sewa Dengan Driver', desc: 'Termasuk driver profesional', icon: User },
+                          { value: 'lepas-kunci', label: 'Lepas Kunci', desc: 'Tanpa driver, bebas', icon: Car },
+                          { value: 'dengan-driver', label: 'Dengan Driver', desc: 'Termasuk sopir ramah', icon: User },
                         ].map((opt) => {
                           const selected = formData.serviceType === opt.value;
                           const OptIcon = opt.icon;
                           return (
                             <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => { setFormData(prev => ({ ...prev, serviceType: opt.value })); setSubmitError(''); }}
-                            className={cn(
-                              'w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 flex items-start gap-4',
-                              selected
-                                ? 'border-[#f97316] bg-[#13112a] shadow-md shadow-[#f97316]/20'
-                                : 'border-[#2a2548] bg-[#1b1838] hover:border-[#f97316]/50'
-                            )}
+                              key={opt.value}
+                              type="button"
+                              onClick={() => { setFormData(prev => ({ ...prev, serviceType: opt.value })); setSubmitError(''); }}
+                              className={cn(
+                                'w-full text-left p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row items-start gap-2 sm:gap-3.5 cursor-pointer',
+                                selected
+                                  ? 'border-foreground bg-secondary/40 ring-1 ring-foreground/20 shadow-xs'
+                                  : 'border-border bg-background hover:border-foreground/30'
+                              )}
                             >
-                              <div className={cn(
-                                'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                                selected ? 'bg-[#f97316]/20 text-[#f97316]' : 'bg-[#13112a] text-white/40'
-                              )}>
-                                <OptIcon size={20} />
+                              <div className="flex items-center justify-between w-full sm:w-auto">
+                                <div className={cn(
+                                  'w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-border',
+                                  selected ? 'bg-foreground text-background' : 'bg-card text-foreground/60'
+                                )}>
+                                  <OptIcon className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+                                </div>
+                                <div className={cn(
+                                  'w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 shrink-0 sm:hidden flex items-center justify-center',
+                                  selected ? 'border-foreground bg-foreground' : 'border-border'
+                                )}>
+                                  {selected && <div className="w-1 h-1 rounded-full bg-background" />}
+                                </div>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <span className={cn('font-bold text-sm', selected ? 'text-white' : 'text-white/70')}>{opt.label}</span>
-                                <p className="text-xs text-white/40 mt-0.5">{opt.desc}</p>
+                                <span className="font-bold text-xs sm:text-sm text-foreground block truncate">{opt.label}</span>
+                                <p className="text-[10px] sm:text-[11px] text-foreground/60 mt-0.5 line-clamp-1 sm:line-clamp-none">{opt.desc}</p>
                               </div>
                               <div className={cn(
-                                'w-5 h-5 rounded-full border-2 shrink-0 mt-1 transition-all duration-200 flex items-center justify-center',
-                                selected
-                                  ? 'border-[#f97316] bg-[#f97316]'
-                                  : 'border-[#2a2548] bg-[#1b1838]'
+                                'w-4 h-4 rounded-full border-2 shrink-0 mt-1 hidden sm:flex items-center justify-center',
+                                selected ? 'border-foreground bg-foreground' : 'border-border'
                               )}>
-                                {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                {selected && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
                               </div>
                             </button>
                           );
@@ -763,16 +756,16 @@ function BookingForm() {
 
                     {/* Car Selection */}
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-white flex items-center gap-2">
-                        <Search size={14} className="text-[#f97316]" /> Pilih Unit Mobil <span className="text-red-500">*</span>
+                      <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                        <Search size={13} className="text-foreground/70" /> Pilih Unit Mobil <span className="text-red-600">*</span>
                       </label>
                       <select
                         name="carId" value={formData.carId} onChange={handleInputChange}
-                        className="w-full h-12 px-4 bg-[#13112a] border border-[#2a2548] text-white rounded-xl focus:border-[#f97316] focus:outline-none focus:ring-1 focus:ring-[#f97316]/30 appearance-none cursor-pointer"
+                        className="w-full h-9 sm:h-11 px-3 sm:px-3.5 bg-background border border-border text-foreground text-xs sm:text-sm rounded-xl focus:border-foreground/50 focus:outline-none appearance-none cursor-pointer"
                         disabled={loadingCars}
                       >
                         <option value="">
-                          {loadingCars ? 'Memuat daftar mobil...' : 'Pilih mobil yang Anda inginkan'}
+                          {loadingCars ? 'Memuat daftar armada...' : 'Pilih mobil yang Anda inginkan'}
                         </option>
                         {dbCars.map((car) => (
                           <option key={car.id} value={car.id}>
@@ -786,19 +779,19 @@ function BookingForm() {
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          className="mt-3 p-4 bg-[#13112a] border border-[#2a2548] rounded-2xl flex items-center gap-4"
+                          className="mt-2.5 p-3 sm:p-4 bg-background border border-border rounded-xl sm:rounded-2xl flex items-center gap-3 sm:gap-4 shadow-xs"
                         >
-                          <div className="w-14 h-14 rounded-xl bg-[#1b1838] border border-[#2a2548] flex items-center justify-center overflow-hidden shrink-0">
+                          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden shrink-0">
                             {selectedCarDetails.image ? (
                               <img src={selectedCarDetails.image} alt={selectedCarDetails.name} className="w-full h-full object-cover" />
                             ) : (
-                              <Car size={24} className="text-white/30" />
+                              <Car size={18} className="text-foreground/30" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white text-sm">{selectedCarDetails.name}</p>
-                            <p className="text-xs text-white/50">
-                              Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} / hari
+                            <p className="font-bold text-foreground text-xs sm:text-sm truncate">{selectedCarDetails.name}</p>
+                            <p className="text-[10px] sm:text-[11px] text-foreground/60">
+                              Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} / 24 Jam
                             </p>
                           </div>
                         </motion.div>
@@ -808,20 +801,20 @@ function BookingForm() {
                     <SectionDivider />
 
                     {/* Date Selection */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-white flex items-center gap-2">
-                          <CalendarIcon size={14} className="text-[#f97316]" /> Tanggal Mulai <span className="text-red-500">*</span>
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                          <CalendarIcon size={12} className="text-foreground/70 shrink-0" /> Mulai <span className="text-red-600">*</span>
                         </label>
                         <Popover>
                           <PopoverTrigger className={cn(
-                            'w-full justify-start text-left font-normal h-12 rounded-xl border border-[#2a2548] bg-[#13112a] text-white hover:bg-[#2a2548] px-4 flex items-center transition-colors',
-                            !date && 'text-white/40'
+                            'w-full justify-start text-left font-normal h-9 sm:h-11 rounded-xl border border-border bg-background text-foreground hover:bg-card px-2.5 sm:px-3.5 flex items-center transition-colors text-[11px] sm:text-sm cursor-pointer truncate',
+                            !date && 'text-foreground/40'
                           )}>
-                            <CalendarIcon className="mr-2 h-4 w-4 text-[#f97316]" />
-                            {date ? format(date, 'PPP', { locale: localeId }) : <span>Pilih tanggal mulai</span>}
+                            <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 text-foreground/60 shrink-0" />
+                            <span className="truncate">{date ? format(date, 'dd MMM yyyy', { locale: localeId }) : 'Pilih tgl'}</span>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-[#1b1838] border border-[#2a2548]" align="start">
+                          <PopoverContent className="w-auto p-0 bg-card border border-border shadow-md" align="start">
                             <Calendar
                               mode="single" selected={date}
                               onSelect={(d) => {
@@ -835,19 +828,19 @@ function BookingForm() {
                         </Popover>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-white flex items-center gap-2">
-                          <CalendarIcon size={14} className="text-[#f97316]" /> Tanggal Selesai <span className="text-red-500">*</span>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                          <CalendarIcon size={12} className="text-foreground/70 shrink-0" /> Selesai <span className="text-red-600">*</span>
                         </label>
                         <Popover>
                           <PopoverTrigger className={cn(
-                            'w-full justify-start text-left font-normal h-12 rounded-xl border border-[#2a2548] bg-[#13112a] text-white hover:bg-[#2a2548] px-4 flex items-center transition-colors',
-                            !endDate && 'text-white/40'
+                            'w-full justify-start text-left font-normal h-9 sm:h-11 rounded-xl border border-border bg-background text-foreground hover:bg-card px-2.5 sm:px-3.5 flex items-center transition-colors text-[11px] sm:text-sm cursor-pointer truncate',
+                            !endDate && 'text-foreground/40'
                           )}>
-                            <CalendarIcon className="mr-2 h-4 w-4 text-[#f97316]" />
-                            {endDate ? format(endDate, 'PPP', { locale: localeId }) : <span>Pilih tanggal selesai</span>}
+                            <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 text-foreground/60 shrink-0" />
+                            <span className="truncate">{endDate ? format(endDate, 'dd MMM yyyy', { locale: localeId }) : 'Pilih tgl'}</span>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-[#1b1838] border border-[#2a2548]" align="start">
+                          <PopoverContent className="w-auto p-0 bg-card border border-border shadow-md" align="start">
                             <Calendar
                               mode="single" selected={endDate}
                               onSelect={setEndDate}
@@ -864,11 +857,11 @@ function BookingForm() {
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="p-3 bg-[#13112a] border border-[#2a2548] rounded-2xl flex items-center gap-3"
+                        className="p-2.5 sm:p-3 bg-secondary/30 border border-border rounded-xl flex items-center gap-2"
                       >
-                        <Clock size={16} className="text-[#f97316] shrink-0" />
-                        <span className="text-sm text-white/70">
-                          Durasi sewa: <strong className="text-white">{formatDuration(parseInt(formData.duration))}</strong>
+                        <Clock size={14} className="text-foreground/70 shrink-0" />
+                        <span className="text-[11px] sm:text-xs text-foreground/80">
+                          Total durasi sewa: <strong className="text-foreground">{formatDuration(parseInt(formData.duration))}</strong>
                         </span>
                       </motion.div>
                     )}
@@ -880,55 +873,53 @@ function BookingForm() {
                    ═══════════════════════════════════════════════════════ */}
                 {step === 2 && (
                   <StepWrapper step={step}>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-white flex items-center gap-2">
-                          <Clock size={14} className="text-[#f97316]" /> Jam Pengambilan <span className="text-red-500">*</span>
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                          <Clock size={13} className="text-foreground/70 shrink-0" /> Jam Ambil <span className="text-red-600">*</span>
                         </label>
                         <Input
                           type="time" name="pickupTime"
                           value={formData.pickupTime} onChange={handleInputChange}
-                          className="bg-[#13112a] border-[#2a2548] text-white rounded-xl h-12"
+                          className="bg-background border-border text-foreground rounded-xl h-9 sm:h-11 text-xs sm:text-sm px-2.5"
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-white flex items-center gap-2">
-                          <Clock size={14} className="text-[#f97316]" /> Jam Pengembalian <span className="text-red-500">*</span>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                          <Clock size={13} className="text-foreground/70 shrink-0" /> Jam Kembali <span className="text-red-600">*</span>
                         </label>
                         <Input
                           type="time" name="returnTime"
                           value={formData.returnTime} onChange={handleInputChange}
-                          className="bg-[#13112a] border-[#2a2548] text-white rounded-xl h-12"
+                          className="bg-background border-border text-foreground rounded-xl h-9 sm:h-11 text-xs sm:text-sm px-2.5"
                         />
                       </div>
                     </div>
 
                     <SectionDivider />
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-white flex items-center gap-2">
-                        <MapPin size={14} className="text-[#f97316]" /> Lokasi Penjemputan / Pengantaran
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
+                        <MapPin size={13} className="text-foreground/70 shrink-0" /> Titik Penjemputan / Pengantaran Unit
                       </label>
                       <Input
                         type="text" name="pickupLocation"
                         placeholder="Contoh: Bandara YIA / Stasiun Tugu / Hotel"
                         value={formData.pickupLocation} onChange={handleInputChange}
-                        className="bg-[#13112a] border-[#2a2548] text-white placeholder:text-white/50 rounded-xl h-12"
+                        className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
                       />
-                      <p className="text-xs text-white/40 mt-1">
-                        Kosongkan jika ambil di kantor kami
+                      <p className="text-[10px] sm:text-[11px] text-foreground/50 mt-1">
+                        Biarkan kosong jika Anda ingin mengambil langsung di garasi kami.
                       </p>
                     </div>
 
                     {/* Time validation hint */}
                     {date && endDate && formData.pickupTime && formData.returnTime && (
-                      <div className="p-3 bg-[#13112a] border border-[#2a2548] rounded-2xl flex items-center gap-3">
-                        <Clock size={16} className="text-[#f97316] shrink-0" />
-                        <span className="text-sm text-white/70">
-                          {date && endDate && (
-                            <>Sewa dari <strong className="text-white">{format(date, 'dd MMM', { locale: localeId })} {formData.pickupTime}</strong> sampai <strong className="text-white">{format(endDate, 'dd MMM', { locale: localeId })} {formData.returnTime}</strong></>
-                          )}
+                      <div className="p-2.5 sm:p-3 bg-secondary/30 border border-border rounded-xl flex items-center gap-2">
+                        <Clock size={14} className="text-foreground/70 shrink-0" />
+                        <span className="text-[11px] sm:text-xs text-foreground/80 leading-tight">
+                          Jadwal: <strong className="text-foreground">{format(date, 'dd MMM', { locale: localeId })} {formData.pickupTime}</strong> s/d <strong className="text-foreground">{format(endDate, 'dd MMM', { locale: localeId })} {formData.returnTime}</strong>
                         </span>
                       </div>
                     )}
@@ -940,54 +931,54 @@ function BookingForm() {
                    ═══════════════════════════════════════════════════════ */}
                 {step === 3 && (
                   <StepWrapper step={step}>
-                    <div className="bg-[#13112a] rounded-2xl p-6 border border-[#2a2548] space-y-4">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-white/50 pb-2 border-b border-[#2a2548] flex items-center gap-2">
-                        <Package size={14} className="text-[#f97316]" /> Detail Rental
+                    <div className="bg-background rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-border space-y-2.5 shadow-xs">
+                      <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-foreground/60 pb-2 border-b border-border flex items-center gap-2">
+                        <Package size={13} className="text-foreground/70" /> Rangkuman Detail Sewa
                       </h4>
-                      <div className="grid grid-cols-2 gap-y-3 text-sm">
-                        <div className="text-white/50">Layanan:</div>
-                        <div className="font-bold text-white text-right capitalize">
-                          {formData.serviceType === 'lepas-kunci' ? 'Sewa Lepas Kunci' : formData.serviceType === 'dengan-driver' ? 'Sewa Dengan Driver' : '-'}
+                      <div className="grid grid-cols-2 gap-y-2 text-[11px] sm:text-sm">
+                        <div className="text-foreground/60">Tipe Layanan:</div>
+                        <div className="font-bold text-foreground text-right capitalize">
+                          {formData.serviceType === 'lepas-kunci' ? 'Lepas Kunci' : formData.serviceType === 'dengan-driver' ? 'Dengan Driver' : '-'}
                         </div>
-                        <div className="text-white/50">Unit Mobil:</div>
-                        <div className="font-bold text-white text-right">{selectedCarDetails?.name || '-'}</div>
-                        <div className="text-white/50">Tanggal Mulai:</div>
-                        <div className="font-bold text-white text-right font-sans">
+                        <div className="text-foreground/60">Unit Mobil:</div>
+                        <div className="font-bold text-foreground text-right truncate">{selectedCarDetails?.name || '-'}</div>
+                        <div className="text-foreground/60">Tanggal Mulai:</div>
+                        <div className="font-bold text-foreground text-right truncate">
                           {date ? format(date, 'PPP', { locale: localeId }) : '-'}
                         </div>
-                        <div className="text-white/50">Jam Ambil:</div>
-                        <div className="font-bold text-white text-right">{formData.pickupTime || '-'}</div>
-                        <div className="text-white/50">Tanggal Selesai:</div>
-                        <div className="font-bold text-white text-right font-sans">
+                        <div className="text-foreground/60">Jam Ambil:</div>
+                        <div className="font-bold text-foreground text-right">{formData.pickupTime || '-'}</div>
+                        <div className="text-foreground/60">Tanggal Selesai:</div>
+                        <div className="font-bold text-foreground text-right truncate">
                           {endDate ? format(endDate, 'PPP', { locale: localeId }) : '-'}
                         </div>
-                        <div className="text-white/50">Jam Kembali:</div>
-                        <div className="font-bold text-white text-right">{formData.returnTime || '-'}</div>
-                        <div className="text-white/50">Durasi:</div>
-                        <div className="font-bold text-white text-right">{formatDuration(parseInt(formData.duration))}</div>
-                        <div className="text-white/50">Lokasi:</div>
-                        <div className="font-bold text-white text-right">{formData.pickupLocation || 'Ambil di Kantor'}</div>
+                        <div className="text-foreground/60">Jam Kembali:</div>
+                        <div className="font-bold text-foreground text-right">{formData.returnTime || '-'}</div>
+                        <div className="text-foreground/60">Durasi Sewa:</div>
+                        <div className="font-bold text-foreground text-right">{formatDuration(parseInt(formData.duration))}</div>
+                        <div className="text-foreground/60">Lokasi:</div>
+                        <div className="font-bold text-foreground text-right truncate">{formData.pickupLocation || 'Ambil di Garasi'}</div>
                       </div>
                     </div>
 
                     {selectedCarDetails && (
-                      <div className="bg-[#13112a] rounded-2xl p-6 border border-[#2a2548] space-y-3">
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-white/50 pb-2 border-b border-[#2a2548] flex items-center gap-2">
-                          <CreditCard size={14} className="text-[#f97316]" /> Estimasi Biaya
+                      <div className="bg-background rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-border space-y-2 shadow-xs">
+                        <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-foreground/60 pb-2 border-b border-border flex items-center gap-2">
+                          <CreditCard size={13} className="text-foreground/70" /> Estimasi Biaya Sewa
                         </h4>
-                        <div className="flex justify-between items-center text-xs text-white/50">
-                          <span>Harga Sewa ({selectedCarDetails.name}):</span>
-                          <span className="font-semibold text-white">Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} / hari</span>
+                        <div className="flex justify-between items-center text-[11px] sm:text-xs text-foreground/70">
+                          <span>Tarif Sewa Unit:</span>
+                          <span className="font-semibold text-foreground">Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} / hari</span>
                         </div>
                         {formData.serviceType === 'dengan-driver' && (
-                          <div className="flex justify-between items-center text-xs text-emerald-400 font-medium">
+                          <div className="flex justify-between items-center text-[11px] sm:text-xs text-foreground font-medium">
                             <span>Layanan Driver:</span>
                             <span className="font-semibold">+Rp {driverFeePerDay.toLocaleString('id-ID')} / hari</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center text-xs text-white/50 pt-2 border-t border-[#2a2548]">
-                          <span>Durasi:</span>
-                          <span className="font-semibold text-white">{rentalDays} Hari</span>
+                        <div className="flex justify-between items-center text-[11px] sm:text-xs text-foreground/70 pt-2 border-t border-border">
+                          <span>Total Hari Sewa:</span>
+                          <span className="font-bold text-foreground">{rentalDays} Hari</span>
                         </div>
                       </div>
                     )}
@@ -999,56 +990,56 @@ function BookingForm() {
                    ═══════════════════════════════════════════════════════ */}
                 {step === 4 && (
                   <StepWrapper step={step}>
-                    <div className="bg-[#13112a] rounded-2xl p-5 border border-[#2a2548] flex items-start gap-3 mb-2">
-                      <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
-                      <p className="text-xs text-white/50 leading-relaxed">
-                        Data diri Anda akan digunakan untuk verifikasi identitas dan komunikasi pemesanan. Pastikan data yang dimasukkan valid.
+                    <div className="bg-secondary/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-border flex items-start gap-2.5 mb-2">
+                      <AlertTriangle size={15} className="text-foreground/70 shrink-0 mt-0.5" />
+                      <p className="text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
+                        Data diri Anda akan digunakan untuk keperluan verifikasi identitas dan konfirmasi penyerahan armada mobil.
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-white flex items-center gap-2">
-                        <User size={14} className="text-[#f97316]" /> Nama Lengkap <span className="text-red-500">*</span>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                        <User size={13} className="text-foreground/70" /> Nama Lengkap Sesuai KTP <span className="text-red-600">*</span>
                       </label>
                       <Input
                         type="text" name="name"
                         placeholder="Contoh: Ahmad Fauzi"
                         value={formData.name} onChange={handleInputChange}
-                        className="bg-[#13112a] border-[#2a2548] text-white placeholder:text-white/50 rounded-xl h-12 focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316]/30"
+                        className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-white flex items-center gap-2">
-                          <Phone size={14} className="text-[#f97316]" /> Nomor WhatsApp <span className="text-red-500">*</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                          <Phone size={13} className="text-foreground/70" /> Nomor WhatsApp <span className="text-red-600">*</span>
                         </label>
                         <Input
                           type="tel" name="phone"
                           placeholder="08123456789"
                           value={formData.phone} onChange={handleInputChange}
-                          className="bg-[#13112a] border-[#2a2548] text-white placeholder:text-white/50 rounded-xl h-12 focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316]/30"
+                          className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-white flex items-center gap-2">
-                          <Mail size={14} className="text-[#f97316]" /> Email
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                          <Mail size={13} className="text-foreground/70" /> Alamat Email
                         </label>
                         <Input
                           type="email" name="email"
                           placeholder="email@example.com"
                           value={formData.email} onChange={handleInputChange}
-                          className="bg-[#13112a] border-[#2a2548] text-white placeholder:text-white/50 rounded-xl h-12 focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316]/30"
+                          className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
                         />
                       </div>
                     </div>
 
                     {/* Auto-fill info */}
                     {user && (
-                      <div className="p-3 bg-[#13112a] border border-[#2a2548] rounded-2xl flex items-center gap-3">
-                        <CheckCircle2 size={16} className="text-green-400 shrink-0" />
-                        <span className="text-xs text-white/50">
-                          Data diisi otomatis dari akun Anda. <strong className="text-white/70">{user.email}</strong>
+                      <div className="p-2.5 sm:p-3 bg-background border border-border rounded-xl flex items-center gap-2">
+                        <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                        <span className="text-[11px] sm:text-xs text-foreground/70 truncate">
+                          Tersinkron dari akun: <strong className="text-foreground">{user.email}</strong>
                         </span>
                       </div>
                     )}
@@ -1056,109 +1047,101 @@ function BookingForm() {
                 )}
 
                 {/* ═══════════════════════════════════════════════════════
-                   STEP 5: Upload Dokumen (KTP & SIM)
+                   STEP 5: Upload Dokumen (2 Cols on Mobile)
                    ═══════════════════════════════════════════════════════ */}
                 {step === 5 && (
                   <StepWrapper step={step}>
-                    <div className="bg-[#13112a] rounded-2xl p-5 border border-[#2a2548] flex items-start gap-3 mb-2">
-                      <ShieldCheck size={16} className="text-[#f97316] shrink-0 mt-0.5" />
-                      <p className="text-xs text-white/50 leading-relaxed">
-                        Upload foto KTP dan SIM Anda untuk verifikasi identitas. File akan dienkripsi dan hanya digunakan untuk keperluan verifikasi sewa.
+                    <div className="bg-secondary/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-border flex items-start gap-2.5 mb-2">
+                      <ShieldCheck size={15} className="text-foreground/70 shrink-0 mt-0.5" />
+                      <p className="text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
+                        Unggah foto KTP dan SIM asli Anda untuk verifikasi identitas resmi.
                       </p>
                     </div>
 
-                    {/* Upload Foto KTP */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Upload size={16} className="text-[#f97316]" />
-                        <h3 className="text-sm font-bold text-white">
-                          Upload Foto KTP <span className="text-red-500">*</span>
-                        </h3>
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                      {/* Upload Foto KTP */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Upload size={13} className="text-foreground/70" />
+                          <h3 className="text-[11px] sm:text-xs font-bold text-foreground uppercase tracking-wide truncate">
+                            Foto KTP <span className="text-red-600">*</span>
+                          </h3>
+                        </div>
+
+                        {!ktpPreview ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDocumentUpload('ktp')}
+                            className="border-2 border-dashed border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-6 text-center cursor-pointer hover:border-foreground/40 bg-background w-full transition-all flex flex-col items-center justify-center min-h-[120px] sm:min-h-[160px]"
+                          >
+                            <div className="p-2 sm:p-3 rounded-full bg-secondary text-foreground mb-1.5">
+                              <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6" />
+                            </div>
+                            <p className="font-bold text-foreground text-[10px] sm:text-xs leading-tight">Upload KTP</p>
+                            <p className="text-[9px] sm:text-[10px] text-foreground/50 mt-0.5">Maks 5MB</p>
+                          </button>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-border bg-background"
+                          >
+                            <img src={ktpPreview} alt="KTP" className="w-full h-28 sm:h-44 object-cover" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xs px-2 sm:px-3 py-1.5 border-t border-border flex items-center justify-between">
+                              <span className="text-foreground text-[10px] sm:text-xs font-semibold truncate">KTP OK</span>
+                              <button
+                                type="button"
+                                onClick={() => { setKtpFile(null); setKtpPreview(null); }}
+                                className="p-0.5 rounded text-foreground/60 hover:text-foreground cursor-pointer"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
                       </div>
 
-                      {!ktpPreview ? (
-                        <button
-                          type="button"
-                          onClick={() => handleDocumentUpload('ktp')}
-                          className="border-2 border-dashed border-[#2a2548] rounded-2xl p-8 text-center cursor-pointer hover:border-[#f97316] hover:bg-[#13112a] w-full transition-all duration-200 group"
-                        >
-                          <div className="flex flex-col items-center gap-3">
-                            <div className="p-4 rounded-full bg-[#13112a] group-hover:bg-[#1b1838] transition-colors">
-                              <ImageIcon size={28} className="text-white/40 group-hover:text-white/60" />
-                            </div>
-                            <p className="font-bold text-white text-sm">Klik untuk upload foto KTP</p>
-                            <p className="text-xs text-white/30">Format: JPG, PNG, WEBP • Maksimal 10 MB</p>
-                          </div>
-                        </button>
-                      ) : (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.97 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="relative rounded-2xl overflow-hidden border-2 border-green-500/30 bg-green-500/10"
-                        >
-                          <img src={ktpPreview} alt="KTP" className="w-full max-h-56 object-contain" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 size={16} className="text-green-400" />
-                              <span className="text-white text-xs font-medium">KTP terupload</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => { setKtpFile(null); setKtpPreview(null); }}
-                              className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
-                            >
-                              <X size={14} className="text-white" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
+                      {/* Upload Foto SIM */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Upload size={13} className="text-foreground/70" />
+                          <h3 className="text-[11px] sm:text-xs font-bold text-foreground uppercase tracking-wide truncate">
+                            Foto SIM A <span className="text-red-600">*</span>
+                          </h3>
+                        </div>
 
-                    {/* Upload Foto SIM */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Upload size={16} className="text-[#f97316]" />
-                        <h3 className="text-sm font-bold text-white">
-                          Upload Foto SIM <span className="text-red-500">*</span>
-                        </h3>
+                        {!simPreview ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDocumentUpload('sim')}
+                            className="border-2 border-dashed border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-6 text-center cursor-pointer hover:border-foreground/40 bg-background w-full transition-all flex flex-col items-center justify-center min-h-[120px] sm:min-h-[160px]"
+                          >
+                            <div className="p-2 sm:p-3 rounded-full bg-secondary text-foreground mb-1.5">
+                              <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6" />
+                            </div>
+                            <p className="font-bold text-foreground text-[10px] sm:text-xs leading-tight">Upload SIM</p>
+                            <p className="text-[9px] sm:text-[10px] text-foreground/50 mt-0.5">Maks 5MB</p>
+                          </button>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-border bg-background"
+                          >
+                            <img src={simPreview} alt="SIM" className="w-full h-28 sm:h-44 object-cover" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xs px-2 sm:px-3 py-1.5 border-t border-border flex items-center justify-between">
+                              <span className="text-foreground text-[10px] sm:text-xs font-semibold truncate">SIM OK</span>
+                              <button
+                                type="button"
+                                onClick={() => { setSimFile(null); setSimPreview(null); }}
+                                className="p-0.5 rounded text-foreground/60 hover:text-foreground cursor-pointer"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
                       </div>
-
-                      {!simPreview ? (
-                        <button
-                          type="button"
-                          onClick={() => handleDocumentUpload('sim')}
-                          className="border-2 border-dashed border-[#2a2548] rounded-2xl p-8 text-center cursor-pointer hover:border-[#f97316] hover:bg-[#13112a] w-full transition-all duration-200 group"
-                        >
-                          <div className="flex flex-col items-center gap-3">
-                            <div className="p-4 rounded-full bg-[#13112a] group-hover:bg-[#1b1838] transition-colors">
-                              <ImageIcon size={28} className="text-white/40 group-hover:text-white/60" />
-                            </div>
-                            <p className="font-bold text-white text-sm">Klik untuk upload foto SIM</p>
-                            <p className="text-xs text-white/30">Format: JPG, PNG, WEBP • Maksimal 10 MB</p>
-                          </div>
-                        </button>
-                      ) : (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.97 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="relative rounded-2xl overflow-hidden border-2 border-green-500/30 bg-green-500/10"
-                        >
-                          <img src={simPreview} alt="SIM" className="w-full max-h-56 object-contain" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 size={16} className="text-green-400" />
-                              <span className="text-white text-xs font-medium">SIM terupload</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => { setSimFile(null); setSimPreview(null); }}
-                              className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
-                            >
-                              <X size={14} className="text-white" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
                     </div>
                   </StepWrapper>
                 )}
@@ -1169,50 +1152,50 @@ function BookingForm() {
                 {step === 6 && (
                   <StepWrapper step={step}>
                     {/* Data Penyewa */}
-                    <div className="bg-[#13112a] rounded-2xl p-6 border border-[#2a2548] space-y-3">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-white/50 pb-2 border-b border-[#2a2548] flex items-center gap-2">
-                        <User size={14} className="text-[#f97316]" /> Data Penyewa
+                    <div className="bg-background rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-border space-y-2 shadow-xs">
+                      <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-foreground/60 pb-1.5 border-b border-border flex items-center gap-1.5">
+                        <User size={13} className="text-foreground/70" /> Identitas Penyewa
                       </h4>
-                      <div className="grid grid-cols-2 gap-y-2.5 text-sm">
-                        <div className="text-white/50">Nama:</div>
-                        <div className="font-bold text-white text-right">{formData.name || '-'}</div>
-                        <div className="text-white/50">WhatsApp:</div>
-                        <div className="font-bold text-white text-right">{formData.phone || '-'}</div>
-                        <div className="text-white/50">Email:</div>
-                        <div className="font-bold text-white text-right">{formData.email || '-'}</div>
+                      <div className="grid grid-cols-2 gap-y-1.5 text-[11px] sm:text-sm">
+                        <div className="text-foreground/60">Nama:</div>
+                        <div className="font-bold text-foreground text-right truncate">{formData.name || '-'}</div>
+                        <div className="text-foreground/60">WhatsApp:</div>
+                        <div className="font-bold text-foreground text-right truncate">{formData.phone || '-'}</div>
+                        <div className="text-foreground/60">Email:</div>
+                        <div className="font-bold text-foreground text-right truncate">{formData.email || '-'}</div>
                       </div>
                     </div>
 
                     {/* Detail Rental */}
-                    <div className="bg-[#13112a] rounded-2xl p-6 border border-[#2a2548] space-y-3">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-white/50 pb-2 border-b border-[#2a2548] flex items-center gap-2">
-                        <Car size={14} className="text-[#f97316]" /> Detail Rental
+                    <div className="bg-background rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-border space-y-2 shadow-xs">
+                      <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-foreground/60 pb-1.5 border-b border-border flex items-center gap-1.5">
+                        <Car size={13} className="text-foreground/70" /> Detail Sewa Kendaraan
                       </h4>
-                      <div className="grid grid-cols-2 gap-y-2.5 text-sm">
-                        <div className="text-white/50">Layanan:</div>
-                        <div className="font-bold text-white text-right capitalize">
+                      <div className="grid grid-cols-2 gap-y-1.5 text-[11px] sm:text-sm">
+                        <div className="text-foreground/60">Layanan:</div>
+                        <div className="font-bold text-foreground text-right capitalize">
                           {formData.serviceType === 'lepas-kunci' ? 'Lepas Kunci' : formData.serviceType === 'dengan-driver' ? 'Dengan Driver' : '-'}
                         </div>
-                        <div className="text-white/50">Unit:</div>
-                        <div className="font-bold text-white text-right">{selectedCarDetails?.name || '-'}</div>
-                        <div className="text-white/50">Mulai:</div>
-                        <div className="font-bold text-white text-right font-sans">
+                        <div className="text-foreground/60">Unit:</div>
+                        <div className="font-bold text-foreground text-right truncate">{selectedCarDetails?.name || '-'}</div>
+                        <div className="text-foreground/60">Mulai:</div>
+                        <div className="font-bold text-foreground text-right truncate">
                           {date ? `${format(date, 'dd MMM yyyy', { locale: localeId })} ${formData.pickupTime}` : '-'}
                         </div>
-                        <div className="text-white/50">Selesai:</div>
-                        <div className="font-bold text-white text-right font-sans">
+                        <div className="text-foreground/60">Selesai:</div>
+                        <div className="font-bold text-foreground text-right truncate">
                           {endDate ? `${format(endDate, 'dd MMM yyyy', { locale: localeId })} ${formData.returnTime}` : '-'}
                         </div>
-                        <div className="text-white/50">Durasi:</div>
-                        <div className="font-bold text-white text-right">{formatDuration(parseInt(formData.duration))}</div>
-                        <div className="text-white/50">Lokasi:</div>
-                        <div className="font-bold text-white text-right">{formData.pickupLocation || 'Ambil di Kantor'}</div>
-                        <div className="text-white/50">Dokumen:</div>
-                        <div className="font-bold text-white text-right">
+                        <div className="text-foreground/60">Durasi:</div>
+                        <div className="font-bold text-foreground text-right">{formatDuration(parseInt(formData.duration))}</div>
+                        <div className="text-foreground/60">Lokasi:</div>
+                        <div className="font-bold text-foreground text-right truncate">{formData.pickupLocation || 'Ambil di Garasi'}</div>
+                        <div className="text-foreground/60">Dokumen:</div>
+                        <div className="font-bold text-foreground text-right">
                           {ktpPreview && simPreview ? (
-                            <span className="text-green-400">✓ KTP & SIM</span>
+                            <span className="text-emerald-600 font-semibold">✓ Terlampir</span>
                           ) : (
-                            <span className="text-amber-400">Belum lengkap</span>
+                            <span className="text-amber-600">Belum Lengkap</span>
                           )}
                         </div>
                       </div>
@@ -1220,102 +1203,95 @@ function BookingForm() {
 
                     {/* Rincian Biaya */}
                     {selectedCarDetails && (
-                      <div className="bg-[#13112a] rounded-2xl p-6 border border-[#2a2548] space-y-3">
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-white/50 pb-2 border-b border-[#2a2548] flex items-center gap-2">
-                          <CreditCard size={14} className="text-[#f97316]" /> Rincian Biaya
+                      <div className="bg-background rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-border space-y-2 shadow-xs">
+                        <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-foreground/60 pb-1.5 border-b border-border flex items-center gap-1.5">
+                          <CreditCard size={13} className="text-foreground/70" /> Rincian Tarif
                         </h4>
-                        <div className="flex justify-between items-center text-sm text-white/70">
-                          <span>Sewa {selectedCarDetails.name}</span>
-                          <span className="font-semibold text-white">Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} × {rentalDays} hr</span>
+                        <div className="flex justify-between items-center text-[11px] sm:text-sm text-foreground/70">
+                          <span className="truncate">Sewa {selectedCarDetails.name}</span>
+                          <span className="font-semibold text-foreground shrink-0">Rp {selectedCarDetails.pricePerDay.toLocaleString('id-ID')} × {rentalDays}h</span>
                         </div>
                         {formData.serviceType === 'dengan-driver' && (
-                          <div className="flex justify-between items-center text-sm text-emerald-400">
-                            <span>Layanan Driver</span>
-                            <span className="font-semibold">+Rp {driverFeePerDay.toLocaleString('id-ID')} × {rentalDays} hr</span>
+                          <div className="flex justify-between items-center text-[11px] sm:text-sm text-foreground font-medium">
+                            <span>Driver</span>
+                            <span className="font-semibold">+Rp {driverFeePerDay.toLocaleString('id-ID')} × {rentalDays}h</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center pt-3 border-t border-[#2a2548]">
-                          <span className="text-sm font-bold text-white">Total Harga Sewa</span>
-                          <span className="text-xl font-black text-white">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                        <div className="flex justify-between items-center pt-2 border-t border-border">
+                          <span className="text-xs sm:text-sm font-bold text-foreground">Total</span>
+                          <span className="text-base sm:text-xl font-black text-foreground">Rp {totalPrice.toLocaleString('id-ID')}</span>
                         </div>
                       </div>
                     )}
 
                     {/* DP Banner */}
-                    <div className="bg-gradient-to-r from-[#f97316] to-[#f97316]/80 text-white rounded-2xl p-6 flex items-center justify-between shadow-lg shadow-[#f97316]/20">
+                    <div className="bg-foreground text-background rounded-xl sm:rounded-2xl p-4 sm:p-6 flex items-center justify-between shadow-xs">
                       <div>
-                        <p className="text-xs text-white/70 uppercase tracking-wider mb-1">DP yang Harus Dibayar (50%)</p>
-                        <p className="text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
+                        <p className="text-[9px] sm:text-[10px] text-background/60 uppercase tracking-widest font-bold mb-0.5">Kewajiban DP (50%)</p>
+                        <p className="text-xl sm:text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
                       </div>
-                      <CheckCircle2 className="w-10 h-10 text-white/80" />
-                    </div>
-
-                    {/* Terms */}
-                    <div className="p-4 rounded-2xl bg-[#13112a] border border-[#2a2548]">
-                      <p className="text-xs text-white/50 leading-relaxed">
-                        <span className="font-bold text-white">Catatan:</span> Dengan melanjutkan, Anda menyetujui syarat & ketentuan rental mobil kami. Setelah pembayaran DP 50% dikonfirmasi, pesanan Anda akan diproses.
-                      </p>
+                      <CheckCircle2 className="w-7 h-7 sm:w-9 sm:h-9 text-background/80" />
                     </div>
                   </StepWrapper>
                 )}
 
                 {/* ═══════════════════════════════════════════════════════
-                   STEP 7: Pembayaran DP
+                   STEP 7: Pembayaran DP (2 Cols on Mobile)
                    ═══════════════════════════════════════════════════════ */}
                 {step === 7 && (
                   <StepWrapper step={step}>
                     {/* DP Amount Banner */}
-                    <div className="bg-gradient-to-r from-[#f97316] to-[#f97316]/80 text-white rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg shadow-[#f97316]/20">
+                    <div className="bg-foreground text-background rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-xs">
                       <div>
-                        <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Jumlah DP yang Harus Dibayar</p>
-                        <p className="text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
-                        <p className="text-xs text-white/70 mt-1">50% dari total Rp {totalPrice.toLocaleString('id-ID')}</p>
+                        <p className="text-[9px] sm:text-[10px] text-background/60 uppercase tracking-widest font-bold mb-0.5">Nominal Pembayaran DP</p>
+                        <p className="text-xl sm:text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
+                        <p className="text-[10px] sm:text-xs text-background/70 mt-0.5">50% dari total tagihan Rp {totalPrice.toLocaleString('id-ID')}</p>
                       </div>
                       <div className="text-left sm:text-right">
-                        <p className="text-xs text-white/70">Unit</p>
-                        <p className="font-bold text-sm">{selectedCarDetails?.name}</p>
-                        <p className="text-xs text-white/70">{formatDuration(parseInt(formData.duration))}</p>
+                        <p className="text-[9px] sm:text-[10px] text-background/60 uppercase font-bold">Unit Terpilih</p>
+                        <p className="font-bold text-xs sm:text-sm truncate">{selectedCarDetails?.name}</p>
+                        <p className="text-[10px] sm:text-xs text-background/70">{formatDuration(parseInt(formData.duration))}</p>
                       </div>
                     </div>
 
                     {/* Pilih Metode Pembayaran */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <CreditCard size={16} className="text-[#f97316]" />
-                        <h3 className="text-sm font-bold text-white">
+                        <CreditCard size={14} className="text-foreground/70" />
+                        <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">
                           Pilih Metode Pembayaran DP
                         </h3>
                       </div>
 
-                      {/* Payment Mode Selector Tabs */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Payment Mode Selector Tabs (2 Cols on Mobile) */}
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <button
                           type="button"
                           onClick={() => setPaymentMode('INSTANT')}
                           className={cn(
-                            'p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer relative overflow-hidden',
+                            'p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
                             paymentMode === 'INSTANT'
-                              ? 'border-[#f97316] bg-[#13112a] shadow-lg shadow-[#f97316]/10'
-                              : 'border-[#2a2548] bg-[#1b1838] hover:border-[#f97316]/50'
+                              ? 'border-foreground bg-secondary/40 ring-1 ring-foreground/20 shadow-xs'
+                              : 'border-border bg-background hover:border-foreground/30'
                           )}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f97316]/20 text-[#f97316]">
-                              <Sparkles size={11} /> Rekomendasi
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-foreground text-background">
+                              <Sparkles size={10} /> Instan
                             </span>
                             <div className={cn(
-                              'w-4 h-4 rounded-full border-2 flex items-center justify-center',
-                              paymentMode === 'INSTANT' ? 'border-[#f97316] bg-[#f97316]' : 'border-[#2a2548]'
+                              'w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center',
+                              paymentMode === 'INSTANT' ? 'border-foreground bg-foreground' : 'border-border'
                             )}>
-                              {paymentMode === 'INSTANT' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              {paymentMode === 'INSTANT' && <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-background" />}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <QrCode size={18} className="text-[#f97316]" />
-                            <p className="text-sm font-bold text-white">Instan (QRIS & VA Bank)</p>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <QrCode size={15} className="text-foreground shrink-0" />
+                            <p className="text-[11px] sm:text-sm font-bold text-foreground truncate">QRIS &amp; VA</p>
                           </div>
-                          <p className="text-xs text-white/50 leading-relaxed">
-                            QRIS (GoPay, OVO, ShopeePay), BCA VA, Mandiri VA, BNI VA. Konfirmasi otomatis tanpa upload struk!
+                          <p className="text-[10px] text-foreground/60 leading-tight line-clamp-2">
+                            QRIS, BCA VA, BNI VA, Mandiri. Instan!
                           </p>
                         </button>
 
@@ -1323,105 +1299,86 @@ function BookingForm() {
                           type="button"
                           onClick={() => setPaymentMode('MANUAL')}
                           className={cn(
-                            'p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer relative overflow-hidden',
+                            'p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
                             paymentMode === 'MANUAL'
-                              ? 'border-[#f97316] bg-[#13112a] shadow-lg shadow-[#f97316]/10'
-                              : 'border-[#2a2548] bg-[#1b1838] hover:border-[#f97316]/50'
+                              ? 'border-foreground bg-secondary/40 ring-1 ring-foreground/20 shadow-xs'
+                              : 'border-border bg-background hover:border-foreground/30'
                           )}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/60">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-secondary text-foreground border border-border">
                               Manual
                             </span>
                             <div className={cn(
-                              'w-4 h-4 rounded-full border-2 flex items-center justify-center',
-                              paymentMode === 'MANUAL' ? 'border-[#f97316] bg-[#f97316]' : 'border-[#2a2548]'
+                              'w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center',
+                              paymentMode === 'MANUAL' ? 'border-foreground bg-foreground' : 'border-border'
                             )}>
-                              {paymentMode === 'MANUAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              {paymentMode === 'MANUAL' && <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-background" />}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Building2 size={18} className="text-[#f97316]" />
-                            <p className="text-sm font-bold text-white">Transfer Bank Manual</p>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Building2 size={15} className="text-foreground shrink-0" />
+                            <p className="text-[11px] sm:text-sm font-bold text-foreground truncate">Transfer Bank</p>
                           </div>
-                          <p className="text-xs text-white/50 leading-relaxed">
-                            Transfer langsung ke rekening BCA / BNI / Mandiri kami dan upload struk transfer untuk diverifikasi admin.
+                          <p className="text-[10px] text-foreground/60 leading-tight line-clamp-2">
+                            Transfer ke rekening &amp; upload struk bukti.
                           </p>
                         </button>
                       </div>
 
                       {/* Content based on payment mode */}
                       {paymentMode === 'INSTANT' ? (
-                        <div className="p-5 rounded-2xl bg-[#13112a] border border-[#2a2548] space-y-3">
-                          <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
-                            <CheckCircle2 size={16} />
-                            <span>Pembayaran Otomatis Aktif</span>
+                        <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-background border border-border space-y-1.5">
+                          <div className="flex items-center gap-2 text-foreground text-xs font-bold">
+                            <CheckCircle2 size={14} />
+                            <span>Gateway Pembayaran Otomatis Aktif</span>
                           </div>
-                          <p className="text-xs text-white/70 leading-relaxed">
-                            Setelah Anda menekan tombol <span className="text-[#f97316] font-bold">Kirim Booking</span> di bawah, jendela pembayaran aman Midtrans Snap akan muncul. Anda dapat langsung scan QRIS dengan aplikasi m-banking atau e-wallet pilihan Anda.
+                          <p className="text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
+                            Popup pembayaran Midtrans Snap akan terbuka saat Anda menekan tombol di bawah. Anda dapat membayar dengan QRIS atau Virtual Account.
                           </p>
                         </div>
                       ) : (
                         <>
                           {/* Pilih Bank */}
-                          <div className="space-y-3 pt-2">
-                            <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider">
+                          <div className="space-y-2 pt-1">
+                            <h4 className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
                               Pilih Rekening Tujuan Transfer
                             </h4>
-                            <div className="grid grid-cols-1 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               {BANK_ACCOUNTS.map((bank) => (
-                                <motion.button
+                                <button
                                   key={bank.id}
                                   type="button"
                                   id={`bank-${bank.id.toLowerCase()}`}
                                   onClick={() => setSelectedBank(bank.id)}
-                                  whileHover={{ scale: 1.01 }}
-                                  whileTap={{ scale: 0.99 }}
                                   className={cn(
-                                    'w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 flex items-center gap-4',
+                                    'w-full text-left p-2.5 sm:p-3 rounded-xl border transition-all duration-200 flex items-center gap-2.5 cursor-pointer',
                                     selectedBank === bank.id
-                                      ? 'border-[#f97316] bg-[#13112a] shadow-md shadow-[#f97316]/20'
-                                      : 'border-[#2a2548] bg-[#1b1838] hover:border-[#f97316]/50 hover:bg-[#13112a]'
+                                      ? 'border-foreground bg-secondary/40 ring-1 ring-foreground/20'
+                                      : 'border-border bg-background hover:border-foreground/30'
                                   )}
                                 >
-                                  <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0', bank.color)}>
+                                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-border">
                                     {bank.logo}
                                   </div>
 
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-bold text-white">{bank.fullName}</span>
-                                      {selectedBank === bank.id && (
-                                        <span className="text-xs bg-[#f97316] text-white px-2 py-0.5 rounded-full font-bold">Dipilih</span>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <span className="font-mono text-base font-bold text-white tracking-widest">
+                                    <span className="font-bold text-[11px] sm:text-xs text-foreground block truncate">{bank.fullName}</span>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                      <span className="font-mono text-xs font-bold text-foreground truncate">
                                         {bank.number}
                                       </span>
                                       <CopyButton text={bank.number} />
                                     </div>
-                                    <p className="text-xs text-white/50">a.n. {bank.accountName}</p>
                                   </div>
-
-                                  <div className={cn(
-                                    'w-5 h-5 rounded-full border-2 shrink-0 transition-all duration-200 flex items-center justify-center',
-                                    selectedBank === bank.id
-                                      ? 'border-[#f97316] bg-[#f97316]'
-                                      : 'border-[#2a2548] bg-[#1b1838]'
-                                  )}>
-                                    {selectedBank === bank.id && (
-                                      <div className="w-2 h-2 rounded-full bg-white" />
-                                    )}
-                                  </div>
-                                </motion.button>
+                                </button>
                               ))}
                             </div>
                           </div>
 
                           {/* Upload Bukti Transfer */}
-                          <div className="space-y-3 pt-2">
-                            <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider">
+                          <div className="space-y-2 pt-1">
+                            <h4 className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
                               Upload Bukti Transfer Manual
                             </h4>
 
@@ -1430,42 +1387,37 @@ function BookingForm() {
                                 type="button"
                                 id="upload-bukti-transfer"
                                 onClick={handlePaymentProofUpload}
-                                className="border-2 border-dashed border-[#2a2548] rounded-2xl p-8 text-center cursor-pointer hover:border-[#f97316] hover:bg-[#13112a] w-full transition-all duration-200 group"
+                                className="border-2 border-dashed border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center cursor-pointer hover:border-foreground/40 bg-background w-full transition-all group"
                               >
-                                <div className="flex flex-col items-center gap-3">
-                                  <div className="p-4 rounded-full bg-[#13112a] group-hover:bg-[#1b1838] transition-colors">
-                                    <ImageIcon size={28} className="text-white/40 group-hover:text-[#f97316] transition-colors" />
+                                <div className="flex flex-col items-center gap-1.5">
+                                  <div className="p-2 sm:p-3 rounded-full bg-secondary text-foreground">
+                                    <ImageIcon size={20} />
                                   </div>
-                                  <div>
-                                    <p className="font-bold text-white text-sm">Klik untuk upload bukti transfer</p>
-                                    <p className="text-xs text-white/40 mt-1">Format: JPG, PNG, WEBP • Maksimal 10 MB</p>
-                                  </div>
-                                  <span className="text-xs bg-[#f97316] text-white font-bold px-4 py-1.5 rounded-xl mt-1">
-                                    Pilih File
-                                  </span>
+                                  <p className="font-bold text-foreground text-xs">Klik untuk upload bukti transfer</p>
+                                  <p className="text-[10px] text-foreground/50">JPG, PNG, WEBP &bull; Maks 10MB</p>
                                 </div>
                               </button>
                             ) : (
-                              <div className="relative rounded-2xl overflow-hidden border-2 border-green-500/30 bg-green-500/10">
+                              <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-border bg-background">
                                 <img
                                   src={uploadedPreview}
                                   alt="Preview bukti transfer"
-                                  className="w-full max-h-64 object-contain"
+                                  className="w-full max-h-48 object-contain"
                                 />
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <CheckCircle2 size={16} className="text-green-400" />
-                                    <span className="text-white text-xs font-medium truncate max-w-48">
+                                <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xs px-3 py-2 border-t border-border flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <CheckCircle2 size={14} className="text-emerald-600" />
+                                    <span className="text-foreground text-[11px] font-semibold truncate max-w-40">
                                       {uploadedFile?.name || 'Bukti transfer'}
                                     </span>
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => { setUploadedFile(null); setUploadedPreview(null); }}
-                                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                                    className="p-1 rounded-lg hover:bg-secondary text-foreground/60 hover:text-foreground cursor-pointer"
                                     aria-label="Hapus file"
                                   >
-                                    <X size={14} className="text-white" />
+                                    <X size={13} />
                                   </button>
                                 </div>
                               </div>
@@ -1476,38 +1428,37 @@ function BookingForm() {
                     </div>
 
                     {/* Info Penting */}
-                    <div className="p-4 rounded-2xl bg-[#13112a] border border-[#2a2548] flex items-start gap-3">
-                      <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                    <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex items-start gap-2.5">
+                      <AlertTriangle size={15} className="text-foreground/70 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs text-white/60 leading-relaxed">
-                          <span className="font-bold text-white">Penting:</span> Pastikan jumlah transfer sesuai dengan nominal DP di atas. Tim admin akan memverifikasi bukti transfer Anda dalam 1×24 jam.
+                        <p className="text-[11px] text-foreground/70 leading-relaxed">
+                          <strong className="text-foreground">Penting:</strong> Pastikan nominal transfer sesuai dengan jumlah DP di atas. Tim admin kami akan memverifikasi dan menyetujui pesanan Anda dalam 1×24 jam.
                         </p>
                       </div>
                     </div>
                   </StepWrapper>
                 )}
 
-
                 {/* Error from submit */}
                 {submitError && (
                   <motion.div
-                    initial={{ opacity: 0, y: -8 }}
+                    initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl"
+                    className="flex items-start gap-2.5 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700"
                   >
-                    <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
-                    <p className="text-sm text-red-400 font-medium">{submitError}</p>
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <p className="text-xs font-semibold">{submitError}</p>
                   </motion.div>
                 )}
 
                 {/* ─── Navigation Buttons ─── */}
-                <div className="flex justify-between items-center pt-6 border-t border-[#2a2548]">
+                <div className="flex justify-between items-center pt-6 border-t border-border">
                   {step > 1 ? (
                     <Button
                       type="button" onClick={prevStep}
-                      className="bg-transparent border border-[#2a2548] text-white/60 hover:bg-[#2a2548] font-bold px-6 h-12 rounded-xl flex items-center gap-2 transition-all"
+                      className="bg-card border border-border text-foreground hover:bg-secondary font-bold px-5 h-11 rounded-xl flex items-center gap-1.5 text-xs transition-all cursor-pointer"
                     >
-                      <ChevronLeft size={16} />
+                      <ChevronLeft size={15} />
                       Kembali
                     </Button>
                   ) : (
@@ -1518,10 +1469,10 @@ function BookingForm() {
                     <Button
                       type="button" onClick={nextStep}
                       disabled={!canProceed()}
-                      className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold px-8 h-12 rounded-xl flex items-center gap-2 ml-auto disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#f97316]/20"
+                      className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl flex items-center gap-1.5 ml-auto text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
                     >
                       Lanjut
-                      <ChevronRight size={16} />
+                      <ChevronRight size={15} />
                     </Button>
                   ) : (
                     <Button
@@ -1529,12 +1480,12 @@ function BookingForm() {
                       id="btn-kirim-booking"
                       onClick={handleSubmit}
                       disabled={!canProceed() || submitting}
-                      className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold px-8 h-12 rounded-xl ml-auto flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#f97316]/20"
+                      className="bg-foreground hover:bg-foreground/90 text-background font-bold px-7 h-11 rounded-xl ml-auto flex items-center gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
                     >
                       {submitting ? (
-                        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Memproses...</>
+                        <><div className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin" /> Memproses...</>
                       ) : (
-                        <><CheckCircle2 size={16} /> Kirim Booking</>
+                        <><CheckCircle2 size={16} /> Kirim Booking Sekarang</>
                       )}
                     </Button>
                   )}
@@ -1554,8 +1505,8 @@ function BookingForm() {
 export default function BookingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#13112a] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#f97316] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
       </div>
     }>
       <BookingForm />

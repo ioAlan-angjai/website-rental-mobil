@@ -11,7 +11,7 @@ import { BcaLogo } from '@/components/ui/bca-logo';
 import {
   Car, CreditCard, Upload, ImageIcon, X, Building2, Copy, Check,
   AlertCircle, Landmark, CheckCircle2, ArrowLeft, Clock, Calendar,
-  Loader2, MapPin, Receipt, ChevronRight, QrCode, Sparkles, Zap,
+  Loader2, MapPin, Receipt, ChevronRight, Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -23,9 +23,9 @@ import { motion } from 'framer-motion';
 import { openSnapPayment } from '@/lib/snap';
 
 const BANK_ACCOUNTS = [
-  { id: 'BCA', name: 'BCA', fullName: 'Bank Central Asia', number: process.env.NEXT_PUBLIC_BANK_BCA_NUMBER || '1234567890', accountName: process.env.NEXT_PUBLIC_BANK_BCA_NAME || 'PT RentalMobil Jogja', color: 'bg-transparent', logo: <BcaLogo /> },
-  { id: 'BNI', name: 'BNI', fullName: 'Bank Negara Indonesia', number: process.env.NEXT_PUBLIC_BANK_BNI_NUMBER || '0987654321', accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT RentalMobil Jogja', color: 'bg-orange-600', logo: <Landmark className="w-5 h-5 text-white" /> },
-  { id: 'MANDIRI', name: 'Mandiri', fullName: 'Bank Mandiri', number: process.env.NEXT_PUBLIC_BANK_MANDIRI_NUMBER || '1122334455', accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT RentalMobil Jogja', color: 'bg-yellow-600', logo: <Building2 className="w-5 h-5 text-white" /> },
+  { id: 'BCA', name: 'BCA', fullName: 'Bank Central Asia', number: process.env.NEXT_PUBLIC_BANK_BCA_NUMBER || '1234567890', accountName: process.env.NEXT_PUBLIC_BANK_BCA_NAME || 'PT Rental Mobil Jogja', color: 'bg-transparent', logo: <BcaLogo /> },
+  { id: 'BNI', name: 'BNI', fullName: 'Bank Negara Indonesia', number: process.env.NEXT_PUBLIC_BANK_BNI_NUMBER || '0987654321', accountName: process.env.NEXT_PUBLIC_BANK_BNI_NAME || 'PT Rental Mobil Jogja', color: 'bg-foreground/10', logo: <Landmark className="w-5 h-5 text-foreground" /> },
+  { id: 'MANDIRI', name: 'Mandiri', fullName: 'Bank Mandiri', number: process.env.NEXT_PUBLIC_BANK_MANDIRI_NUMBER || '1122334455', accountName: process.env.NEXT_PUBLIC_BANK_MANDIRI_NAME || 'PT Rental Mobil Jogja', color: 'bg-foreground/10', logo: <Building2 className="w-5 h-5 text-foreground" /> },
 ];
 
 function CopyButton({ text }: { text: string }) {
@@ -38,8 +38,8 @@ function CopyButton({ text }: { text: string }) {
     } catch { }
   };
   return (
-    <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-[#2a2548] transition-colors text-zinc-400 hover:text-white" aria-label="Salin nomor rekening">
-      {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+    <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-foreground/50 hover:text-foreground cursor-pointer" aria-label="Salin nomor rekening">
+      {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
     </button>
   );
 }
@@ -181,8 +181,11 @@ export default function PelunasanPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#13112a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-foreground mx-auto mb-2" />
+          <p className="text-xs text-foreground/60">Memuat rincian pelunasan...</p>
+        </div>
       </div>
     );
   }
@@ -191,14 +194,14 @@ export default function PelunasanPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#13112a] flex flex-col">
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center px-4">
-          <div className="text-center max-w-sm">
-            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Terjadi Kesalahan</h2>
-            <p className="text-zinc-400 text-sm mb-6">{error}</p>
-            <Button onClick={() => router.push('/riwayat-booking')} variant="outline">
+        <div className="flex-1 flex items-center justify-center px-4 pt-32 pb-16">
+          <div className="text-center max-w-sm bg-card border border-border p-8 rounded-2xl shadow-xs">
+            <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+            <h2 className="text-lg font-bold text-foreground mb-1">Terjadi Kesalahan</h2>
+            <p className="text-foreground/60 text-xs mb-5">{error}</p>
+            <Button onClick={() => router.push('/riwayat-booking')} variant="outline" className="border-border text-foreground hover:bg-secondary text-xs rounded-xl">
               Kembali ke Riwayat Booking
             </Button>
           </div>
@@ -220,37 +223,37 @@ export default function PelunasanPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#13112a] flex flex-col">
+      <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-secondary selection:text-foreground">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center px-4 py-24 relative z-10">
+        <div className="flex-1 flex items-center justify-center px-4 pt-32 pb-16 relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1b1838] border border-[#2a2548] rounded-3xl shadow-xl max-w-md w-full p-8 text-center">
-            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            className="bg-card border border-border rounded-3xl shadow-sm max-w-md w-full p-8 text-center">
+            <div className="w-14 h-14 bg-secondary/60 rounded-full flex items-center justify-center mx-auto mb-5 text-foreground">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-white mb-2">Bukti Pelunasan Terkirim!</h2>
-            <p className="text-zinc-400 text-sm mb-6">
-              Bukti pembayaran pelunasan sebesar{' '}
-              <span className="font-bold text-white">{formatCurrency(remainingAmount)}</span>{' '}
-              telah kami terima. Tim Admin akan memverifikasi pembayaran Anda.
+            <h2 className="text-xl font-extrabold text-foreground mb-2">Pelunasan Berhasil Diproses!</h2>
+            <p className="text-foreground/70 text-xs sm:text-sm mb-6 leading-relaxed">
+              Pelunasan pembayaran sejumlah{' '}
+              <span className="font-extrabold text-foreground">{formatCurrency(remainingAmount)}</span>{' '}
+              telah kami catat. Tim Admin akan memverifikasi status pembayaran Anda secepatnya.
             </p>
-            <div className="bg-[#13112a]/60 border border-[#2a2548] rounded-2xl px-6 py-4 mb-6 text-left space-y-2">
+            <div className="bg-background border border-border rounded-2xl px-5 py-4 mb-6 text-left space-y-2">
               <div>
-                <p className="text-xs text-zinc-500">Booking ID</p>
-                <p className="font-mono text-xs font-bold text-zinc-300">{booking.id}</p>
+                <p className="text-[10px] text-foreground/50 uppercase font-bold">Booking ID</p>
+                <p className="font-mono text-xs font-bold text-foreground">{booking.id}</p>
               </div>
               <div>
-                <p className="text-xs text-zinc-500">Kendaraan</p>
-                <p className="text-sm font-semibold text-white">{booking.car?.brand} {booking.car?.name}</p>
+                <p className="text-[10px] text-foreground/50 uppercase font-bold">Armada Kendaraan</p>
+                <p className="text-xs sm:text-sm font-semibold text-foreground">{booking.car?.brand} {booking.car?.name}</p>
               </div>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               <Button onClick={() => router.push('/riwayat-booking')}
-                className="w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-bold h-12 rounded-xl">
+                className="w-full bg-foreground hover:bg-foreground/90 text-background font-bold h-11 rounded-xl text-xs shadow-xs">
                 Lihat Riwayat Booking
               </Button>
               <Button variant="outline" onClick={() => router.push('/')}
-                className="w-full border-[#2a2548] text-zinc-300 hover:text-white hover:border-white h-12 rounded-xl">
+                className="w-full border-border text-foreground hover:bg-secondary h-11 rounded-xl text-xs">
                 Kembali ke Beranda
               </Button>
             </div>
@@ -262,255 +265,253 @@ export default function PelunasanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#13112a] relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col selection:bg-secondary selection:text-foreground">
       <Navbar />
 
-      <div className="flex-1 max-w-5xl mx-auto w-full px-4 pt-28 pb-16 relative z-10">
+      <div className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-32 pb-16 relative z-10">
         {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs text-zinc-400 mb-6">
-          <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-          <ChevronRight size={10} />
-          <Link href="/riwayat-booking" className="hover:text-white transition-colors">Riwayat Booking</Link>
-          <ChevronRight size={10} />
-          <span className="text-white font-bold">Pelunasan</span>
+        <div className="flex items-center gap-2 text-xs text-foreground/50 mb-6 font-medium">
+          <Link href="/" className="hover:text-foreground transition-colors">Beranda</Link>
+          <ChevronRight size={11} />
+          <Link href="/riwayat-booking" className="hover:text-foreground transition-colors">Riwayat Booking</Link>
+          <ChevronRight size={11} />
+          <span className="text-foreground font-semibold">Pelunasan</span>
         </div>
 
         <div className="flex items-center gap-3 mb-8">
           <button onClick={() => router.back()}
-            className="p-2 hover:bg-[#2a2548] rounded-xl transition-colors text-zinc-400 hover:text-white">
-            <ArrowLeft size={20} />
+            className="p-2 hover:bg-secondary rounded-xl transition-colors text-foreground/60 hover:text-foreground cursor-pointer">
+            <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-white">Pelunasan Pembayaran</h1>
-            <p className="text-zinc-400 text-sm mt-0.5">Selesaikan pembayaran sisa tagihan sewa Anda</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">Pelunasan Pembayaran</h1>
+            <p className="text-foreground/60 text-xs sm:text-sm mt-0.5">Selesaikan sisa tagihan penyewaan armada Anda</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           {/* LEFT COLUMN — Booking Details + Cost Breakdown */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Booking Details Card */}
-            <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-[#13112a] rounded-xl"><Car size={16} className="text-zinc-300" /></div>
-                <h2 className="font-bold text-white">Detail Pemesanan</h2>
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-xs">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="p-2 bg-secondary/50 rounded-xl text-foreground"><Car size={16} /></div>
+                <h2 className="font-bold text-foreground text-sm uppercase tracking-wide">Detail Pemesanan</h2>
               </div>
 
               {(() => {
                 const carImages = booking.car?.images ? (() => { try { return JSON.parse(booking.car.images); } catch { return null; } })() : null;
                 const firstImage = Array.isArray(carImages) ? carImages[0] : null;
                 return firstImage ? (
-                  <div className="mb-4 rounded-xl overflow-hidden bg-[#13112a] h-40">
+                  <div className="mb-4 rounded-xl overflow-hidden bg-background h-44 border border-border">
                     <img src={firstImage} alt={booking.car.name} className="w-full h-full object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   </div>
                 ) : (
-                  <div className="mb-4 rounded-xl overflow-hidden bg-[#13112a] h-40 flex items-center justify-center text-zinc-600">
-                    <Car size={40} />
+                  <div className="mb-4 rounded-xl overflow-hidden bg-background h-44 flex items-center justify-center text-foreground/30 border border-border">
+                    <Car size={36} />
                   </div>
                 );
               })()}
 
-              <div className="space-y-3">
+              <div className="space-y-3 text-xs">
                 <div>
-                  <p className="text-xs text-zinc-500">Kendaraan</p>
-                  <p className="font-bold text-white">{booking.car?.brand} {booking.car?.name}</p>
-                  <p className="text-xs text-zinc-400 capitalize">{booking.car?.category?.toLowerCase()}</p>
+                  <p className="text-[10px] text-foreground/50 uppercase font-bold">Unit Armada</p>
+                  <p className="font-bold text-foreground text-sm">{booking.car?.brand} {booking.car?.name}</p>
+                  <p className="text-xs text-foreground/60 capitalize">{booking.car?.category?.toLowerCase()}</p>
                 </div>
-                <div className="h-px bg-[#2a2548]" />
+                <div className="h-px bg-border" />
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-zinc-500 flex items-center gap-1 mb-0.5"><Calendar size={10} /> Mulai</p>
-                    <p className="text-sm font-semibold text-white">{startDate ? format(startDate, 'dd MMM yyyy', { locale: localeId }) : '-'}</p>
-                    <p className="text-xs text-zinc-400">{startDate ? format(startDate, 'HH:mm') : '-'}</p>
+                    <p className="text-[10px] text-foreground/50 flex items-center gap-1 mb-0.5"><Calendar size={11} /> Mulai</p>
+                    <p className="font-semibold text-foreground">{startDate ? format(startDate, 'dd MMM yyyy', { locale: localeId }) : '-'}</p>
+                    <p className="text-foreground/50">{startDate ? format(startDate, 'HH:mm') : '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500 flex items-center gap-1 mb-0.5"><Calendar size={10} /> Selesai</p>
-                    <p className="text-sm font-semibold text-white">{endDate ? format(endDate, 'dd MMM yyyy', { locale: localeId }) : '-'}</p>
-                    <p className="text-xs text-zinc-400">{endDate ? format(endDate, 'HH:mm') : '-'}</p>
+                    <p className="text-[10px] text-foreground/50 flex items-center gap-1 mb-0.5"><Calendar size={11} /> Selesai</p>
+                    <p className="font-semibold text-foreground">{endDate ? format(endDate, 'dd MMM yyyy', { locale: localeId }) : '-'}</p>
+                    <p className="text-foreground/50">{endDate ? format(endDate, 'HH:mm') : '-'}</p>
                   </div>
                 </div>
                 {booking.durationMinutes && (
-                  <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-                    <Clock size={13} className="text-zinc-500" />
-                    <span>Durasi: {formatDuration(booking.durationMinutes)}</span>
+                  <div className="flex items-center gap-1.5 text-foreground/70">
+                    <Clock size={13} className="text-foreground/50" />
+                    <span>Durasi Sewa: {formatDuration(booking.durationMinutes)}</span>
                   </div>
                 )}
                 {booking.pickupLocation && (
-                  <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-                    <MapPin size={13} className="text-zinc-500" />
-                    <span>{booking.pickupLocation}</span>
+                  <div className="flex items-center gap-1.5 text-foreground/70">
+                    <MapPin size={13} className="text-foreground/50" />
+                    <span>Lokasi: {booking.pickupLocation}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Cost Breakdown Card — clear, line-by-line */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-              className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-[#13112a] rounded-xl"><Receipt size={16} className="text-zinc-300" /></div>
-                <h2 className="font-bold text-white">Rincian Biaya</h2>
+            {/* Cost Breakdown Card */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+              className="bg-card border border-border rounded-2xl p-6 shadow-xs">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="p-2 bg-secondary/50 rounded-xl text-foreground"><Receipt size={16} /></div>
+                <h2 className="font-bold text-foreground text-sm uppercase tracking-wide">Rincian Biaya</h2>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 text-xs sm:text-sm">
                 {/* Base Price */}
-                <div className="flex justify-between text-sm py-1">
-                  <span className="text-zinc-400">Harga Sewa</span>
-                  <span className="font-semibold text-white">{formatCurrency(booking.totalPrice || 0)}</span>
+                <div className="flex justify-between py-1">
+                  <span className="text-foreground/70">Harga Sewa</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(booking.totalPrice || 0)}</span>
                 </div>
 
-                {/* Penalty (if any) */}
+                {/* Penalty */}
                 {penaltyAmount > 0 && (
-                  <div className="flex justify-between text-sm py-1">
-                    <span className="text-red-400">Denda</span>
-                    <span className="font-semibold text-red-400">+ {formatCurrency(penaltyAmount)}</span>
+                  <div className="flex justify-between py-1">
+                    <span className="text-red-600">Denda Keterlambatan</span>
+                    <span className="font-semibold text-red-600">+ {formatCurrency(penaltyAmount)}</span>
                   </div>
                 )}
 
-                {/* Extra Cost (if any) */}
+                {/* Extra Cost */}
                 {extraCost > 0 && (
-                  <div className="flex justify-between text-sm py-1">
-                    <span className="text-zinc-400">Biaya Tambahan</span>
-                    <span className="font-semibold text-white">+ {formatCurrency(extraCost)}</span>
+                  <div className="flex justify-between py-1">
+                    <span className="text-foreground/70">Biaya Tambahan</span>
+                    <span className="font-semibold text-foreground">+ {formatCurrency(extraCost)}</span>
                   </div>
                 )}
 
-                {/* Subtle divider before total gross */}
-                <div className="h-px bg-[#2a2548] my-1" />
+                <div className="h-px bg-border my-1" />
 
                 {/* Total Bill */}
-                <div className="flex justify-between text-sm py-1">
-                  <span className="text-zinc-400">Subtotal</span>
-                  <span className="font-semibold text-white">{formatCurrency(totalBill)}</span>
+                <div className="flex justify-between py-1">
+                  <span className="text-foreground/70">Total Tagihan</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(totalBill)}</span>
                 </div>
 
                 {/* DP Paid */}
-                <div className="flex justify-between text-sm py-1">
-                  <span className="text-zinc-400">DP Dibayar</span>
-                  <span className="font-semibold text-emerald-400">- {formatCurrency(paidAmount)}</span>
+                <div className="flex justify-between py-1">
+                  <span className="text-foreground/70">DP yang Telah Dibayar</span>
+                  <span className="font-semibold text-emerald-700">- {formatCurrency(paidAmount)}</span>
                 </div>
 
-                {/* Strong divider before final */}
-                <div className="h-px bg-[#f97316]/30 my-2" />
+                <div className="h-px bg-border my-2" />
 
-                {/* Remaining — bold hero callout */}
+                {/* Remaining */}
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-base font-bold text-white">Sisa Tagihan</span>
-                  <span className="text-2xl font-black text-[#f97316]">{formatCurrency(remainingAmount)}</span>
+                  <span className="text-sm font-bold text-foreground">Sisa yang Harus Dilunasi</span>
+                  <span className="text-2xl font-black text-foreground">{formatCurrency(remainingAmount)}</span>
                 </div>
               </div>
             </motion.div>
 
             {/* Booking ID */}
-            <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div className="bg-card border border-border rounded-2xl px-4 py-3 flex items-center justify-between shadow-xs">
               <div>
-                <p className="text-xs text-zinc-500">Booking ID</p>
-                <p className="font-mono text-xs font-bold text-zinc-300">{booking.id}</p>
+                <p className="text-[10px] text-foreground/50 uppercase font-bold">Booking ID</p>
+                <p className="font-mono text-xs font-bold text-foreground">{booking.id}</p>
               </div>
               <CopyButton text={booking.id} />
             </div>
           </motion.div>
 
           {/* RIGHT COLUMN — Payment Form */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-6">
             {/* Payment Method Selector */}
-            <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#13112a] rounded-xl"><CreditCard size={16} className="text-zinc-300" /></div>
-                <h2 className="font-bold text-white">Metode Pelunasan</h2>
+            <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-secondary/50 rounded-xl text-foreground"><CreditCard size={16} /></div>
+                <h2 className="font-bold text-foreground text-xs sm:text-sm uppercase tracking-wide">Pilih Metode Pelunasan</h2>
               </div>
 
               {/* Mode Tabs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setPaymentMode('INSTANT')}
                   className={cn(
-                    'p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
+                    'p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
                     paymentMode === 'INSTANT'
-                      ? 'border-[#f97316] bg-[#13112a] shadow-md shadow-[#f97316]/10'
-                      : 'border-[#2a2548] bg-[#13112a]/50 hover:border-[#f97316]/50'
+                      ? 'border-foreground bg-secondary/30 shadow-xs'
+                      : 'border-border bg-background hover:border-foreground/30'
                   )}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f97316]/20 text-[#f97316]">
-                      <Sparkles size={11} /> Instan
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-foreground text-background">
+                      <Sparkles size={10} /> Instan
                     </span>
                     <div className={cn(
-                      'w-4 h-4 rounded-full border-2 flex items-center justify-center',
-                      paymentMode === 'INSTANT' ? 'border-[#f97316] bg-[#f97316]' : 'border-[#2a2548]'
+                      'w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                      paymentMode === 'INSTANT' ? 'border-foreground bg-foreground' : 'border-border'
                     )}>
-                      {paymentMode === 'INSTANT' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      {paymentMode === 'INSTANT' && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
                     </div>
                   </div>
-                  <p className="text-sm font-bold text-white">QRIS & Virtual Account</p>
-                  <p className="text-xs text-zinc-400 mt-1">Konfirmasi otomatis via Midtrans Snap tanpa upload bukti.</p>
+                  <p className="text-[11px] sm:text-sm font-bold text-foreground leading-tight">QRIS & VA</p>
+                  <p className="text-[10px] sm:text-[11px] text-foreground/60 mt-1 line-clamp-2">Otomatis via Midtrans Snap.</p>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaymentMode('MANUAL')}
                   className={cn(
-                    'p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
+                    'p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
                     paymentMode === 'MANUAL'
-                      ? 'border-[#f97316] bg-[#13112a] shadow-md shadow-[#f97316]/10'
-                      : 'border-[#2a2548] bg-[#13112a]/50 hover:border-[#f97316]/50'
+                      ? 'border-foreground bg-secondary/30 shadow-xs'
+                      : 'border-border bg-background hover:border-foreground/30'
                   )}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-zinc-400">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-secondary text-foreground border border-border">
                       Manual
                     </span>
                     <div className={cn(
-                      'w-4 h-4 rounded-full border-2 flex items-center justify-center',
-                      paymentMode === 'MANUAL' ? 'border-[#f97316] bg-[#f97316]' : 'border-[#2a2548]'
+                      'w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                      paymentMode === 'MANUAL' ? 'border-foreground bg-foreground' : 'border-border'
                     )}>
-                      {paymentMode === 'MANUAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      {paymentMode === 'MANUAL' && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
                     </div>
                   </div>
-                  <p className="text-sm font-bold text-white">Transfer Rekening Bank</p>
-                  <p className="text-xs text-zinc-400 mt-1">Transfer langsung ke rekening kami & upload struk.</p>
+                  <p className="text-[11px] sm:text-sm font-bold text-foreground leading-tight">Transfer Bank</p>
+                  <p className="text-[10px] sm:text-[11px] text-foreground/60 mt-1 line-clamp-2">Upload bukti transfer.</p>
                 </button>
               </div>
 
               {/* Conditional body */}
               {paymentMode === 'INSTANT' ? (
-                <div className="p-4 rounded-xl bg-[#13112a] border border-[#2a2548] space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+                <div className="p-4 rounded-xl bg-background border border-border space-y-2">
+                  <div className="flex items-center gap-2 text-foreground text-xs font-bold">
                     <CheckCircle2 size={15} />
-                    <span>Pembayaran Instan Otomatis</span>
+                    <span>Pembayaran Instan & Otomatis Terverifikasi</span>
                   </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Klik tombol di bawah untuk membuka jendela pembayaran Midtrans. Anda bisa scan QRIS (GoPay, OVO, BCA, Mandiri) dan transaksi langsung terverifikasi secara instan.
+                  <p className="text-xs text-foreground/70 leading-relaxed">
+                    Klik tombol di bawah untuk membuka popup Midtrans Snap. Anda bisa membayar lewat QRIS (GoPay, OVO, Dana, ShopeePay, BCA, Mandiri) atau Virtual Account.
                   </p>
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 pt-2">
-                    <p className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Pilih Rekening Tujuan</p>
+                  <div className="space-y-2.5 pt-2">
+                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Pilih Rekening Tujuan</p>
                     {BANK_ACCOUNTS.map((bank) => (
                       <button key={bank.id} type="button" onClick={() => setSelectedBank(bank.id)}
                         className={cn(
-                          'w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left',
+                          'w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left cursor-pointer',
                           selectedBank === bank.id
-                            ? 'border-[#f97316] bg-[#f97316]/10'
-                            : 'border-[#2a2548] hover:border-zinc-500 bg-[#13112a]/60'
+                            ? 'border-foreground bg-secondary/30 ring-1 ring-foreground/20'
+                            : 'border-border hover:border-foreground/30 bg-background'
                         )}>
                         <div className="flex items-center gap-3">
-                          <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', bank.color, bank.id === 'BCA' ? 'bg-blue-500/20 border border-blue-500/30' : '')}>
+                          <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center border border-border', bank.color)}>
                             {bank.logo}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{bank.fullName}</p>
-                            <p className="text-xs text-zinc-400 font-mono">{bank.number}</p>
-                            <p className="text-xs text-zinc-500">{bank.accountName}</p>
+                            <p className="text-xs font-bold text-foreground">{bank.fullName}</p>
+                            <p className="text-xs text-foreground/70 font-mono">{bank.number}</p>
+                            <p className="text-[10px] text-foreground/50">{bank.accountName}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <CopyButton text={bank.number} />
-                          <div className={cn('w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center', selectedBank === bank.id ? 'border-[#f97316] bg-[#f97316]' : 'border-zinc-500')}>
-                            {selectedBank === bank.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          <div className={cn('w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center', selectedBank === bank.id ? 'border-foreground bg-foreground' : 'border-border')}>
+                            {selectedBank === bank.id && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
                           </div>
                         </div>
                       </button>
@@ -519,11 +520,11 @@ export default function PelunasanPage() {
 
                   {/* Transfer Amount Reminder */}
                   {selectedBank && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                      className="bg-[#f97316]/10 border border-[#f97316]/30 rounded-2xl px-5 py-4">
-                      <p className="text-xs font-bold text-[#f97316] mb-1">Transfer tepat sejumlah:</p>
-                      <p className="text-2xl font-black text-[#f97316]">{formatCurrency(remainingAmount)}</p>
-                      <p className="text-xs text-[#f97316]/80 mt-1">
+                    <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                      className="bg-secondary/40 border border-border rounded-2xl px-5 py-4">
+                      <p className="text-xs font-bold text-foreground mb-1">Transfer tepat sejumlah:</p>
+                      <p className="text-2xl font-black text-foreground">{formatCurrency(remainingAmount)}</p>
+                      <p className="text-xs text-foreground/70 mt-1">
                         ke rekening {BANK_ACCOUNTS.find(b => b.id === selectedBank)?.fullName} &bull;{' '}
                         {BANK_ACCOUNTS.find(b => b.id === selectedBank)?.number}
                       </p>
@@ -531,40 +532,40 @@ export default function PelunasanPage() {
                   )}
 
                   {/* Upload Bukti Transfer */}
-                  <div className="space-y-3 pt-2">
-                    <p className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Upload Bukti Transfer</p>
+                  <div className="space-y-2 pt-2">
+                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Upload Struk Bukti Transfer</p>
                     {!uploadedPreview ? (
                       <div {...getRootProps()}
                         className={cn(
-                          'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors',
-                          isDragActive ? 'border-[#f97316] bg-[#f97316]/10' : 'border-[#2a2548] hover:border-zinc-500 hover:bg-[#2a2548]/30'
+                          'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors bg-background',
+                          isDragActive ? 'border-foreground bg-secondary/30' : 'border-border hover:border-foreground/40'
                         )}>
                         <input {...getInputProps()} />
-                        <ImageIcon className="mx-auto w-8 h-8 text-zinc-500 mb-3" />
-                        <p className="text-sm font-semibold text-zinc-300">{isDragActive ? 'Letakkan file di sini' : 'Klik atau drag foto bukti transfer'}</p>
-                        <p className="text-xs text-zinc-500 mt-1">JPG, PNG, WebP - Maks. 10MB</p>
+                        <ImageIcon className="mx-auto w-8 h-8 text-foreground/40 mb-2" />
+                        <p className="text-xs font-semibold text-foreground">{isDragActive ? 'Lepaskan file di sini' : 'Klik atau drag foto bukti transfer'}</p>
+                        <p className="text-[10px] text-foreground/50 mt-1">JPG, PNG, WebP — Maksimal 10MB</p>
                       </div>
                     ) : (
-                      <div className="relative rounded-xl overflow-hidden border border-[#2a2548]">
-                        <img src={uploadedPreview} alt="Bukti transfer" className="w-full h-48 object-contain bg-[#13112a]" />
+                      <div className="relative rounded-xl overflow-hidden border border-border bg-background">
+                        <img src={uploadedPreview} alt="Bukti transfer" className="w-full h-44 object-contain" />
                         <button onClick={removeFile}
-                          className="absolute top-2 right-2 p-1.5 bg-[#1b1838]/90 backdrop-blur rounded-full border border-[#2a2548] hover:bg-red-500/20 hover:border-red-500/30 text-zinc-400 hover:text-red-400 transition-all">
+                          className="absolute top-2 right-2 p-1.5 bg-background/90 backdrop-blur rounded-full border border-border hover:bg-red-50 text-foreground/70 hover:text-red-600 transition-all cursor-pointer">
                           <X size={14} />
                         </button>
-                        <div className="px-4 py-2 bg-[#13112a]/60 border-t border-[#2a2548] flex items-center gap-2">
-                          <ImageIcon size={13} className="text-zinc-500" />
-                          <span className="text-xs text-zinc-400 truncate">{uploadedFile?.name}</span>
+                        <div className="px-4 py-2 bg-background border-t border-border flex items-center gap-2">
+                          <ImageIcon size={13} className="text-foreground/50" />
+                          <span className="text-xs text-foreground/70 truncate">{uploadedFile?.name}</span>
                         </div>
                       </div>
                     )}
                   </div>
 
                   {/* Notes */}
-                  <div className="space-y-2 pt-2">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider block">Catatan (opsional)</label>
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider block">Catatan Tambahan (opsional)</label>
                     <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Misal: transfer pada 12 Juli jam 14:00 dari BNI ..."
-                      className="w-full rounded-xl border border-[#2a2548] bg-[#13112a]/60 text-sm text-zinc-200 placeholder:text-zinc-500 p-3 focus:outline-none focus:border-[#f97316] resize-none h-20" />
+                      placeholder="Contoh: ditransfer via mobile banking BCA atas nama ..."
+                      className="w-full rounded-xl border border-border bg-background text-xs text-foreground placeholder:text-foreground/40 p-3 focus:outline-none focus:border-foreground/50 resize-none h-20" />
                   </div>
                 </>
               )}
@@ -572,25 +573,25 @@ export default function PelunasanPage() {
 
             {/* Submit Error */}
             {submitError && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl">
-                <AlertCircle size={16} className="text-red-400 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-300 font-medium">{submitError}</p>
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-2.5 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700">
+                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                <p className="text-xs font-semibold">{submitError}</p>
               </motion.div>
             )}
 
             {/* CTA — Final Payment */}
             <Button onClick={handleSubmit} disabled={submitting}
-              className="w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-bold h-14 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-lg shadow-lg shadow-[#f97316]/20">
+              className="w-full bg-foreground hover:bg-foreground/90 text-background font-bold h-13 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base shadow-xs cursor-pointer">
               {submitting ? (
-                <><Loader2 size={20} className="animate-spin" /> Memproses...</>
+                <><Loader2 size={18} className="animate-spin" /> Memproses...</>
               ) : (
-                <><CheckCircle2 size={20} /> Konfirmasi Pelunasan Sekarang</>
+                <><CheckCircle2 size={18} /> Konfirmasi Pelunasan Sekarang</>
               )}
             </Button>
 
-            <p className="text-center text-xs text-zinc-500">
-              Dengan mengklik tombol di atas, Anda menyatakan telah melakukan pembayaran sisa tagihan
+            <p className="text-center text-[11px] text-foreground/50">
+              Dengan mengklik konfirmasi, Anda menyatakan data pembayaran yang dimasukkan sudah benar.
             </p>
           </motion.div>
         </div>

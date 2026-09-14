@@ -62,7 +62,7 @@ export function DashboardKPIs({ bookings, cars, drivers }: DashboardKPIsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2.5 sm:gap-4 mb-8">
       {kpis.map((kpi, idx) => (
         <motion.div
           key={kpi.title}
@@ -70,14 +70,14 @@ export function DashboardKPIs({ bookings, cars, drivers }: DashboardKPIsProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: idx * 0.03 }}
         >
-          <div className="bg-white border border-zinc-200/80 hover:border-zinc-300 hover:shadow-md transition-all rounded-3xl p-5 shadow-xs flex flex-col justify-between h-full">
-            <div className="flex items-center justify-between pb-2">
-              <span className="text-xs font-bold text-zinc-500 truncate">{kpi.title}</span>
-              <div className="p-2 rounded-xl bg-zinc-100 border border-zinc-200/70 text-zinc-800">
-                <kpi.icon className="h-4 w-4 text-zinc-800" />
+          <div className="bg-white border border-zinc-200/80 hover:border-zinc-300 hover:shadow-md transition-all rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xs flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between pb-1 sm:pb-2">
+              <span className="text-[10px] sm:text-xs font-bold text-zinc-500 truncate">{kpi.title}</span>
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-zinc-100 border border-zinc-200/70 text-zinc-800 shrink-0 ml-1">
+                <kpi.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-zinc-800" />
               </div>
             </div>
-            <div className="text-xl font-extrabold tracking-tight text-zinc-950 mt-1">{kpi.value}</div>
+            <div className="text-sm sm:text-xl font-extrabold tracking-tight text-zinc-950 mt-1 truncate">{kpi.value}</div>
           </div>
         </motion.div>
       ))}

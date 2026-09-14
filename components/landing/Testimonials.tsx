@@ -30,9 +30,6 @@ export function Testimonials() {
         
         {/* Section Header */}
         <div className="text-center mb-16 space-y-3">
-          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 uppercase tracking-wider">
-            <MessageSquare size={13} /> Testimoni Nyata
-          </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight text-white">
             Apa Kata <br />
             <span className="text-[#f97316]">

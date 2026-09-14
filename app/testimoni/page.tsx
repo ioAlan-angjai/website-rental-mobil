@@ -5,7 +5,6 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, Quote, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function TestimoniPage() {
@@ -16,69 +15,45 @@ export default function TestimoniPage() {
     fetch('/api/testimonials')
       .then((r) => r.json())
       .then((res) => {
-        if (res.data) {
-          setTestimonials(res.data);
-        }
+        if (res.data) setTestimonials(res.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#13112a]">
+    <div className="min-h-screen bg-[#F8F2F1] text-[#1A1A1A]">
       <Navbar />
 
       {/* Header Banner */}
-      <section className="relative pt-28 pb-10 px-4 border-b border-[#2a2548]/50">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#f97316]/[0.02] rounded-full blur-[120px]" />
-        </div>
-        <div className="max-w-7xl mx-auto relative z-10 text-center space-y-4">
-          <div className="flex justify-center items-center gap-2 text-xs text-white/40">
-            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-            <span>/</span>
-            <span className="text-white font-bold">Testimoni</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-            Testimoni Pelanggan
+      <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-[#1A1A1A] tracking-tight mb-4">
+            Cerita &amp; Pengalaman Pelanggan
           </h1>
-          <p className="text-white/50 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-            Dengar langsung pengalaman mereka yang telah mempercayakan perjalanan bersama kami di Yogyakarta
+          <p className="text-[#504745] max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+            Dengar langsung ulasan jujur dari wisatawan, profesional, dan keluarga yang telah mempercayakan perjalanannya kepada RentalMobil Jogja.
           </p>
-        </div>
-      </section>
-
-      {/* Intro Card */}
-      <section className="py-12 px-4 max-w-7xl mx-auto">
-        <div className="bg-[#1b1838] p-8 md:p-12 rounded-2xl border border-[#2a2548] text-center max-w-4xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-[#13112a] border border-[#2a2548] flex items-center justify-center mx-auto mb-6">
-            <MessageSquare size={28} className="text-[#f97316]" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Kepuasan Pelanggan Adalah Prioritas Kami
-          </h2>
-          <p className="text-white/50 max-w-2xl mx-auto leading-relaxed">
-            Kami bangga melayani ribuan pelanggan dari berbagai daerah. Berikut testimoni mereka yang telah merasakan pelayanan terbaik RentalMobil Jogja.
-          </p>
-        </div>
+        </motion.div>
       </section>
 
       {/* Testimonials Grid */}
-      <section className="py-12 pb-20 px-4 max-w-7xl mx-auto">
+      <section className="pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-60 rounded-2xl bg-[#1b1838]/60 border border-[#2a2548] animate-pulse p-6" />
+              <div key={i} className="h-48 sm:h-64 rounded-2xl sm:rounded-3xl bg-[#FFFFFF] border border-[#D7CDCC] animate-pulse p-4 sm:p-6" />
             ))}
           </div>
         ) : testimonials.length === 0 ? (
-          <div className="text-center py-12 text-white/40 text-sm">
-            Belum ada testimoni di database.
+          <div className="text-center py-16 text-[#756A68] text-sm bg-[#FFFFFF] border border-[#D7CDCC] rounded-3xl max-w-lg mx-auto p-8">
+            <p className="font-semibold text-[#1A1A1A] mb-1">Belum Ada Ulasan</p>
+            <p className="text-xs text-[#756A68]">Ulasan pelanggan akan segera ditampilkan di sini.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6">
             {testimonials.map((t, idx) => {
-              const initials = t.name
+              const initials = (t.name || 'User')
                 .split(' ')
                 .map((n: string) => n[0])
                 .join('')
@@ -87,44 +62,45 @@ export default function TestimoniPage() {
               return (
                 <motion.div
                   key={t.id || idx}
-                  initial={{ opacity: 0, y: 25 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-50px' }}
-                  transition={{ duration: 0.5, delay: (idx % 3) * 0.08 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: (idx % 3) * 0.08 }}
+                  className="bg-[#FFFFFF] border border-[#D7CDCC] rounded-2xl sm:rounded-3xl p-3.5 sm:p-7 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                 >
-                  <div className="group relative p-6 rounded-2xl bg-[#1b1838] border border-[#2a2548] hover:border-[#f97316]/30 transition-all duration-300 flex flex-col justify-between h-full hover:-translate-y-1">
-                    <Quote size={28} className="absolute top-5 right-5 text-white/[0.04] group-hover:text-[#f97316]/10 transition-colors duration-300" />
-
-                    <div className="space-y-4">
-                      <div className="flex gap-0.5">
+                  <div className="space-y-2.5 sm:space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-0.5 sm:gap-1">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
-                            size={15}
+                            size={11}
                             className={
-                              i < t.rating
-                                ? 'text-[#f97316] fill-[#f97316]'
-                                : 'text-white/20 fill-white/20'
+                              i < (t.rating || 5)
+                                ? 'text-amber-400 fill-amber-400 sm:w-3.5 sm:h-3.5'
+                                : 'text-[#E3DDDC] fill-[#E3DDDC] sm:w-3.5 sm:h-3.5'
                             }
                           />
                         ))}
                       </div>
-                      <p className="text-white/80 text-sm leading-relaxed italic">
-                        "{t.comment || t.text}"
-                      </p>
+                      <Quote size={16} className="text-[#D7CDCC] sm:w-5 sm:h-5 shrink-0" />
                     </div>
 
-                    <div className="flex items-center gap-3 pt-5 border-t border-[#2a2548]/50 mt-5 shrink-0">
-                      <Avatar className="w-10 h-10 border border-[#2a2548]">
-                        {t.avatar && <AvatarImage src={t.avatar} alt={t.name} />}
-                        <AvatarFallback className="bg-[#13112a] text-[#f97316] font-bold text-xs">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-bold text-white">{t.name}</p>
-                        <p className="text-xs text-white/50 mt-0.5">{t.role}</p>
-                      </div>
+                    <p className="text-[10px] sm:text-sm text-[#2B2322] leading-relaxed italic line-clamp-4 sm:line-clamp-none">
+                      &ldquo;{t.comment || t.text}&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:gap-3 pt-3 sm:pt-5 border-t border-[#F0E6E4] mt-3 sm:mt-5">
+                    <Avatar className="w-7 h-7 sm:w-10 sm:h-10 border border-[#D7CDCC] shrink-0">
+                      {t.avatar && <AvatarImage src={t.avatar} alt={t.name} />}
+                      <AvatarFallback className="bg-[#F8F7F6] text-[#1A1A1A] font-bold text-[10px] sm:text-xs">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-[11px] sm:text-sm font-bold text-[#1A1A1A] truncate">{t.name}</p>
+                      <p className="text-[9px] sm:text-[11px] text-[#756A68] truncate">{t.role || 'Pelanggan Terverifikasi'}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -138,3 +114,4 @@ export default function TestimoniPage() {
     </div>
   );
 }
+

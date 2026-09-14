@@ -1,73 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* ═══════════════════════════════════════════════
+     DESIGN SYSTEM — Stitch-based Light Theme
+     Brand: Warm neutral / cream / mauve
+     ═══════════════════════════════════════════════ */
+
   :root {
-    --background: 245 34% 12%;
-    --foreground: 210 40% 98%;
-    --card: 245 34% 16%;
-    --card-foreground: 210 40% 98%;
-    --popover: 245 34% 14%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 24 95% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20.2% 65.1%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 245 34% 18%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 245 34% 22%;
-    --input: 245 34% 22%;
-    --ring: 24 95% 53%;
-    --radius: 1rem;
-  }
+    /* ── Core Surfaces ── */
+    --background: 8 30% 96%;          /* #F8F2F1 — page bg (warm cream) */
+    --foreground: 0 0% 10%;           /* #1A1A1A — primary text */
 
-  .dark {
-    --background: 245 34% 12%;
-    --foreground: 210 40% 98%;
-    --card: 245 34% 16%;
-    --card-foreground: 210 40% 98%;
-    --popover: 245 34% 14%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 24 95% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20.2% 65.1%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 245 34% 18%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 245 34% 22%;
-    --input: 245 34% 22%;
-    --ring: 24 95% 53%;
-  }
+    --card: 0 0% 100%;                /* #FFFFFF — card surface */
+    --card-foreground: 0 0% 10%;
 
-  .admin-theme, .light {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 0 0% 10%;
+
+    /* ── Interactive ── */
+    --primary: 0 0% 10%;              /* #1A1A1A — CTA buttons, links */
+    --primary-foreground: 0 0% 100%;  /* white text on dark buttons */
+
+    --secondary: 30 11% 97%;          /* #F8F7F6 — secondary surfaces */
+    --secondary-foreground: 0 0% 20%;
+
+    --accent: 30 11% 97%;             /* #F8F7F6 */
+    --accent-foreground: 0 0% 10%;
+
+    --muted: 30 11% 97%;              /* #F8F7F6 — muted bg */
+    --muted-foreground: 0 0% 45%;     /* gray text */
+
+    /* ── Semantic ── */
+    --destructive: 0 72% 51%;         /* red */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 69% 31%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+
+    --info: 210 40% 50%;
+    --info-foreground: 0 0% 100%;
+
+    /* ── Borders & Inputs ── */
+    --border: 5 8% 88%;               /* #E3DDDC — warm light border */
+    --input: 5 8% 88%;
+    --ring: 5 11% 72%;                /* #BFB3B1 — focus ring (warm) */
+
+    /* ── Radius ── */
+    --radius: 0.75rem;
+
+    /* ── Extended Tokens ── */
+    --surface-elevated: 0 0% 100%;    /* white — elevated cards */
+    --surface-sunken: 8 20% 94%;      /* slightly darker bg for sections */
+    --border-strong: 5 11% 82%;       /* #D7CDCC — stronger border */
+    --text-heading: 0 0% 8%;          /* near-black headings */
+    --text-body: 0 0% 25%;            /* dark gray body */
+    --text-muted: 0 0% 50%;           /* mid-gray muted */
+    --text-subtle: 0 0% 65%;          /* light gray subtle */
+    --hero-bg: 8 50% 95%;             /* warm peach hero */
+    --hero-bg-end: 30 30% 97%;        /* hero gradient end */
+    --cta-bg: 0 0% 10%;               /* dark CTA banner */
+    --footer-bg: 0 0% 8%;             /* very dark footer */
+    --footer-text: 0 0% 70%;          /* gray footer text */
+  }
+
+  /* ── Admin Theme (preserved — not redesigned) ── */
+  .admin-theme {
+    --background: 220 14% 96%;
+    --foreground: 224 71% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 224 71% 4%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 220 90% 56%;
   }
 }
 
@@ -77,10 +100,63 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", sans-serif;
+    font-family: var(--font-sans), 'Plus Jakarta Sans', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), 'Manrope', 'Plus Jakarta Sans', 'Inter', sans-serif;
+    color: hsl(var(--text-heading));
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  p {
+    color: hsl(var(--text-body));
+    line-height: 1.7;
   }
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border-strong)); border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* ── Utility Classes ── */
+@layer utilities {
+  .surface-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+  .surface-elevated {
+    background: hsl(var(--surface-elevated));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.04);
+  }
+  .surface-sunken {
+    background: hsl(var(--surface-sunken));
+  }
+  .text-heading { color: hsl(var(--text-heading)); }
+  .text-body { color: hsl(var(--text-body)); }
+  .text-muted-custom { color: hsl(var(--text-muted)); }
+  .text-subtle { color: hsl(var(--text-subtle)); }
+  .border-strong { border-color: hsl(var(--border-strong)); }
+  .hero-gradient {
+    background: linear-gradient(180deg, hsl(var(--hero-bg)), hsl(var(--hero-bg-end)));
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* ── Print ── */
+@media print {
+  .print\:hidden { display: none !important; }
+  body { background: white !important; color: black !important; }
 }

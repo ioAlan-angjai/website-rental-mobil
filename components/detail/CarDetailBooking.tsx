@@ -41,37 +41,37 @@ export function CarDetailBooking({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="sticky top-24 p-8 rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-800/30 border border-sky-400/20 backdrop-blur-md"
+      transition={{ delay: 0.3 }}
+      className="sticky top-24 p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-xs"
     >
-      <h3 className="text-2xl font-bold text-white mb-6">Pesan Sekarang</h3>
+      <h3 className="text-xl font-bold text-foreground mb-6">Pesan Sekarang</h3>
 
       {/* Date Inputs */}
       <div className="space-y-4 mb-6">
         <div>
-          <label className="block text-sm text-slate-400 mb-2">Tanggal Mulai</label>
-          <div className="flex items-center gap-3 p-3 bg-slate-700/30 border border-slate-600/50 rounded-lg">
-            <Calendar size={18} className="text-sky-400" />
+          <label className="block text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-2">Tanggal Mulai</label>
+          <div className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl">
+            <Calendar size={16} className="text-foreground/70" />
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => onDateFromChange(e.target.value)}
-              className="flex-1 bg-transparent text-white focus:outline-none"
+              className="flex-1 bg-transparent text-foreground text-xs font-medium focus:outline-none"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-2">Tanggal Berakhir</label>
-          <div className="flex items-center gap-3 p-3 bg-slate-700/30 border border-slate-600/50 rounded-lg">
-            <Calendar size={18} className="text-sky-400" />
+          <label className="block text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-2">Tanggal Selesai</label>
+          <div className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl">
+            <Calendar size={16} className="text-foreground/70" />
             <input
               type="date"
               value={dateTo}
               onChange={(e) => onDateToChange(e.target.value)}
-              className="flex-1 bg-transparent text-white focus:outline-none"
+              className="flex-1 bg-transparent text-foreground text-xs font-medium focus:outline-none"
             />
           </div>
         </div>
@@ -79,32 +79,32 @@ export function CarDetailBooking({
 
       {/* Duration Info */}
       {rentalDays > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-sky-500/10 border border-sky-400/20 rounded-lg mb-6">
-          <Clock size={18} className="text-sky-400" />
-          <span className="text-sm text-slate-300">Durasi: {rentalDays} hari</span>
+        <div className="flex items-center gap-2 p-3 bg-secondary/40 border border-border rounded-xl mb-6 text-xs text-foreground font-semibold">
+          <Clock size={16} className="text-foreground/70" />
+          <span>Durasi Rental: {rentalDays} Hari</span>
         </div>
       )}
 
       {/* Price Breakdown */}
       {basePrice > 0 && (
-        <div className="p-4 bg-slate-700/20 rounded-lg mb-6 space-y-2 text-sm">
-          <div className="flex justify-between text-slate-300">
+        <div className="p-4 bg-background rounded-xl mb-6 space-y-2 text-xs border border-border">
+          <div className="flex justify-between text-foreground/70">
             <span>Harga per hari:</span>
             <span>{formatCurrency(car.pricePerDay)}</span>
           </div>
-          <div className="flex justify-between text-slate-300">
+          <div className="flex justify-between text-foreground/70">
             <span>Total ({rentalDays} hari):</span>
             <span>{formatCurrency(basePrice)}</span>
           </div>
           {discount > 0 && (
-            <div className="flex justify-between text-emerald-400 pt-2 border-t border-slate-600/50">
-              <span>Diskon Mahasiswa ({car.studentDiscount}%):</span>
+            <div className="flex justify-between text-foreground font-semibold pt-2 border-t border-border">
+              <span>Diskon ({car.studentDiscount}%):</span>
               <span>-{formatCurrency(discount)}</span>
             </div>
           )}
-          <div className="flex justify-between text-white font-bold text-base pt-2 border-t border-slate-600/50">
+          <div className="flex justify-between text-foreground font-bold text-sm pt-2 border-t border-border">
             <span>Total Bayar:</span>
-            <span className="bg-gradient-to-r from-sky-400 to-amber-400 bg-clip-text text-transparent">
+            <span className="text-foreground font-black">
               {formatCurrency(totalPrice)}
             </span>
           </div>
@@ -112,18 +112,16 @@ export function CarDetailBooking({
       )}
 
       {/* CTA Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+      <button
         disabled={!dateFrom || !dateTo}
-        className="w-full py-3 bg-gradient-to-r from-sky-400 to-amber-400 text-slate-900 font-bold rounded-lg hover:shadow-lg hover:shadow-sky-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="w-full py-3 bg-foreground text-background font-bold text-xs rounded-xl hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
       >
-        {!dateFrom || !dateTo ? 'Pilih Tanggal Terlebih Dahulu' : 'Lanjut ke Checkout'}
-      </motion.button>
+        {!dateFrom || !dateTo ? 'Pilih Tanggal Terlebih Dahulu' : 'Lanjut ke Pemesanan'}
+      </button>
 
       {/* Info */}
-      <p className="text-xs text-slate-500 mt-4 text-center">
-        Asuransi comprehensive & roadside assistance termasuk
+      <p className="text-[11px] text-foreground/50 mt-4 text-center">
+        Asuransi standar & bantuan operasional 24/7 termasuk.
       </p>
     </motion.div>
   );

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  CalendarCheck, Car, CreditCard, AlertCircle, CheckCircle2,
+  CalendarCheck, Car, CreditCard, CheckCircle2,
   Clock, XCircle, ArrowRight, Loader2, MapPin, Settings2,
   Calendar, FileText, ChevronRight, RefreshCw, Landmark,
   Wallet, AlertTriangle
@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { formatDuration, formatRupiah } from '@/lib/utils';
-import { BOOKING_STATUS_MAP, STATUS_STEPS, getStatusMeta } from '@/lib/booking-status';
+import { STATUS_STEPS, getStatusMeta } from '@/lib/booking-status';
 import { openSnapPayment } from '@/lib/snap';
 
 function getPaidAmount(booking: any): number {
@@ -158,10 +158,10 @@ export default function RiwayatBookingPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-[#13112a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-[#2a2548] border-t-amber-400 animate-spin" />
-          <p className="text-sm text-zinc-300 tracking-wide">Memuat...</p>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-border border-t-foreground animate-spin" />
+          <p className="text-xs text-foreground/60 tracking-wide">Memuat data akun...</p>
         </div>
       </div>
     );
@@ -188,8 +188,7 @@ export default function RiwayatBookingPage() {
 
     return (
       <div className="relative">
-        {/* Timeline horizontal bar */}
-        <div className="relative flex items-center justify-between mb-8 mt-2">
+        <div className="relative flex items-center justify-between mb-4 mt-2">
           {STATUS_STEPS.map((step, idx) => {
             const stepNum = idx + 1;
             const isCompleted = booking.status === 'COMPLETED' ? true : activeStep > stepNum;
@@ -200,45 +199,45 @@ export default function RiwayatBookingPage() {
                 {/* Connector line */}
                 {idx < STATUS_STEPS.length - 1 && (
                   <div
-                    className={`absolute top-4 left-[55%] w-full h-0.5 -z-0 transition-colors duration-500 ${
-                      isCancelled ? 'bg-red-500/20' : (isCompleted || booking.status === 'COMPLETED') ? 'bg-emerald-500/60' : 'bg-[#2a2548]'
+                    className={`absolute top-3.5 left-[50%] w-full h-[2px] -z-0 transition-colors duration-300 ${
+                      isCancelled ? 'bg-red-200' : (isCompleted || booking.status === 'COMPLETED') ? 'bg-foreground' : 'bg-border'
                     }`}
                   />
                 )}
 
                 {/* Circle node */}
                 <div
-                  className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                  className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all duration-300 text-xs ${
                     isCancelled
-                      ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                      ? 'bg-red-50 border-red-300 text-red-600'
                       : isCompleted
-                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        ? 'bg-foreground border-foreground text-background shadow-xs'
                         : isCurrent
-                          ? 'bg-[#1b1838] border-amber-500 text-amber-400 shadow-sm shadow-amber-500/10'
-                          : 'bg-[#13112a] border-[#2a2548] text-zinc-600'
+                          ? 'bg-background border-foreground text-foreground ring-2 ring-foreground/20'
+                          : 'bg-background border-border text-foreground/30'
                   }`}
                 >
                   {isCancelled ? (
-                    <XCircle size={14} />
+                    <XCircle size={13} />
                   ) : isCompleted ? (
-                    <CheckCircle2 size={16} />
+                    <CheckCircle2 size={14} />
                   ) : isCurrent ? (
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
                   ) : (
-                    <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-foreground/30" />
                   )}
                 </div>
 
                 {/* Step label */}
                 <span
-                  className={`text-[10px] mt-2 text-center font-medium leading-tight max-w-[60px] ${
+                  className={`text-[10px] mt-2 text-center font-medium leading-tight max-w-[65px] ${
                     isCancelled
-                      ? 'text-red-400'
+                      ? 'text-red-600'
                       : isCompleted
-                        ? 'text-emerald-400 font-semibold'
+                        ? 'text-foreground font-semibold'
                         : isCurrent
-                          ? meta.color + ' font-semibold'
-                          : 'text-zinc-500'
+                          ? 'text-foreground font-bold'
+                          : 'text-foreground/40'
                   }`}
                 >
                   {step.label}
@@ -252,36 +251,31 @@ export default function RiwayatBookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#13112a] relative flex flex-col">
-      {/* Subtle background glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-amber-500/3 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-background text-foreground relative flex flex-col selection:bg-secondary selection:text-foreground">
       <Navbar />
 
-      <div className="flex-1 max-w-5xl mx-auto w-full px-4 pt-28 pb-20 relative z-10">
+      <div className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-32 pb-20 relative z-10">
 
         {/* ── Page Header ── */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mb-2 tracking-wide">
-              <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-              <ChevronRight size={12} className="text-zinc-500" />
-              <span className="text-zinc-200">Riwayat Booking</span>
+            <div className="flex items-center gap-2 text-xs text-foreground/50 mb-2 font-medium">
+              <Link href="/" className="hover:text-foreground transition-colors">Beranda</Link>
+              <ChevronRight size={12} />
+              <span className="text-foreground font-semibold">Riwayat Booking</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
-              Riwayat <span className="text-amber-400">Sewa Mobil</span>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
+              Riwayat Sewa Mobil
             </h1>
-            <p className="text-zinc-300 text-sm mt-2">
-              Pantau status pemesanan, tagihan, dan detail armada Anda.
+            <p className="text-foreground/60 text-xs sm:text-sm mt-1">
+              Pantau status pemesanan aktif, riwayat transaksi, dan bukti sewa Anda.
             </p>
           </div>
 
           <button
             onClick={fetchBookings}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-zinc-200 bg-[#1b1838] border border-[#2a2548] hover:border-zinc-400 hover:text-white active:scale-95 transition-all rounded-xl self-start md:self-auto cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-foreground bg-card border border-border hover:bg-secondary active:scale-95 transition-all rounded-xl self-start md:self-auto cursor-pointer shadow-xs"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             Segarkan
@@ -290,26 +284,28 @@ export default function RiwayatBookingPage() {
 
         {/* ── Stats Strip ── */}
         {!loading && bookings.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-6">
             {[
               { label: 'Total Pesanan', value: bookings.length, sub: 'semua status' },
-              { label: 'Aktif', value: activeCount, sub: 'sedang berjalan' },
-              { label: 'Menunggu Bayar', value: pendingPayCount, sub: 'perlu pelunasan' },
+              { label: 'Sedang Berjalan', value: activeCount, sub: 'dalam proses' },
+              { label: 'Menunggu Pelunasan', value: pendingPayCount, sub: 'tagihan aktif' },
             ].map((s, i) => (
               <div
                 key={i}
-                className="bg-[#1b1838]/80 border border-[#2a2548] rounded-2xl p-4 backdrop-blur-sm"
+                className={`bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-xs ${
+                  i === 2 ? 'col-span-2 sm:col-span-1' : ''
+                }`}
               >
-                <p className="text-[11px] text-zinc-400 font-semibold uppercase tracking-wider">{s.label}</p>
-                <p className="text-2xl font-black text-white mt-1">{s.value}</p>
-                <p className="text-[10px] text-zinc-400 mt-0.5">{s.sub}</p>
+                <p className="text-[9px] sm:text-[10px] text-foreground/50 font-bold uppercase tracking-wider">{s.label}</p>
+                <p className="text-lg sm:text-2xl font-black text-foreground mt-0.5">{s.value}</p>
+                <p className="text-[9px] sm:text-[10px] text-foreground/60 mt-0.5">{s.sub}</p>
               </div>
             ))}
           </div>
         )}
 
         {/* ── Filter Tabs ── */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
           {[
             { id: 'all', label: 'Semua' },
             { id: 'active', label: 'Dalam Proses' },
@@ -319,10 +315,10 @@ export default function RiwayatBookingPage() {
             <button
               key={tab.id}
               onClick={() => setFilterStatus(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                 filterStatus === tab.id
-                  ? 'bg-amber-500 text-[#13112a] border-amber-500 shadow-lg shadow-amber-500/20'
-                  : 'bg-[#1b1838] text-zinc-300 border-[#2a2548] hover:border-zinc-500 hover:text-white'
+                  ? 'bg-foreground text-background border-foreground shadow-xs'
+                  : 'bg-card text-foreground/75 border-border hover:border-foreground/30 hover:bg-background'
               }`}
             >
               {tab.label}
@@ -335,24 +331,24 @@ export default function RiwayatBookingPage() {
 
           {/* Loading */}
           {loading && (
-            <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl py-20 flex flex-col items-center gap-4">
-              <div className="w-8 h-8 rounded-full border-2 border-[#2a2548] border-t-amber-400 animate-spin" />
-              <p className="text-sm text-zinc-300">Memuat riwayat booking...</p>
+            <div className="bg-card border border-border rounded-2xl py-16 flex flex-col items-center gap-3 shadow-xs">
+              <div className="w-8 h-8 rounded-full border-2 border-border border-t-foreground animate-spin" />
+              <p className="text-xs text-foreground/60 font-medium">Memuat riwayat booking...</p>
             </div>
           )}
 
           {/* Error */}
           {error && !loading && (
-            <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl p-6 flex items-start gap-4">
-              <div className="p-2 bg-zinc-800 rounded-xl shrink-0">
-                <AlertTriangle size={16} className="text-amber-400" />
+            <div className="bg-card border border-border rounded-2xl p-6 flex items-start gap-3.5 shadow-xs">
+              <div className="p-2 bg-secondary rounded-xl shrink-0 text-foreground">
+                <AlertTriangle size={16} />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Gagal Mengambil Data</h4>
-                <p className="text-xs text-zinc-300 mt-1">{error}</p>
+                <h4 className="font-bold text-foreground text-sm">Gagal Mengambil Data</h4>
+                <p className="text-xs text-foreground/60 mt-0.5">{error}</p>
                 <button
                   onClick={fetchBookings}
-                  className="mt-3 text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                  className="mt-2 text-xs font-bold text-foreground hover:underline transition-colors cursor-pointer"
                 >
                   Coba Lagi →
                 </button>
@@ -362,15 +358,15 @@ export default function RiwayatBookingPage() {
 
           {/* Empty */}
           {!loading && !error && filteredBookings.length === 0 && (
-            <div className="bg-[#1b1838] border border-[#2a2548] rounded-2xl py-16 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-[#1b1838] border border-[#2a2548] flex items-center justify-center mx-auto mb-4">
-                <CalendarCheck size={24} className="text-zinc-400" />
+            <div className="bg-card border border-border rounded-2xl py-16 px-6 text-center shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-background border border-border flex items-center justify-center mx-auto mb-3">
+                <CalendarCheck size={24} className="text-foreground/40" />
               </div>
-              <h3 className="text-base font-bold text-white">Belum Ada Riwayat Booking</h3>
-              <p className="text-zinc-300 text-xs mt-2 max-w-xs mx-auto">
-                Anda belum melakukan pemesanan atau tidak ada data dengan filter ini.
+              <h3 className="text-base font-bold text-foreground">Belum Ada Riwayat Booking</h3>
+              <p className="text-foreground/60 text-xs mt-1 max-w-xs mx-auto">
+                Anda belum melakukan pemesanan atau tidak ada data pada kategori ini.
               </p>
-              <Link href="/armada" className="inline-flex items-center gap-1.5 mt-6 bg-amber-500 hover:bg-amber-400 text-[#13112a] font-bold text-xs px-5 py-2.5 rounded-xl transition-all">
+              <Link href="/armada" className="inline-flex items-center gap-1.5 mt-5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs">
                 Lihat Armada Mobil
                 <ArrowRight size={12} />
               </Link>
@@ -382,105 +378,101 @@ export default function RiwayatBookingPage() {
             const paidAmount = getPaidAmount(booking);
             const outstanding = getOutstanding(booking);
             const meta = getStatusMeta(booking.status);
-            const StatusIcon = Car; // fallback icon
 
             const carImages = booking.car?.images
               ? (typeof booking.car.images === 'string' ? JSON.parse(booking.car.images) : booking.car.images)
               : [];
             const carThumb = carImages[0] || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800';
 
-            const needsAction = outstanding > 0 && ['WAITING_PAYMENT', 'IN_PROGRESS', 'DP_CONFIRMED', 'PENDING', 'WAITING_DP'].includes(booking.status);
-
             return (
               <motion.div
                 key={booking.id}
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                className="bg-[#1b1838] border border-[#2a2548] rounded-2xl overflow-hidden hover:border-[#3a3570] transition-all duration-300"
+                transition={{ duration: 0.3, delay: idx * 0.04 }}
+                className="bg-card border border-border rounded-2xl overflow-hidden hover:border-foreground/30 hover:shadow-sm transition-all duration-300 shadow-xs"
               >
                 {/* ── Top Bar ── */}
-                <div className="px-5 py-3.5 border-b border-[#2a2548]/50 flex flex-wrap items-center justify-between gap-3 bg-[#13112a]/80">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-[#2a2548]/50">
-                      <FileText size={13} className="text-zinc-300" />
+                <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 border-b border-border flex flex-wrap items-center justify-between gap-2.5 bg-card/70">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-secondary/50 text-foreground">
+                      <FileText size={13} />
                     </div>
                     <div>
-                      <p className="text-[9px] text-zinc-400 font-semibold uppercase tracking-widest">ID Pemesanan</p>
-                      <p className="font-mono text-xs font-bold text-white mt-0.5">{booking.id}</p>
+                      <p className="text-[9px] text-foreground/50 font-bold uppercase tracking-wider">ID Booking</p>
+                      <p className="font-mono text-[11px] sm:text-xs font-bold text-foreground mt-0.5">{booking.id}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Status Badge — from booking-status.ts */}
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border ${meta.bg} ${meta.color} border-current/20`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${meta.dot} shrink-0`} />
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    {/* Status Badge */}
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold bg-secondary text-foreground border border-border">
+                      <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />
                       {meta.label}
                     </span>
 
                     {/* Secondary badges */}
                     {booking.status === 'IN_PROGRESS' && outstanding > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-semibold bg-[#13112a] text-zinc-200 border border-[#2a2548]">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-background text-foreground/80 border border-border">
                         <Clock size={10} />
                         Sisa Tagihan
                       </span>
                     )}
                     {booking.status === 'DP_CONFIRMED' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-semibold bg-[#13112a] text-zinc-200 border border-[#2a2548]">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-background text-foreground/80 border border-border">
                         <CheckCircle2 size={10} />
-                        DP Terbayar
+                        DP Diterima
                       </span>
                     )}
                   </div>
                 </div>
 
                 {/* ── Card Body ── */}
-                <div className="p-5">
+                <div className="p-3.5 sm:p-5">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-                    {/* Col 1: Car */}
-                    <div className="lg:col-span-4 space-y-3">
-                      <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-[#13112a]">
+                    {/* Col 1: Car Info */}
+                    <div className="lg:col-span-4 space-y-2.5">
+                      <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-background border border-border">
                         <img src={carThumb} alt={booking.car?.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#13112a]/60 to-transparent" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">{booking.car?.brand}</p>
-                        <h4 className="text-base font-bold text-white mt-0.5 leading-tight">{booking.car?.name}</h4>
-                        <span className="inline-block mt-1.5 bg-[#13112a] text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded-md capitalize border border-[#2a2548]">
+                        <p className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider">{booking.car?.brand}</p>
+                        <h4 className="text-base font-bold text-foreground mt-0.5 leading-tight">{booking.car?.name}</h4>
+                        <span className="inline-block mt-1 bg-background text-foreground/70 text-[10px] font-medium px-2 py-0.5 rounded-md capitalize border border-border">
                           {booking.car?.category}
                         </span>
                       </div>
                     </div>
 
                     {/* Col 2: Booking Details */}
-                    <div className="lg:col-span-4 space-y-3 border-t lg:border-t-0 lg:border-x border-[#2a2548]/50 pt-5 lg:pt-0 lg:px-5">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300">Detail Pemesanan</p>
-                      <div className="space-y-3.5">
+                    <div className="lg:col-span-4 space-y-3 border-t lg:border-t-0 lg:border-x border-border pt-4 lg:pt-0 lg:px-5 text-xs">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/50">Detail Jadwal & Layanan</p>
+                      <div className="space-y-3">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-6 h-6 rounded-lg bg-[#13112a] flex items-center justify-center shrink-0 mt-0.5">
-                            <Calendar size={11} className="text-zinc-300" />
+                          <div className="w-6 h-6 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 mt-0.5 text-foreground/70">
+                            <Calendar size={11} />
                           </div>
                           <div>
-                            <p className="text-[11px] font-semibold text-white">Durasi Sewa</p>
-                            <p className="text-[11px] text-zinc-300 mt-0.5 leading-relaxed">
+                            <p className="text-[11px] font-bold text-foreground">Jadwal Sewa</p>
+                            <p className="text-[11px] text-foreground/70 mt-0.5 leading-relaxed">
                               {format(parseISO(booking.startDateTime || booking.startDate), 'd MMM yyyy', { locale: localeId })}
-                              <span className="mx-1.5 text-zinc-400">→</span>
+                              <span className="mx-1.5 text-foreground/40">→</span>
                               {format(parseISO(booking.endDateTime || booking.endDate), 'd MMM yyyy', { locale: localeId })}
                             </p>
-                            <span className="inline-block mt-1 text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                            <span className="inline-block mt-1 text-[10px] font-bold text-foreground bg-secondary/50 border border-border px-2 py-0.5 rounded-md">
                               {formatDuration(booking.durationMinutes ?? booking.duration)}
                             </span>
                           </div>
                         </div>
 
                         <div className="flex items-start gap-2.5">
-                          <div className="w-6 h-6 rounded-lg bg-[#13112a] flex items-center justify-center shrink-0 mt-0.5">
-                            <Settings2 size={11} className="text-zinc-300" />
+                          <div className="w-6 h-6 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 mt-0.5 text-foreground/70">
+                            <Settings2 size={11} />
                           </div>
                           <div>
-                            <p className="text-[11px] font-semibold text-white">Layanan</p>
-                            <p className="text-[11px] text-zinc-300 mt-0.5 capitalize">
+                            <p className="text-[11px] font-bold text-foreground">Tipe Layanan</p>
+                            <p className="text-[11px] text-foreground/70 mt-0.5 capitalize">
                               {booking.serviceType?.replace('_', ' ').toLowerCase()}
                             </p>
                           </div>
@@ -488,76 +480,72 @@ export default function RiwayatBookingPage() {
 
                         {booking.pickupLocation && (
                           <div className="flex items-start gap-2.5">
-                            <div className="w-6 h-6 rounded-lg bg-[#13112a] flex items-center justify-center shrink-0 mt-0.5">
-                              <MapPin size={11} className="text-zinc-300" />
+                            <div className="w-6 h-6 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 mt-0.5 text-foreground/70">
+                              <MapPin size={11} />
                             </div>
                             <div>
-                              <p className="text-[11px] font-semibold text-white">Penjemputan</p>
-                              <p className="text-[11px] text-zinc-300 mt-0.5">{booking.pickupLocation}</p>
+                              <p className="text-[11px] font-bold text-foreground">Titik Penjemputan</p>
+                              <p className="text-[11px] text-foreground/70 mt-0.5">{booking.pickupLocation}</p>
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Col 3: Payment / Timeline */}
-                    <div className="lg:col-span-4 space-y-3 pt-5 lg:pt-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300">Rincian Pembayaran</p>
+                    {/* Col 3: Payment Breakdown */}
+                    <div className="lg:col-span-4 space-y-3 pt-4 lg:pt-0 text-xs">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/50">Rincian Pembayaran</p>
 
-                      <div className="space-y-2 text-[11px]">
-                        <div className="flex justify-between text-zinc-300">
+                      <div className="space-y-1.5 text-[11px]">
+                        <div className="flex justify-between text-foreground/70">
                           <span>Sewa ({formatDuration(booking.durationMinutes ?? booking.duration)})</span>
                           <span>{formatRupiah(booking.basePrice)}</span>
                         </div>
                         {booking.discountAmount > 0 && (
-                          <div className="flex justify-between text-zinc-300">
-                            <span>Diskon</span>
+                          <div className="flex justify-between text-foreground/70">
+                            <span>Diskon Promo</span>
                             <span>−{formatRupiah(booking.discountAmount)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-white font-bold border-t border-[#2a2548] pt-2 text-xs">
+                        <div className="flex justify-between text-foreground font-bold border-t border-border pt-1.5 text-xs">
                           <span>Total Tagihan</span>
                           <span>{formatRupiah(booking.totalPrice)}</span>
                         </div>
-                        <div className="flex justify-between text-zinc-300">
-                          <span>DP (50%)</span>
+                        <div className="flex justify-between text-foreground/70">
+                          <span>DP Minimal (50%)</span>
                           <span>{formatRupiah(booking.dpAmount)}</span>
                         </div>
                       </div>
 
-                      {/* Payment Progress */}
-                      <div className="border-t border-[#2a2548]/50 pt-3 space-y-2">
-                        <div className="flex items-center justify-between bg-[#13112a] rounded-xl px-3.5 py-2.5 border border-[#2a2548]/50">
+                      {/* Payment Progress Summary */}
+                      <div className="border-t border-border pt-2.5 space-y-2">
+                        <div className="flex items-center justify-between bg-background rounded-xl px-3 py-2 border border-border">
                           <div>
-                            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">Sudah Terbayar</p>
-                            <p className={`text-xs font-black mt-0.5 ${paidAmount > 0 ? 'text-white' : 'text-zinc-400'}`}>
+                            <p className="text-[9px] text-foreground/50 font-bold uppercase tracking-wider">Sudah Terbayar</p>
+                            <p className={`text-xs font-bold mt-0.5 ${paidAmount > 0 ? 'text-foreground' : 'text-foreground/40'}`}>
                               {formatRupiah(paidAmount)}
                             </p>
                           </div>
                           {paidAmount > 0 && (
-                            <div className="w-5 h-5 rounded-full bg-[#13112a] flex items-center justify-center">
-                              <CheckCircle2 size={11} className="text-zinc-300" />
+                            <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-foreground">
+                              <CheckCircle2 size={12} />
                             </div>
                           )}
                         </div>
 
-                        <div className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 border ${
-                          outstanding > 0
-                            ? 'bg-amber-500/5 border-amber-500/15'
-                            : 'bg-[#13112a] border-[#2a2548]/50'
-                        }`}>
+                        <div className="flex items-center justify-between rounded-xl px-3 py-2 border border-border bg-secondary/30">
                           <div>
-                            <p className={`text-[9px] font-bold uppercase tracking-widest ${outstanding > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
-                              {outstanding > 0 ? 'Sisa Tagihan' : 'Status Bayar'}
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-foreground/60">
+                              {outstanding > 0 ? 'Sisa Tagihan' : 'Status Tagihan'}
                             </p>
-                            <p className={`text-xs font-black mt-0.5 ${outstanding > 0 ? 'text-amber-200' : 'text-zinc-300'}`}>
+                            <p className="text-xs font-black mt-0.5 text-foreground">
                               {outstanding > 0 ? formatRupiah(outstanding) : '✓ Lunas'}
                             </p>
                           </div>
                           {outstanding > 0 && ['WAITING_PAYMENT', 'IN_PROGRESS', 'DP_CONFIRMED'].includes(booking.status) && (
                             <Link href={`/pelunasan/${booking.id}`}>
-                              <button className="text-[10px] font-bold bg-amber-500 hover:bg-amber-400 text-[#13112a] px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shrink-0 shadow-sm">
-                                Bayar
+                              <button className="text-[10px] font-bold bg-foreground hover:bg-foreground/90 text-background px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs">
+                                Lunasi
                               </button>
                             </Link>
                           )}
@@ -567,9 +555,9 @@ export default function RiwayatBookingPage() {
                   </div>
 
                   {/* ── Status Timeline ── */}
-                  <div className="mt-5 pt-5 border-t border-[#2a2548]/50">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 mb-3">
-                      Status Timeline
+                  <div className="mt-5 pt-4 border-t border-border">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/50 mb-3">
+                      Tahapan Status Booking
                     </p>
                     <StatusTimeline booking={booking} />
                   </div>
@@ -581,16 +569,16 @@ export default function RiwayatBookingPage() {
                     const proofUrl = booking.paymentProof || booking.payments?.find((p: any) => p.proofImage)?.proofImage;
                     if (proofUrl) {
                       return (
-                        <div className="mt-4 p-4 bg-[#13112a] border border-[#2a2548] rounded-xl flex items-center justify-between gap-4">
+                        <div className="mt-4 p-4 bg-background border border-border rounded-xl flex items-center justify-between gap-4">
                           <div className="flex items-start gap-3">
-                            <div className="w-7 h-7 rounded-lg bg-[#13112a] flex items-center justify-center shrink-0">
-                              <Clock size={13} className="text-zinc-200" />
+                            <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-foreground">
+                              <Clock size={14} />
                             </div>
                             <div>
-                              <p className="text-xs font-semibold text-white">
-                                Bukti DP ({formatRupiah(booking.dpAmount)}) Berhasil Diunggah
+                              <p className="text-xs font-bold text-foreground">
+                                Bukti DP ({formatRupiah(booking.dpAmount)}) Sudah Diunggah
                               </p>
-                              <p className="text-[10px] text-zinc-300 mt-0.5">
+                              <p className="text-[11px] text-foreground/60 mt-0.5">
                                 Sedang diverifikasi oleh admin. Status akan berubah otomatis setelah disetujui.
                               </p>
                             </div>
@@ -599,7 +587,7 @@ export default function RiwayatBookingPage() {
                             href={proofUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1.5 bg-[#13112a] hover:bg-[#1b1838] text-zinc-300 text-[10px] font-semibold rounded-lg shrink-0 transition-colors border border-[#2a2548]"
+                            className="px-3 py-1.5 bg-card hover:bg-secondary text-foreground text-[10px] font-bold rounded-lg shrink-0 transition-colors border border-border"
                           >
                             Lihat Bukti
                           </a>
@@ -611,27 +599,27 @@ export default function RiwayatBookingPage() {
 
                   {/* 1b. DP Pending — belum bayar */}
                   {['PENDING', 'WAITING_DP'].includes(booking.status) && !(booking.paymentProof || booking.payments?.some((p: any) => p.proofImage)) && (
-                    <div className="mt-4 p-4 bg-[#13112a] border border-[#2a2548] rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="mt-4 p-4 bg-background border border-border rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/15 flex items-center justify-center shrink-0">
-                          <Landmark size={13} className="text-amber-400" />
+                        <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-foreground">
+                          <Landmark size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-white">
-                            Transfer DP sebesar <span className="font-black text-amber-300">{formatRupiah(booking.dpAmount)}</span> untuk konfirmasi pesanan
+                          <p className="text-xs font-semibold text-foreground">
+                            Silakan bayar DP sebesar <span className="font-extrabold text-foreground">{formatRupiah(booking.dpAmount)}</span> untuk konfirmasi pesanan
                           </p>
-                          <p className="text-[10px] text-zinc-300 mt-0.5">
-                            Metode: Pembayaran Instan Gateway (MIDTRANS) / Transfer Bank
+                          <p className="text-[11px] text-foreground/60 mt-0.5">
+                            Metode: Pembayaran Instan Gateway (MIDTRANS QRIS/VA) atau Transfer Rekening
                           </p>
                         </div>
                       </div>
                       <button
                         onClick={() => handlePayDP(booking.id)}
                         disabled={payingBookingId === booking.id}
-                        className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-[#13112a] font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm shadow-amber-500/20 whitespace-nowrap disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
                       >
                         {payingBookingId === booking.id ? (
-                          <><Loader2 size={12} className="animate-spin" /> Membuka Pembayaran...</>
+                          <><Loader2 size={12} className="animate-spin" /> Membuka Gateway...</>
                         ) : (
                           <><CreditCard size={12} /> Bayar DP Sekarang <ArrowRight size={12} /></>
                         )}
@@ -639,75 +627,75 @@ export default function RiwayatBookingPage() {
                     </div>
                   )}
 
-                  {/* 2. DP Confirmed — Menunggu Pengambilan / Penyerahan Mobil */}
+                  {/* 2. DP Confirmed */}
                   {booking.status === 'DP_CONFIRMED' && (
-                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-4">
+                    <div className="mt-4 p-4 bg-secondary/40 border border-border rounded-xl flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
-                          <CheckCircle2 size={14} className="text-emerald-400" />
+                        <div className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center shrink-0 text-foreground">
+                          <CheckCircle2 size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-white">
-                            DP Berhasil Dikonfirmasi ({formatRupiah(booking.dpAmount)}) — Pesanan Telah Disetujui (ACC)
+                          <p className="text-xs font-bold text-foreground">
+                            DP Berhasil Dikonfirmasi ({formatRupiah(booking.dpAmount)}) — Pesanan Telah Disetujui
                           </p>
-                          <p className="text-[10px] text-zinc-300 mt-0.5">
-                            Silakan ambil kendaraan sesuai jadwal sewa. Admin akan menyerahkan unit saat waktu sewa dimulai.
+                          <p className="text-[11px] text-foreground/60 mt-0.5">
+                            Unit armada sedang disiapkan. Silakan ambil unit atau tunggu pengantaran sesuai jadwal pemesanan.
                           </p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-emerald-400 px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20 shrink-0">
-                        Siap Digunakan
+                      <span className="text-[10px] font-bold text-foreground px-3 py-1 bg-card rounded-lg border border-border shrink-0">
+                        Siap Diambil
                       </span>
                     </div>
                   )}
 
-                  {/* 3. In Progress — Mobil Sedang Digunakan */}
+                  {/* 3. In Progress */}
                   {booking.status === 'IN_PROGRESS' && (
-                    <div className="mt-4 p-4 bg-sky-500/10 border border-sky-500/20 rounded-xl flex items-center justify-between gap-4">
+                    <div className="mt-4 p-4 bg-secondary/40 border border-border rounded-xl flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
-                          <Car size={14} className="text-sky-400" />
+                        <div className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center shrink-0 text-foreground">
+                          <Car size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-white">
-                            Mobil Sedang Digunakan (Masa Sewa Aktif)
+                          <p className="text-xs font-bold text-foreground">
+                            Unit Sedang Digunakan (Masa Sewa Aktif)
                           </p>
-                          <p className="text-[10px] text-zinc-300 mt-0.5">
-                            Selamat menikmati perjalanan Anda! Saat masa sewa berakhir, admin akan memproses pengembalian unit & menerbitkan tagihan pelunasan.
+                          <p className="text-[11px] text-foreground/60 mt-0.5">
+                            Selamat menikmati perjalanan Anda! Pelunasan sisa tagihan dapat diselesaikan saat atau setelah pengembalian unit.
                           </p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-sky-400 px-3 py-1 bg-sky-500/10 rounded-lg border border-sky-500/20 shrink-0">
+                      <span className="text-[10px] font-bold text-foreground px-3 py-1 bg-card rounded-lg border border-border shrink-0">
                         Sewa Berjalan
                       </span>
                     </div>
                   )}
 
-                  {/* 4. Waiting Payment — Mobil Dikembalikan & Menunggu Pelunasan */}
+                  {/* 4. Waiting Payment */}
                   {(booking.status === 'WAITING_PAYMENT' || (outstanding > 0 && ['WAITING_RETURN', 'WAITING_PAYMENT'].includes(booking.status))) && (
-                    <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="mt-4 p-4 bg-background border border-border rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-                          <Wallet size={14} className="text-amber-400" />
+                        <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-foreground">
+                          <Wallet size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-white">
-                            Mobil Telah Dikembalikan — Tagihan Pelunasan: <span className="font-black text-amber-300">{formatRupiah(outstanding)}</span>
+                          <p className="text-xs font-semibold text-foreground">
+                            Unit Selesai Digunakan — Sisa Tagihan Pelunasan: <span className="font-extrabold text-foreground">{formatRupiah(outstanding)}</span>
                           </p>
-                          <p className="text-[10px] text-zinc-300 mt-0.5">
+                          <p className="text-[11px] text-foreground/60 mt-0.5">
                             {booking.penaltyAmount > 0
-                              ? `Termasuk denda keterlambatan ${formatRupiah(booking.penaltyAmount)}. Silakan selesaikan pelunasan.`
-                              : 'Pengembalian mobil telah dikonfirmasi admin. Silakan selesaikan sisa pelunasan untuk menyelesaikan transaksi.'}
+                              ? `Termasuk penyesuaian biaya / denda keterlambatan. Silakan selesaikan pelunasan.`
+                              : 'Pengembalian mobil telah diverifikasi oleh admin. Silakan selesaikan sisa pembayaran.'}
                           </p>
                         </div>
                       </div>
                       <button
                         onClick={() => handlePayPelunasan(booking.id)}
                         disabled={payingBookingId === booking.id}
-                        className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-[#13112a] font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm shadow-amber-500/20 whitespace-nowrap disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
                       >
                         {payingBookingId === booking.id ? (
-                          <><Loader2 size={12} className="animate-spin" /> Membuka Pembayaran...</>
+                          <><Loader2 size={12} className="animate-spin" /> Membuka Gateway...</>
                         ) : (
                           <><CreditCard size={12} /> Bayar Pelunasan Sekarang <ArrowRight size={12} /></>
                         )}
@@ -715,25 +703,25 @@ export default function RiwayatBookingPage() {
                     </div>
                   )}
 
-                  {/* 5. Completed — Invoice */}
+                  {/* 5. Completed */}
                   {booking.status === 'COMPLETED' && (
-                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-4">
+                    <div className="mt-4 p-4 bg-secondary/30 border border-border rounded-xl flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
-                          <CheckCircle2 size={14} className="text-emerald-400" />
+                        <div className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center shrink-0 text-foreground">
+                          <CheckCircle2 size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-white">
+                          <p className="text-xs font-bold text-foreground">
                             Transaksi Sewa Selesai & Lunas Sepenuhnya
                           </p>
-                          <p className="text-[10px] text-zinc-300 mt-0.5">
-                            Terima kasih telah mempercayakan perjalanan Anda kepada RentalMobil Jogja!
+                          <p className="text-[11px] text-foreground/60 mt-0.5">
+                            Terima kasih telah mempercayakan perjalanan Anda kepada Rental Mobil!
                           </p>
                         </div>
                       </div>
                       <Link
                         href={`/invoice?bookingId=${booking.id}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-white text-zinc-900 px-3.5 py-2 rounded-xl hover:bg-zinc-100 transition-colors shadow-sm shrink-0"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-foreground text-background px-3.5 py-2 rounded-xl hover:bg-foreground/90 transition-colors shadow-xs shrink-0"
                       >
                         <FileText size={13} />
                         Unduh Invoice

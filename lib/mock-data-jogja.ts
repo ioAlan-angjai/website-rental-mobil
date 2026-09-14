@@ -6,7 +6,7 @@ export interface CarJogja {
   brand: string;
   model: string;
   year: number;
-  category: 'suv' | 'mpv' | 'sedan' | 'hatchback' | 'elf';
+  category: 'mpv' | 'suv' | 'city_car' | 'hatchback' | 'luxury' | 'pickup' | 'minibus' | 'sedan' | 'elf';
   pricePerDay: number; // Harga sewa per hari
   transmission: 'Manual' | 'Otomatis';
   seats: number;

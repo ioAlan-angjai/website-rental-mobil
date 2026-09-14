@@ -21,10 +21,6 @@ export function AboutSection() {
           
           {/* Left Column - Teks Informatif */}
           <div className="space-y-6">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
-              <Building className="w-3.5 h-3.5" /> Tentang RentalMobil
-            </span>
-            
             <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
               Solusi Kepemilikan Mobil <br />
               <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
