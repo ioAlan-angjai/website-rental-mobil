@@ -371,7 +371,7 @@ export function AdminChatPanel() {
                               : 'bg-white text-zinc-900 border border-zinc-200/90 rounded-bl-none shadow-sm'
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words">{msg.message}</p>
+                          <p className={`whitespace-pre-wrap break-words leading-relaxed ${isAdmin ? 'text-white' : 'text-zinc-900'}`}>{msg.message}</p>
                         </div>
                       </div>
                     );

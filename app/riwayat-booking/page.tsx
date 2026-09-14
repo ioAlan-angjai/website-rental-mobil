@@ -17,7 +17,7 @@ import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { formatDuration, formatRupiah } from '@/lib/utils';
 import { STATUS_STEPS, getStatusMeta } from '@/lib/booking-status';
-import { openSnapPayment } from '@/lib/snap';
+import { CustomPaymentModal } from '@/components/payment/CustomPaymentModal';
 
 function getPaidAmount(booking: any): number {
   if (['COMPLETED'].includes(booking.status) || booking.fullPaid) {
@@ -58,8 +58,13 @@ export default function RiwayatBookingPage() {
     }
   }, [status, router]);
 
-  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
-  const [payError, setPayError] = useState<string | null>(null);
+  const [activePaymentModal, setActivePaymentModal] = useState<{
+    isOpen: boolean;
+    bookingId: string;
+    paymentType: 'DP' | 'FULL_PAYMENT';
+    amount: number;
+    carName: string;
+  } | null>(null);
 
   const fetchBookings = () => {
     setLoading(true);
@@ -74,82 +79,25 @@ export default function RiwayatBookingPage() {
       .finally(() => setLoading(false));
   };
 
-  const handlePayDP = async (bookingId: string) => {
-    setPayingBookingId(bookingId);
-    setPayError(null);
-    try {
-      const res = await fetch('/api/payment/create-transaction', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId, paymentType: 'DP' }),
-      });
-      const data = await res.json();
-      if (data.isGatewayActive && data.token) {
-        await openSnapPayment(data.token, {
-          onSuccess: async (result) => {
-            try {
-              await fetch('/api/payment/confirm', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookingId, paymentType: 'DP', result }),
-              });
-            } catch (err) {}
-            fetchBookings();
-          },
-          onPending: () => {
-            fetchBookings();
-          },
-          onError: () => {
-            setPayError('Pembayaran gagal atau dibatalkan.');
-          },
-        });
-      } else {
-        setPayError(data.error || 'Gagal memuat gateway pembayaran.');
-      }
-    } catch (e) {
-      setPayError('Terjadi kesalahan saat memproses pembayaran.');
-    } finally {
-      setPayingBookingId(null);
-    }
+  const handlePayDP = (booking: any) => {
+    setActivePaymentModal({
+      isOpen: true,
+      bookingId: booking.id,
+      paymentType: 'DP',
+      amount: booking.dpAmount || Math.floor(booking.totalPrice * 0.5),
+      carName: booking.car?.name || 'Rental Mobil',
+    });
   };
 
-  const handlePayPelunasan = async (bookingId: string) => {
-    setPayingBookingId(bookingId);
-    setPayError(null);
-    try {
-      const res = await fetch('/api/payment/create-transaction', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId, paymentType: 'FULL_PAYMENT' }),
-      });
-      const data = await res.json();
-      if (data.isGatewayActive && data.token) {
-        await openSnapPayment(data.token, {
-          onSuccess: async (result) => {
-            try {
-              await fetch('/api/payment/confirm', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookingId, paymentType: 'FULL_PAYMENT', result }),
-              });
-            } catch (err) {}
-            fetchBookings();
-          },
-          onPending: () => {
-            fetchBookings();
-          },
-          onError: () => {
-            setPayError('Pembayaran pelunasan gagal atau dibatalkan.');
-          },
-        });
-      } else {
-        router.push(`/pelunasan/${bookingId}`);
-      }
-    } catch (e) {
-      setPayError('Terjadi kesalahan saat memproses pelunasan.');
-    } finally {
-      setPayingBookingId(null);
-    }
+  const handlePayPelunasan = (booking: any) => {
+    const outstanding = getOutstanding(booking);
+    setActivePaymentModal({
+      isOpen: true,
+      bookingId: booking.id,
+      paymentType: 'FULL_PAYMENT',
+      amount: outstanding > 0 ? outstanding : booking.totalPrice,
+      carName: booking.car?.name || 'Rental Mobil',
+    });
   };
 
   useEffect(() => {
@@ -614,15 +562,10 @@ export default function RiwayatBookingPage() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handlePayDP(booking.id)}
-                        disabled={payingBookingId === booking.id}
-                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
+                        onClick={() => handlePayDP(booking)}
+                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap"
                       >
-                        {payingBookingId === booking.id ? (
-                          <><Loader2 size={12} className="animate-spin" /> Membuka Gateway...</>
-                        ) : (
-                          <><CreditCard size={12} /> Bayar DP Sekarang <ArrowRight size={12} /></>
-                        )}
+                        <CreditCard size={12} /> Bayar DP Sekarang <ArrowRight size={12} />
                       </button>
                     </div>
                   )}
@@ -690,15 +633,10 @@ export default function RiwayatBookingPage() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handlePayPelunasan(booking.id)}
-                        disabled={payingBookingId === booking.id}
-                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
+                        onClick={() => handlePayPelunasan(booking)}
+                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap"
                       >
-                        {payingBookingId === booking.id ? (
-                          <><Loader2 size={12} className="animate-spin" /> Membuka Gateway...</>
-                        ) : (
-                          <><CreditCard size={12} /> Bayar Pelunasan Sekarang <ArrowRight size={12} /></>
-                        )}
+                        <CreditCard size={12} /> Bayar Pelunasan Sekarang <ArrowRight size={12} />
                       </button>
                     </div>
                   )}
@@ -734,6 +672,22 @@ export default function RiwayatBookingPage() {
           })}
         </div>
       </div>
+
+      {/* Custom Native Payment Modal */}
+      {activePaymentModal && (
+        <CustomPaymentModal
+          isOpen={activePaymentModal.isOpen}
+          bookingId={activePaymentModal.bookingId}
+          paymentType={activePaymentModal.paymentType}
+          amount={activePaymentModal.amount}
+          carName={activePaymentModal.carName}
+          onClose={() => setActivePaymentModal(null)}
+          onSuccess={() => {
+            setActivePaymentModal(null);
+            fetchBookings();
+          }}
+        />
+      )}
 
       <Footer />
     </div>

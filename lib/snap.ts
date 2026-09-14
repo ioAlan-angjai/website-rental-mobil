@@ -45,9 +45,11 @@ export function loadSnapScript(clientKey?: string): Promise<boolean> {
     const snapClientKey =
       clientKey ||
       process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ||
-      'Mid-client-NzoW4glWv_IMTgm8';
+      '';
 
-    script.setAttribute('data-client-key', snapClientKey);
+    if (snapClientKey) {
+      script.setAttribute('data-client-key', snapClientKey);
+    }
     script.async = true;
 
     script.onload = () => resolve(true);

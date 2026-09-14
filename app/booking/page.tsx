@@ -24,7 +24,7 @@ import { id as localeId } from 'date-fns/locale';
 import { BcaLogo } from '@/components/ui/bca-logo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { openSnapPayment } from '@/lib/snap';
+import { CustomPaymentModal } from '@/components/payment/CustomPaymentModal';
 
 // Bank info
 const BANK_ACCOUNTS = [
@@ -180,6 +180,12 @@ function BookingForm() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [activePaymentBooking, setActivePaymentBooking] = useState<{
+    isOpen: boolean;
+    bookingId: string;
+    amount: number;
+    carName: string;
+  } | null>(null);
 
   // Auto-fill user identity when session resolves
   useEffect(() => {
@@ -385,45 +391,16 @@ function BookingForm() {
         return;
       }
 
-      // If INSTANT mode with Midtrans, create transaction and open Snap popup
+      // If INSTANT mode with Midtrans, open Custom Payment Modal
       if (paymentMode === 'INSTANT' && data.booking?.id) {
-        try {
-          const txRes = await fetch('/api/payment/create-transaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: data.booking.id, paymentType: 'DP' }),
-          });
-
-          const txData = await txRes.json();
-
-          if (txData.isGatewayActive && txData.token) {
-            await openSnapPayment(txData.token, {
-              onSuccess: async (result) => {
-                try {
-                  await fetch('/api/payment/confirm', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId: data.booking.id, paymentType: 'DP', result }),
-                  });
-                } catch (err) {}
-                router.push('/riwayat-booking?success=1');
-              },
-              onPending: () => {
-                router.push('/riwayat-booking');
-              },
-              onError: () => {
-                setSubmitError('Pembayaran belum selesai. Anda dapat melanjutkannya dari Riwayat Booking.');
-                router.push('/riwayat-booking');
-              },
-              onClose: () => {
-                setBookingSuccess(true);
-              },
-            });
-            return;
-          }
-        } catch (snapErr) {
-          console.error('Midtrans Snap error:', snapErr);
-        }
+        const carObj = dbCars.find((c) => c.id === formData.carId);
+        setActivePaymentBooking({
+          isOpen: true,
+          bookingId: data.booking.id,
+          amount: data.booking.dpAmount || Math.floor(data.booking.totalPrice * 0.5),
+          carName: carObj?.name || 'Rental Mobil',
+        });
+        return;
       }
 
       // Upload proof image if uploadedPreview exists (manual mode)
@@ -1334,7 +1311,7 @@ function BookingForm() {
                             <span>Gateway Pembayaran Otomatis Aktif</span>
                           </div>
                           <p className="text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
-                            Popup pembayaran Midtrans Snap akan terbuka saat Anda menekan tombol di bawah. Anda dapat membayar dengan QRIS atau Virtual Account.
+                            Form pembayaran interaktif Midtrans Sandbox Core API akan terbuka langsung setelah konfirmasi. Anda dapat membayar dengan QRIS (GoPay, BCA, Mandiri, OVO, Dana) atau Virtual Account.
                           </p>
                         </div>
                       ) : (
@@ -1496,6 +1473,25 @@ function BookingForm() {
           </Card>
         )}
       </section>
+
+      {/* Custom Native Payment Modal for DP / Instant Payment */}
+      {activePaymentBooking && (
+        <CustomPaymentModal
+          isOpen={activePaymentBooking.isOpen}
+          bookingId={activePaymentBooking.bookingId}
+          paymentType="DP"
+          amount={activePaymentBooking.amount}
+          carName={activePaymentBooking.carName}
+          onClose={() => {
+            setActivePaymentBooking(null);
+            setBookingSuccess(true);
+          }}
+          onSuccess={() => {
+            setActivePaymentBooking(null);
+            router.push('/riwayat-booking?success=1');
+          }}
+        />
+      )}
 
       <Footer />
     </div>
