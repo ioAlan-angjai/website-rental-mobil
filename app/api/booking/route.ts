@@ -41,7 +41,10 @@ export async function GET(_req: NextRequest) {
     });
 
     const mappedBookings = bookings.map((b) => {
-      const proofPayment = b.payments?.find((p: any) => p.proofImage);
+      // paymentProof HANYA untuk bukti transfer manual, jangan ambil URL QR/Midtrans
+      const proofPayment = b.payments?.find(
+        (p: any) => p.proofImage && !p.proofImage.includes("midtrans.com")
+      );
       return {
         ...b,
         paymentProof: proofPayment?.proofImage || null,
@@ -136,11 +139,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Cek ketersediaan: overlap interval [start, end) dengan booking aktif
-    // Status yang dianggap aktif: PENDING, WAITING_DP, DP_CONFIRMED, IN_PROGRESS
+    // Status yang dianggap aktif: PENDING, WAITING_DP, DP_CONFIRMED, IN_PROGRESS, WAITING_RETURN
     const existingBookings = await prisma.booking.findMany({
       where: {
         carId,
-        status: { in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS"] },
+        status: { in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS", "WAITING_RETURN"] },
         // Konflik jika existing.start < requested.end AND existing.end > requested.start
         startDateTime: { lt: end },
         endDateTime: { gt: start },
@@ -268,11 +271,16 @@ export async function POST(req: NextRequest) {
 
       // Notifikasi ke USER: booking berhasil dibuat
       if (booking.userId) {
+        const isGateway = booking.paymentMethod === "MIDTRANS";
+        const messageText = isGateway
+          ? `Booking mobil ${booking.car.name} berhasil dibuat. Silakan selesaikan pembayaran DP sebesar Rp ${dpAmount.toLocaleString("id-ID")} melalui Midtrans Payment Gateway untuk mengonfirmasi pesanan.`
+          : `Booking mobil ${booking.car.name} berhasil dibuat. Silakan transfer DP sebesar Rp ${dpAmount.toLocaleString("id-ID")} dan unggah bukti transfer.`;
+
         await prisma.notification.create({
           data: {
             userId: booking.userId,
             title: "Booking Berhasil Dibuat",
-            message: `Booking mobil ${booking.car.name} berhasil dibuat. Silakan lakukan pembayaran DP sebesar Rp ${dpAmount.toLocaleString("id-ID")}.`,
+            message: messageText,
             type: "BOOKING_CREATED",
           },
         });

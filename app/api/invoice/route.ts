@@ -55,7 +55,10 @@ export async function GET(req: Request) {
 
       // Generate invoice
       const invoiceNumber = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${booking.id.slice(-6).toUpperCase()}`;
-      const totalAmount = booking.totalPrice + (booking.penaltyAmount || 0);
+      const totalAmount =
+        booking.totalPrice +
+        (booking.penaltyAmount || 0) +
+        (booking.extraCost || 0);
       const isPaid = booking.status === 'COMPLETED' || booking.fullPaid;
 
       invoice = await prisma.invoice.create({

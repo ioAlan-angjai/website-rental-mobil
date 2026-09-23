@@ -216,6 +216,12 @@ function InvoiceContent() {
                     <span className="font-medium text-red-600">{formatIDR(invoice.penalty)}</span>
                   </div>
                 )}
+                {invoice.booking?.extraCost > 0 && (
+                  <div className="flex justify-between text-xs sm:text-sm">
+                    <span className="text-foreground/70">Biaya Tambahan</span>
+                    <span className="font-medium text-amber-600">+{formatIDR(invoice.booking.extraCost)}</span>
+                  </div>
+                )}
                 <div className="h-px bg-border my-2" />
                 <div className="flex justify-between items-center pt-1">
                   <span className="font-bold text-foreground text-sm">Total Tagihan</span>

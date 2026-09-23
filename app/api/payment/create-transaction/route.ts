@@ -43,7 +43,10 @@ export async function POST(req: NextRequest) {
         where: { bookingId, status: "VERIFIED" },
       });
       const totalVerified = verifiedPayments.reduce((s, p) => s + p.amount, 0);
-      const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
+      const totalBill =
+        booking.totalPrice +
+        (booking.penaltyAmount || 0) +
+        (booking.extraCost || 0);
       targetAmount = Math.max(0, totalBill - totalVerified);
       itemName = `Pelunasan Sewa Mobil ${booking.car.name}`;
     }

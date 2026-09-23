@@ -22,7 +22,13 @@ export async function POST(
 
     const { id: bookingId } = params;
     const body = await req.json();
-    const { actualReturnDate, paymentMethod = "CASH" } = body;
+    const {
+      actualReturnDate,
+      paymentMethod = "CASH",
+      manualPenaltyAmount,
+      extraCost = 0,
+      notes: returnNotes,
+    } = body;
 
     if (!actualReturnDate) {
       return NextResponse.json(
@@ -54,43 +60,64 @@ export async function POST(
     const returnTime = new Date(actualReturnDate);
     const endTime = new Date(booking.endDateTime);
 
-    // Hitung denda Keterlambatan: 10% dari harga sewa 1 hari per jam (1 jam = 10%, 2 jam = 20%, dst.)
-    let penaltyAmount = 0;
+    // Hitung estimasi denda Keterlambatan: 10% dari harga sewa 1 hari per jam
+    let autoPenaltyAmount = 0;
     const diffTimeMs = returnTime.getTime() - endTime.getTime();
 
     if (diffTimeMs > 0) {
       const diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
       if (diffHours > 0) {
         const penaltyRatePerHour = 0.10; // 10% per jam
-        penaltyAmount = Math.round(diffHours * penaltyRatePerHour * booking.car.pricePerDay);
+        autoPenaltyAmount = Math.round(diffHours * penaltyRatePerHour * booking.car.pricePerDay);
       }
     }
 
-    const finalTotal = booking.totalPrice + penaltyAmount;
+    // Gunakan nominal denda yang diinputkan admin jika ada, jika tidak gunakan estimasi otomatis
+    const finalPenaltyAmount =
+      manualPenaltyAmount !== undefined && manualPenaltyAmount !== null && manualPenaltyAmount !== ""
+        ? Math.max(0, Math.round(Number(manualPenaltyAmount)))
+        : autoPenaltyAmount;
 
-    // Hitung total pembayaran VERIFIED dari tabel Payment (SUM, bukan dpAmount tunggal)
+    const finalExtraCost = Math.max(0, Math.round(Number(extraCost) || 0));
+
+    // PENTING: booking.totalPrice adalah harga dasar sewa (basePrice - discountAmount) dan BERSIFAT TETAP.
+    // Grand Total dihitung dinamis = totalPrice + penaltyAmount + extraCost
+    const finalGrandTotal = booking.totalPrice + finalPenaltyAmount + finalExtraCost;
+
+    // Hitung total pembayaran VERIFIED dari tabel Payment
     const verifiedPayments = await prisma.payment.findMany({
       where: { bookingId, status: "VERIFIED" },
     });
     const totalVerifiedPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
-    const remainingAmount = Math.max(0, finalTotal - totalVerifiedPaid);
+    const remainingAmount = Math.max(0, finalGrandTotal - totalVerifiedPaid);
 
     const isFullyPaidNow = remainingAmount === 0;
 
+    // Keterangan catatan denda / biaya tambahan
+    const notesParts: string[] = [];
+    if (returnNotes && returnNotes.trim()) {
+      notesParts.push(returnNotes.trim());
+    }
+    if (finalPenaltyAmount > 0) {
+      notesParts.push(`Denda keterlambatan: Rp ${finalPenaltyAmount.toLocaleString('id-ID')}`);
+    }
+    if (finalExtraCost > 0) {
+      notesParts.push(`Biaya tambahan: Rp ${finalExtraCost.toLocaleString('id-ID')}`);
+    }
+    const combinedNotes = notesParts.length > 0 ? notesParts.join(' | ') : booking.notes;
+
     // Database transaction
     const [updatedBooking] = await prisma.$transaction([
-      // 1. Update Booking: simpan penalty + total akhir, tentukan status
+      // 1. Update Booking: simpan penalty & extraCost, JANGAN ubah totalPrice dasar!
       prisma.booking.update({
         where: { id: bookingId },
         data: {
-          penaltyAmount: penaltyAmount,
-          totalPrice: finalTotal,
+          penaltyAmount: finalPenaltyAmount,
+          extraCost: finalExtraCost,
           remainingAmount: remainingAmount,
           status: isFullyPaidNow ? "COMPLETED" : "WAITING_PAYMENT",
           fullPaid: isFullyPaidNow,
-          notes: penaltyAmount > 0
-            ? `Telat pengembalian. Denda Rp ${penaltyAmount.toLocaleString('id-ID')}`
-            : booking.notes,
+          notes: combinedNotes,
         }
       }),
 
@@ -100,7 +127,7 @@ export async function POST(
         data: { status: "AVAILABLE" }
       }),
 
-      // 3. Create payment record untuk pelunasan (+ denda jika ada)
+      // 3. Create payment record untuk pelunasan (+ denda + extra cost jika ada)
       // Jika lunas saat itu (cash), langsung VERIFIED. Jika masih ada sisa, PENDING (menunggu user bayar).
       prisma.payment.create({
         data: {
@@ -111,8 +138,8 @@ export async function POST(
           status: isFullyPaidNow ? "VERIFIED" : "PENDING",
           verifiedAt: isFullyPaidNow ? new Date() : null,
           verifiedBy: isFullyPaidNow ? (session.user?.email || "admin") : null,
-          rejectReason: penaltyAmount > 0 && !isFullyPaidNow
-            ? `Termasuk denda keterlambatan Rp ${penaltyAmount.toLocaleString('id-ID')}`
+          rejectReason: (finalPenaltyAmount > 0 || finalExtraCost > 0) && !isFullyPaidNow
+            ? notesParts.join(' | ')
             : null,
         }
       })
@@ -130,11 +157,16 @@ export async function POST(
           }
         });
       } else {
+        const extraText = [];
+        if (finalPenaltyAmount > 0) extraText.push(`denda Rp ${finalPenaltyAmount.toLocaleString('id-ID')}`);
+        if (finalExtraCost > 0) extraText.push(`biaya tambahan Rp ${finalExtraCost.toLocaleString('id-ID')}`);
+        const extraString = extraText.length > 0 ? ` (termasuk ${extraText.join(', ')})` : '';
+
         await prisma.notification.create({
           data: {
             userId: booking.userId,
             title: "Tagihan Pelunasan Tersedia",
-            message: `Mobil ${booking.car.name} telah dikembalikan. Sisa pembayaran pelunasan sebesar Rp ${remainingAmount.toLocaleString('id-ID')}${penaltyAmount > 0 ? ` (termasuk denda Rp ${penaltyAmount.toLocaleString('id-ID')})` : ''}. Silakan lakukan pelunasan.`,
+            message: `Mobil ${booking.car.name} telah dikembalikan. Sisa pembayaran pelunasan sebesar Rp ${remainingAmount.toLocaleString('id-ID')}${extraString}. Silakan lakukan pelunasan.`,
             type: "SETTLEMENT_DUE",
             link: `/pelunasan/${booking.id}`,
           } as any
@@ -148,9 +180,10 @@ export async function POST(
         ? "Mobil berhasil dikembalikan dan pembayaran lunas."
         : "Mobil dikembalikan. Menunggu pelunasan dari penyewa.",
       booking: updatedBooking,
-      penaltyAmount,
+      penaltyAmount: finalPenaltyAmount,
+      extraCost: finalExtraCost,
       remainingAmount,
-      finalTotal
+      finalGrandTotal
     });
 
   } catch (error) {

@@ -112,7 +112,10 @@ export async function POST(
       0
     );
 
-    const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
+    const totalBill =
+      booking.totalPrice +
+      (booking.penaltyAmount || 0) +
+      (booking.extraCost || 0);
     const remainingAmount = Math.max(0, totalBill - verifiedPaymentTotal);
 
     // Validasi: pastikan ada sisa yang harus dibayar

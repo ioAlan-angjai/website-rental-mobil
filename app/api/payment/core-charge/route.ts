@@ -70,7 +70,10 @@ export async function POST(req: NextRequest) {
         where: { bookingId, status: "VERIFIED" },
       });
       const totalVerified = verifiedPayments.reduce((s, p) => s + p.amount, 0);
-      const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
+      const totalBill =
+        booking.totalPrice +
+        (booking.penaltyAmount || 0) +
+        (booking.extraCost || 0);
       targetAmount = Math.max(0, totalBill - totalVerified);
       itemName = `Pelunasan Sewa ${booking.car.name}`;
     }
@@ -114,21 +117,46 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Store in Payment model
-    await prisma.payment.create({
-      data: {
+    // Simpan data sesi charge ke database Payment.
+    // PENTING: proofImage WAJIB null karena QR Code Midtrans bukan bukti transfer manual.
+    const existingPendingPayment = await prisma.payment.findFirst({
+      where: {
         bookingId: booking.id,
-        amount: targetAmount,
         type: paymentType,
-        method: paymentMethod,
-        bankName: chargeResult.bankName || (paymentMethod === "QRIS" ? "QRIS" : "BANK"),
-        accountNumber: chargeResult.vaNumber || chargeResult.billKey || null,
-        accountName: chargeResult.billerCode || null,
-        proofImage: chargeResult.qrImageUrl || null,
         status: "PENDING",
-        rejectReason: `ORDER_ID:${uniqueOrderId}|TX_ID:${chargeResult.transactionId || ""}|EXPIRY:${chargeResult.expiryTime || ""}`,
       },
+      orderBy: { createdAt: "desc" },
     });
+
+    if (existingPendingPayment) {
+      await prisma.payment.update({
+        where: { id: existingPendingPayment.id },
+        data: {
+          amount: targetAmount,
+          method: paymentMethod,
+          bankName: chargeResult.bankName || (paymentMethod === "QRIS" ? "QRIS" : "BANK"),
+          accountNumber: chargeResult.vaNumber || chargeResult.billKey || null,
+          accountName: chargeResult.billerCode || null,
+          proofImage: null,
+          rejectReason: `ORDER_ID:${uniqueOrderId}|TX_ID:${chargeResult.transactionId || ""}|EXPIRY:${chargeResult.expiryTime || ""}`,
+        },
+      });
+    } else {
+      await prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: targetAmount,
+          type: paymentType,
+          method: paymentMethod,
+          bankName: chargeResult.bankName || (paymentMethod === "QRIS" ? "QRIS" : "BANK"),
+          accountNumber: chargeResult.vaNumber || chargeResult.billKey || null,
+          accountName: chargeResult.billerCode || null,
+          proofImage: null,
+          status: "PENDING",
+          rejectReason: `ORDER_ID:${uniqueOrderId}|TX_ID:${chargeResult.transactionId || ""}|EXPIRY:${chargeResult.expiryTime || ""}`,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

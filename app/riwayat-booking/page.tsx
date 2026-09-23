@@ -15,13 +15,21 @@ import { Footer } from '@/components/landing/Footer';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { formatDuration, formatRupiah } from '@/lib/utils';
+import { formatDuration, formatRupiah, cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { STATUS_STEPS, getStatusMeta } from '@/lib/booking-status';
 import { CustomPaymentModal } from '@/components/payment/CustomPaymentModal';
 
+function isMidtransBooking(booking: any): boolean {
+  if (booking.paymentMethod === 'MIDTRANS') return true;
+  const methods = ['MIDTRANS', 'QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'];
+  if (methods.includes(booking.paymentMethod)) return true;
+  return booking.payments?.some((p: any) => methods.includes(p.method)) || false;
+}
+
 function getPaidAmount(booking: any): number {
   if (['COMPLETED'].includes(booking.status) || booking.fullPaid) {
-    return booking.totalPrice + (booking.penaltyAmount || 0);
+    return booking.totalPrice + (booking.penaltyAmount || 0) + (booking.extraCost || 0);
   }
   const verifiedPaymentTotal = booking.payments
     ?.filter((p: any) => p.status === 'VERIFIED')
@@ -30,17 +38,13 @@ function getPaidAmount(booking: any): number {
   if (['DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_RETURN', 'WAITING_PAYMENT'].includes(booking.status) || booking.dpPaid) {
     return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
   }
-  const hasProof = !!(booking.paymentProof || booking.payments?.some((p: any) => p.proofImage));
-  if (['PENDING', 'WAITING_DP'].includes(booking.status) && hasProof) {
-    return booking.dpAmount || Math.floor(booking.totalPrice * 0.5);
-  }
   return 0;
 }
 
 function getOutstanding(booking: any): number {
   if (['COMPLETED'].includes(booking.status) || booking.fullPaid) return 0;
   const paid = getPaidAmount(booking);
-  return Math.max(0, (booking.totalPrice + (booking.penaltyAmount || 0)) - paid);
+  return Math.max(0, (booking.totalPrice + (booking.penaltyAmount || 0) + (booking.extraCost || 0)) - paid);
 }
 
 export default function RiwayatBookingPage() {
@@ -57,6 +61,15 @@ export default function RiwayatBookingPage() {
       router.push('/login?callbackUrl=/riwayat-booking');
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === '1') {
+        toast.success('Pembayaran DP berhasil dikonfirmasi oleh sistem!');
+      }
+    }
+  }, []);
 
   const [activePaymentModal, setActivePaymentModal] = useState<{
     isOpen: boolean;
@@ -354,10 +367,33 @@ export default function RiwayatBookingPage() {
 
                   <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     {/* Status Badge */}
-                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold bg-secondary text-foreground border border-border">
-                      <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />
-                      {meta.label}
-                    </span>
+                    {(() => {
+                      const isMidtrans = isMidtransBooking(booking);
+                      let label = meta.label;
+                      let isWarning = false;
+                      if ((booking.status === 'PENDING' || booking.status === 'WAITING_DP') && !booking.dpPaid) {
+                        if (isMidtrans) {
+                          label = 'Menunggu Pembayaran DP (Midtrans)';
+                          isWarning = true;
+                        } else if (booking.paymentProof || booking.payments?.some((p: any) => p.proofImage && !p.proofImage.includes('midtrans.com'))) {
+                          label = 'Menunggu Verifikasi Admin';
+                        } else {
+                          label = 'Menunggu Transfer DP';
+                          isWarning = true;
+                        }
+                      }
+                      return (
+                        <span className={cn(
+                          'inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold border',
+                          isWarning
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                            : 'bg-secondary text-foreground border-border'
+                        )}>
+                          <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', isWarning ? 'bg-amber-500' : 'bg-foreground')} />
+                          {label}
+                        </span>
+                      );
+                    })()}
 
                     {/* Secondary badges */}
                     {booking.status === 'IN_PROGRESS' && outstanding > 0 && (
@@ -512,10 +548,15 @@ export default function RiwayatBookingPage() {
 
                   {/* ── Action Banners ── */}
 
-                  {/* 1. DP Pending — bukti sudah upload */}
-                  {['PENDING', 'WAITING_DP'].includes(booking.status) && (() => {
-                    const proofUrl = booking.paymentProof || booking.payments?.find((p: any) => p.proofImage)?.proofImage;
-                    if (proofUrl) {
+                  {/* 1. Kasus DP Belum Lunas (PENDING / WAITING_DP) */}
+                  {['PENDING', 'WAITING_DP'].includes(booking.status) && !booking.dpPaid && (() => {
+                    const isMidtrans = isMidtransBooking(booking);
+                    const manualProofUrl = booking.paymentProof || booking.payments?.find(
+                      (p: any) => p.proofImage && !p.proofImage.includes('midtrans.com')
+                    )?.proofImage;
+
+                    // A. Kasus Transfer Manual & Bukti sudah diunggah -> menunggu verifikasi admin
+                    if (!isMidtrans && manualProofUrl) {
                       return (
                         <div className="mt-4 p-4 bg-background border border-border rounded-xl flex items-center justify-between gap-4">
                           <div className="flex items-start gap-3">
@@ -524,15 +565,15 @@ export default function RiwayatBookingPage() {
                             </div>
                             <div>
                               <p className="text-xs font-bold text-foreground">
-                                Bukti DP ({formatRupiah(booking.dpAmount)}) Sudah Diunggah
+                                Bukti Transfer DP ({formatRupiah(booking.dpAmount)}) Sudah Diunggah
                               </p>
                               <p className="text-[11px] text-foreground/60 mt-0.5">
-                                Sedang diverifikasi oleh admin. Status akan berubah otomatis setelah disetujui.
+                                Sedang diverifikasi oleh admin. Status pesanan akan otomatis terkonfirmasi setelah disetujui.
                               </p>
                             </div>
                           </div>
                           <a
-                            href={proofUrl}
+                            href={manualProofUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1.5 bg-card hover:bg-secondary text-foreground text-[10px] font-bold rounded-lg shrink-0 transition-colors border border-border"
@@ -542,33 +583,39 @@ export default function RiwayatBookingPage() {
                         </div>
                       );
                     }
-                    return null;
-                  })()}
 
-                  {/* 1b. DP Pending — belum bayar */}
-                  {['PENDING', 'WAITING_DP'].includes(booking.status) && !(booking.paymentProof || booking.payments?.some((p: any) => p.proofImage)) && (
-                    <div className="mt-4 p-4 bg-background border border-border rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-foreground">
-                          <Landmark size={14} />
+                    // B. Kasus Midtrans Gateway atau Transfer Manual belum bayar/upload
+                    return (
+                      <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/25 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                            {isMidtrans ? <CreditCard size={15} /> : <Landmark size={15} />}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">
+                              {isMidtrans ? (
+                                <>Menunggu Pembayaran DP via Midtrans: <span className="font-extrabold text-foreground">{formatRupiah(booking.dpAmount)}</span></>
+                              ) : (
+                                <>Silakan transfer DP sebesar <span className="font-extrabold text-foreground">{formatRupiah(booking.dpAmount)}</span> untuk konfirmasi pesanan</>
+                              )}
+                            </p>
+                            <p className="text-[11px] text-foreground/60 mt-0.5">
+                              {isMidtrans
+                                ? 'Bayar menggunakan QRIS (Semua E-Wallet/BCA) atau Virtual Account. Verifikasi dan konfirmasi booking berjalan otomatis.'
+                                : 'Transfer ke rekening resmi kami dan unggah bukti transfer untuk diverifikasi admin.'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold text-foreground">
-                            Silakan bayar DP sebesar <span className="font-extrabold text-foreground">{formatRupiah(booking.dpAmount)}</span> untuk konfirmasi pesanan
-                          </p>
-                          <p className="text-[11px] text-foreground/60 mt-0.5">
-                            Metode: Pembayaran Instan Gateway (MIDTRANS QRIS/VA) atau Transfer Rekening
-                          </p>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handlePayDP(booking)}
+                          className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap self-start sm:self-auto shrink-0"
+                        >
+                          <CreditCard size={12} /> {isMidtrans ? 'Bayar DP Sekarang (Midtrans)' : 'Bayar DP Sekarang'} <ArrowRight size={12} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handlePayDP(booking)}
-                        className="inline-flex items-center gap-1.5 bg-foreground hover:bg-foreground/90 text-background font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap"
-                      >
-                        <CreditCard size={12} /> Bayar DP Sekarang <ArrowRight size={12} />
-                      </button>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* 2. DP Confirmed */}
                   {booking.status === 'DP_CONFIRMED' && (

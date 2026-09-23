@@ -160,6 +160,9 @@ website-rental/
 │   ├── site-content.ts          # Salinan teks informasi layanan
 │   ├── snap.ts                  # Helper pemanggil Midtrans Snap frontend
 │   └── upload.ts                # Helper upload berkas lokal
+├── docs/
+│   ├── ERD.md                   # Dokumentasi skema basis data & kamus data
+│   └── erd.html                 # Visualizer interaktif ER Diagram (Zoom, Pan, Export)
 ├── prisma/
 │   ├── schema.prisma            # Definisi skema database PostgreSQL
 │   └── seed.ts                  # Script seeding data awal

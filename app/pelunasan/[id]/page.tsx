@@ -551,6 +551,16 @@ export default function PelunasanPage() {
                   <span className="text-sm font-bold text-foreground">Sisa yang Harus Dilunasi</span>
                   <span className="text-2xl font-black text-foreground">{formatCurrency(remainingAmount)}</span>
                 </div>
+
+                {booking.notes && (
+                  <div className="mt-3 p-3 bg-secondary/50 border border-border rounded-xl flex items-start gap-2.5">
+                    <MessageSquare size={14} className="text-foreground/70 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/50">Catatan Pengembalian / Admin</p>
+                      <p className="text-xs text-foreground/80 mt-0.5">{booking.notes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
 

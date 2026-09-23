@@ -90,7 +90,8 @@ export async function processStaleBookings() {
 
     const staleBookings = await prisma.booking.findMany({
       where: {
-        status: "WAITING_DP",
+        status: { in: ["WAITING_DP", "PENDING"] },
+        dpPaid: false,
         createdAt: { lt: deadline },
       },
       include: { car: true },
@@ -113,7 +114,7 @@ export async function processStaleBookings() {
           data: {
             userId: booking.userId,
             title: "Booking Dibatalkan Otomatis",
-            message: `Booking ${booking.car.name} dibatalkan karena tidak ada bukti pembayaran DP dalam 24 jam.`,
+            message: `Booking ${booking.car.name} dibatalkan karena tidak ada pembayaran DP dalam 24 jam.`,
             type: "BOOKING_REJECTED",
           },
         });

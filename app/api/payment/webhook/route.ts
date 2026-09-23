@@ -67,7 +67,6 @@ export async function POST(req: NextRequest) {
           method: paymentMethod.toUpperCase(),
           verifiedAt: new Date(),
           verifiedBy: "MIDTRANS_AUTO",
-          rejectReason: null,
         },
       });
 

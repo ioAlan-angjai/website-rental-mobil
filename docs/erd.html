@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RentalMobil Jogja - Entity Relationship Diagram (ERD)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(22, 30, 46, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 40%);
+    }
+
+    /* Header */
+    header {
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      -webkit-text-fill-color: initial;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    /* Container */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 2rem;
+      max-width: 1700px;
+      width: 100%;
+      margin: 0 auto;
+      gap: 1.5rem;
+    }
+
+    /* Diagram Section */
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 780px;
+    }
+
+    .diagram-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .diagram-info h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .diagram-info p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .diagram-viewport {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      cursor: grab;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(7, 10, 18, 0.6);
+    }
+
+    .diagram-viewport:active {
+      cursor: grabbing;
+    }
+
+    #mermaid-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #mermaid-container svg {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+
+    .floating-toolbar {
+      position: absolute;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      display: flex;
+      gap: 0.4rem;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 0.6rem;
+      padding: 0.35rem;
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .tool-btn {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #fff;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.15s ease;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Data Dictionary & Tables Info */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.25rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #93c5fd;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .card li {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      padding-bottom: 0.4rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+
+    .card li strong {
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+    }
+
+    footer {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-title">
+      <span>🚗 RentalMobil Jogja</span>
+      <span class="badge">Supabase PostgreSQL • Prisma ORM</span>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="resetZoom()">↺ Reset Tampilan</button>
+      <button class="btn btn-primary" onclick="exportSVG()">📥 Simpan SVG</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="diagram-card">
+      <div class="diagram-header">
+        <div class="diagram-info">
+          <h2>Relational Entity Diagram (ERD)</h2>
+          <p>Gunakan mouse scroll untuk Zoom In / Out, dan klik-tahan untuk menggeser (Pan) diagram.</p>
+        </div>
+        <div class="badge">14 Entitas Model</div>
+      </div>
+
+      <div class="diagram-viewport" id="viewport">
+        <div id="mermaid-container" class="mermaid">
+erDiagram
+    users ||--o{ accounts : "has"
+    users ||--o{ sessions : "has"
+    users ||--o{ bookings : "orders"
+    users ||--o{ chats : "creates"
+    users ||--o{ chat_messages : "sends"
+    users ||--o{ notifications : "receives"
+
+    cars ||--o{ bookings : "rented_in"
+
+    bookings ||--|| invoices : "has_one"
+    bookings ||--o{ payments : "payments"
+
+    chats ||--o{ chat_messages : "contains"
+
+    users {
+        String id PK
+        String email
+        String name
+        String role
+        String phone
+        String ktpImage
+        String simImage
+        DateTime createdAt
+    }
+
+    accounts {
+        String id PK
+        String userId FK
+        String provider
+        String providerAccountId
+    }
+
+    sessions {
+        String id PK
+        String sessionToken
+        String userId FK
+        DateTime expires
+    }
+
+    verification_tokens {
+        String identifier
+        String token
+        DateTime expires
+    }
+
+    password_reset_tokens {
+        String id PK
+        String email
+        String token
+        DateTime expires
+        Boolean used
+    }
+
+    cars {
+        String id PK
+        String name
+        String brand
+        String category
+        String transmission
+        Int seats
+        Int pricePerDay
+        String status
+    }
+
+    bookings {
+        String id PK
+        String userId FK
+        String carId FK
+        DateTime startDateTime
+        DateTime endDateTime
+        String serviceType
+        Int totalPrice
+        Int dpAmount
+        Int remainingAmount
+        String status
+        String paymentMethod
+    }
+
+    invoices {
+        String id PK
+        String bookingId FK
+        String invoiceNumber
+        Int subtotal
+        Int penalty
+        Int total
+        String paymentStatus
+        DateTime dueDate
+    }
+
+    payments {
+        String id PK
+        String bookingId FK
+        Int amount
+        String type
+        String method
+        String status
+        String proofImage
+    }
+
+    chats {
+        String id PK
+        String userId FK
+        String assignedToId FK
+        String status
+        String handledBy
+    }
+
+    chat_messages {
+        String id PK
+        String chatId FK
+        String senderId FK
+        String message
+        String senderType
+        Boolean isRead
+    }
+
+    notifications {
+        String id PK
+        String userId FK
+        String title
+        String message
+        String type
+        Boolean isRead
+    }
+
+    drivers {
+        String id PK
+        String name
+        String phone
+        String status
+        Float rating
+    }
+
+    bank_accounts {
+        String id PK
+        String bankName
+        String accountNumber
+        String accountName
+        Boolean isActive
+    }
+
+    testimonials {
+        String id PK
+        String name
+        Int rating
+        String comment
+        Boolean featured
+    }
+
+    settings {
+        String id PK
+        String key
+        String value
+    }
+        </div>
+
+        <div class="floating-toolbar">
+          <button class="tool-btn" title="Zoom In" onclick="zoomIn()">➕</button>
+          <button class="tool-btn" title="Zoom Out" onclick="zoomOut()">➖</button>
+          <button class="tool-btn" title="Reset" onclick="resetZoom()">⟲</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="card">
+        <div class="card-title">🔑 Hubungan Relasi Utama</div>
+        <ul>
+          <li><span>User ➔ Booking</span> <strong>1 : Many (SetNull)</strong></li>
+          <li><span>Car ➔ Booking</span> <strong>1 : Many (Restrict)</strong></li>
+          <li><span>Booking ➔ Invoice</span> <strong>1 : 1 (Cascade)</strong></li>
+          <li><span>Booking ➔ Payment</span> <strong>1 : Many (Cascade)</strong></li>
+          <li><span>User ➔ Chat / Message</span> <strong>1 : Many (Cascade)</strong></li>
+          <li><span>Chat ➔ ChatMessage</span> <strong>1 : Many (Cascade)</strong></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Status Transaksi (Booking Status)</div>
+        <ul>
+          <li><span>Awal Pemesanan</span> <strong>PENDING / WAITING_DP</strong></li>
+          <li><span>DP Diverifikasi</span> <strong>DP_CONFIRMED</strong></li>
+          <li><span>Mobil Digunakan</span> <strong>IN_PROGRESS</strong></li>
+          <li><span>Mobil Selesai Digunakan</span> <strong>WAITING_RETURN</strong></li>
+          <li><span>Pelunasan / Denda</span> <strong>WAITING_PAYMENT</strong></li>
+          <li><span>Selesai Seluruhnya</span> <strong>COMPLETED</strong></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💳 Pembayaran & Billing</div>
+        <ul>
+          <li><span>Payment Types</span> <strong>DP | FULL_PAYMENT | PENALTY</strong></li>
+          <li><span>Metode Otomatis</span> <strong>Midtrans (QRIS / VA)</strong></li>
+          <li><span>Metode Manual</span> <strong>Transfer Bank BCA/BNI/Mandiri</strong></li>
+          <li><span>Status Pembayaran</span> <strong>PENDING | VERIFIED | REJECTED</strong></li>
+          <li><span>Status Invoice</span> <strong>UNPAID | PARTIAL | PAID</strong></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Dokumentasi Skema Basis Data RentalMobil Jogja &copy; 2026. Dihasilkan dari skema resmi <code>prisma/schema.prisma</code>.
+  </footer>
+
+  <script>
+    let panZoomInstance = null;
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#090d16',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#3b82f6',
+        lineColor: '#60a5fa',
+        secondaryColor: '#0f172a',
+        tertiaryColor: '#1e1b4b'
+      },
+      er: {
+        useMaxWidth: false,
+        diagramPadding: 30,
+        layoutDirection: 'TB',
+        entityPadding: 15
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const svgElement = document.querySelector('#mermaid-container svg');
+        if (svgElement) {
+          svgElement.setAttribute('id', 'mermaid-svg-target');
+          svgElement.style.width = '100%';
+          svgElement.style.height = '100%';
+          
+          panZoomInstance = svgPanZoom('#mermaid-svg-target', {
+            zoomEnabled: true,
+            controlIconsEnabled: false,
+            fit: true,
+            center: true,
+            minZoom: 0.2,
+            maxZoom: 10,
+            zoomScaleSensitivity: 0.3
+          });
+        }
+      }, 700);
+    });
+
+    function zoomIn() {
+      if (panZoomInstance) panZoomInstance.zoomIn();
+    }
+
+    function zoomOut() {
+      if (panZoomInstance) panZoomInstance.zoomOut();
+    }
+
+    function resetZoom() {
+      if (panZoomInstance) {
+        panZoomInstance.reset();
+        panZoomInstance.fit();
+        panZoomInstance.center();
+      }
+    }
+
+    function exportSVG() {
+      const svg = document.querySelector('#mermaid-container svg');
+      if (!svg) {
+        alert('Diagram belum selesai dimuat.');
+        return;
+      }
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svg);
+      if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+        source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+      const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = svgUrl;
+      downloadLink.download = 'ERD-RentalMobil-Jogja.svg';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(svgUrl);
+    }
+  </script>
+</body>
+</html>

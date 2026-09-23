@@ -53,7 +53,10 @@ export async function GET(_req: NextRequest) {
     });
 
     const mappedBookings = bookings.map((b) => {
-      const proofPayment = b.payments?.find((p: any) => p.proofImage);
+      // paymentProof HANYA untuk bukti transfer manual
+      const proofPayment = b.payments?.find(
+        (p: any) => p.proofImage && !p.proofImage.includes("midtrans.com")
+      );
       return {
         ...b,
         paymentProof: proofPayment?.proofImage || null,

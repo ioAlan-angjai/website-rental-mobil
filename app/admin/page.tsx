@@ -68,6 +68,9 @@ export default function AdminDashboard() {
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [actualReturnDate, setActualReturnDate] = useState('');
   const [returnPaymentMethod, setReturnPaymentMethod] = useState('CASH');
+  const [penaltyInput, setPenaltyInput] = useState<number | string>(0);
+  const [extraCostInput, setExtraCostInput] = useState<number | string>(0);
+  const [returnNotes, setReturnNotes] = useState('');
 
   // Real DB Cars states
   const [cars, setCars] = useState<any[]>([]);
@@ -294,6 +297,9 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           actualReturnDate,
           paymentMethod: returnPaymentMethod,
+          manualPenaltyAmount: Number(penaltyInput) || 0,
+          extraCost: Number(extraCostInput) || 0,
+          notes: returnNotes,
         }),
       });
 
@@ -1070,13 +1076,33 @@ export default function AdminDashboard() {
                     {selectedBooking.penaltyAmount > 0 && (
                       <>
                         <div className="text-zinc-500 text-rose-600">Denda Keterlambatan:</div>
-                        <div className="font-bold text-right text-rose-600">Rp {selectedBooking.penaltyAmount.toLocaleString('id-ID')}</div>
+                        <div className="font-bold text-right text-rose-600">+ Rp {selectedBooking.penaltyAmount.toLocaleString('id-ID')}</div>
                       </>
                     )}
-                    <div className="text-zinc-900 font-bold border-t pt-2">Total Biaya:</div>
-                    <div className="font-extrabold text-right text-zinc-950 border-t pt-2">Rp {selectedBooking.totalPrice.toLocaleString('id-ID')}</div>
-                    <div className="text-emerald-700 font-bold">DP Diterima (50%):</div>
-                    <div className="font-bold text-right text-emerald-700">Rp {selectedBooking.dpAmount.toLocaleString('id-ID')}</div>
+                    {selectedBooking.extraCost > 0 && (
+                      <>
+                        <div className="text-zinc-500 text-amber-600">Biaya Tambahan:</div>
+                        <div className="font-bold text-right text-amber-600">+ Rp {selectedBooking.extraCost.toLocaleString('id-ID')}</div>
+                      </>
+                    )}
+                    <div className="text-zinc-900 font-bold border-t pt-2">Grand Total:</div>
+                    <div className="font-extrabold text-right text-zinc-950 border-t pt-2">
+                      Rp {(selectedBooking.totalPrice + (selectedBooking.penaltyAmount || 0) + (selectedBooking.extraCost || 0)).toLocaleString('id-ID')}
+                    </div>
+                    <div className={selectedBooking.dpPaid ? 'text-emerald-700 font-bold' : 'text-amber-700 font-bold'}>
+                      {selectedBooking.dpPaid ? 'DP Terbayar (50%):' : 'Nominal DP (50%):'}
+                    </div>
+                    <div className={`font-bold text-right ${selectedBooking.dpPaid ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      Rp {selectedBooking.dpAmount.toLocaleString('id-ID')} {selectedBooking.dpPaid ? '(Lunas)' : '(Belum Dibayar)'}
+                    </div>
+                    {selectedBooking.remainingAmount > 0 && (
+                      <>
+                        <div className="text-rose-700 font-extrabold">Sisa Tagihan Pelunasan:</div>
+                        <div className="font-extrabold text-right text-rose-700">
+                          Rp {selectedBooking.remainingAmount.toLocaleString('id-ID')}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {selectedBooking.paymentMethod && (
@@ -1088,10 +1114,30 @@ export default function AdminDashboard() {
 
                 {/* Bukti Pembayaran DP */}
                 {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (() => {
-                  const dpProofUrl = selectedBooking.paymentProof || selectedBooking.payments?.find((p: any) => p.proofImage)?.proofImage;
+                  const isMidtrans = selectedBooking.paymentMethod === 'MIDTRANS' ||
+                    ['QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(selectedBooking.paymentMethod) ||
+                    selectedBooking.payments?.some((p: any) => ['MIDTRANS', 'QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(p.method));
+
+                  if (isMidtrans && !selectedBooking.dpPaid) {
+                    return (
+                      <div className="p-4 bg-amber-50 text-amber-800 text-xs rounded-2xl border border-amber-200 space-y-1">
+                        <p className="font-bold flex items-center gap-1.5 text-sm text-amber-900">
+                          Midtrans Payment Gateway (Otomatis)
+                        </p>
+                        <p className="text-amber-700 leading-relaxed">
+                          Pesanan ini menggunakan gateway otomatis Midtrans. Status akan otomatis berubah menjadi "DP Terverifikasi" saat pelanggan menyelesaikan pembayaran. Tidak diperlukan verifikasi struk transfer manual.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  const dpProofUrl = selectedBooking.paymentProof || selectedBooking.payments?.find(
+                    (p: any) => p.proofImage && !p.proofImage.includes('midtrans.com')
+                  )?.proofImage;
+
                   return dpProofUrl ? (
                     <div className="space-y-2">
-                      <h4 className="font-bold text-zinc-900 text-sm">Bukti Pembayaran DP</h4>
+                      <h4 className="font-bold text-zinc-900 text-sm">Bukti Pembayaran DP (Transfer Manual)</h4>
                       <div className="border border-zinc-200 rounded-2xl overflow-hidden bg-zinc-100 flex items-center justify-center p-2">
                         <img
                           src={dpProofUrl}
@@ -1104,7 +1150,7 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="p-4 bg-zinc-50 text-zinc-500 text-center text-sm rounded-2xl border border-dashed">
-                      Belum ada bukti pembayaran DP yang diunggah.
+                      Belum ada bukti pembayaran DP yang diunggah penyewa.
                     </div>
                   );
                 })()}
@@ -1181,53 +1227,137 @@ export default function AdminDashboard() {
                 {/* Return & Pelunasan Form */}
                 {showReturnForm && (
                   <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 p-5 bg-zinc-50 rounded-2xl border border-zinc-200">
-                    <h4 className="text-sm font-bold text-zinc-950 border-b pb-1">Form Pengembalian & Pelunasan</h4>
+                    <h4 className="text-sm font-bold text-zinc-950 border-b pb-1">Form Pengembalian Unit & Pelunasan Tagihan</h4>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-zinc-700">
+                          Waktu Aktual Pengembalian
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={actualReturnDate}
+                          onChange={(e) => {
+                            const newDate = e.target.value;
+                            setActualReturnDate(newDate);
+                            const autoPenalty = calculatePenaltyPreview(selectedBooking, newDate);
+                            setPenaltyInput(autoPenalty);
+                          }}
+                          className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-zinc-700">
+                          Metode Pembayaran Pelunasan
+                        </label>
+                        <select
+                          value={returnPaymentMethod}
+                          onChange={(e) => setReturnPaymentMethod(e.target.value)}
+                          className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                        >
+                          <option value="CASH">CASH / Tunai di Tempat</option>
+                          <option value="BCA_TRANSFER">BCA Transfer</option>
+                          <option value="BNI_TRANSFER">BNI Transfer</option>
+                          <option value="MANDIRI_TRANSFER">Mandiri Transfer</option>
+                          <option value="QRIS">QRIS / Online Gateway</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {/* Denda Keterlambatan Editable */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="block text-xs font-bold text-zinc-700">
+                            Denda Keterlambatan (Rp)
+                          </label>
+                          <span className="text-[10px] text-zinc-500">
+                            Auto: Rp {calculatePenaltyPreview(selectedBooking, actualReturnDate).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          value={penaltyInput}
+                          onChange={(e) => setPenaltyInput(e.target.value)}
+                          placeholder="0"
+                          className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-900 text-rose-600"
+                        />
+                      </div>
+
+                      {/* Biaya Tambahan / Kerusakan / Bensin */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-zinc-700">
+                          Biaya Tambahan / Bensin / Lecet (Rp)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={extraCostInput}
+                          onChange={(e) => setExtraCostInput(e.target.value)}
+                          placeholder="0"
+                          className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-900 text-amber-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Catatan Pengembalian */}
                     <div className="space-y-1">
                       <label className="block text-xs font-bold text-zinc-700">
-                        Waktu Aktual Pengembalian
+                        Catatan Pengembalian / Rincian Biaya
                       </label>
                       <input
-                        type="datetime-local"
-                        value={actualReturnDate}
-                        onChange={(e) => setActualReturnDate(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                        type="text"
+                        value={returnNotes}
+                        onChange={(e) => setReturnNotes(e.target.value)}
+                        placeholder="Contoh: Telat 1 jam + bensin kurang 2 bar"
+                        className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-zinc-700">
-                        Metode Pembayaran Pelunasan
-                      </label>
-                      <select
-                        value={returnPaymentMethod}
-                        onChange={(e) => setReturnPaymentMethod(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
-                      >
-                        <option value="CASH">CASH / Tunai</option>
-                        <option value="BCA_TRANSFER">BCA Transfer</option>
-                        <option value="BNI_TRANSFER">BNI Transfer</option>
-                        <option value="MANDIRI_TRANSFER">Mandiri Transfer</option>
-                        <option value="QRIS">QRIS</option>
-                      </select>
-                    </div>
+                    {/* Ringkasan Kalkulasi Akurat */}
+                    {(() => {
+                      const verifiedPaid = selectedBooking.payments?.filter((p: any) => p.status === 'VERIFIED').reduce((sum: number, p: any) => sum + (p.amount || 0), 0) ?? (selectedBooking.dpPaid ? selectedBooking.dpAmount : 0);
+                      const baseOutstanding = Math.max(0, (selectedBooking.totalPrice || 0) - verifiedPaid);
+                      const penaltyNum = Math.max(0, Number(penaltyInput) || 0);
+                      const extraNum = Math.max(0, Number(extraCostInput) || 0);
+                      const grandTotalBill = (selectedBooking.totalPrice || 0) + penaltyNum + extraNum;
+                      const finalPelunasan = Math.max(0, grandTotalBill - verifiedPaid);
 
-                    <div className="bg-white p-4 rounded-xl border border-zinc-200 text-xs space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Sisa Sewa yang Belum Dibayar:</span>
-                        <span className="font-bold">Rp {(selectedBooking.totalPrice - selectedBooking.dpAmount).toLocaleString('id-ID')}</span>
-                      </div>
-                      {calculatePenaltyPreview(selectedBooking, actualReturnDate) > 0 && (
-                        <div className="flex justify-between text-rose-600 font-bold">
-                          <span>Denda Keterlambatan:</span>
-                          <span>Rp {calculatePenaltyPreview(selectedBooking, actualReturnDate).toLocaleString('id-ID')}</span>
+                      return (
+                        <div className="bg-white p-4 rounded-xl border border-zinc-200 text-xs space-y-2">
+                          <div className="flex justify-between text-zinc-600">
+                            <span>Harga Pokok Sewa:</span>
+                            <span className="font-semibold">Rp {selectedBooking.totalPrice.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between text-emerald-700 font-medium">
+                            <span>Pembayaran Terverifikasi (DP):</span>
+                            <span>- Rp {verifiedPaid.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between text-zinc-600 border-t pt-1">
+                            <span>Sisa Pokok Sewa:</span>
+                            <span className="font-semibold">Rp {baseOutstanding.toLocaleString('id-ID')}</span>
+                          </div>
+                          {penaltyNum > 0 && (
+                            <div className="flex justify-between text-rose-600 font-bold">
+                              <span>Denda Keterlambatan:</span>
+                              <span>+ Rp {penaltyNum.toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          {extraNum > 0 && (
+                            <div className="flex justify-between text-amber-600 font-bold">
+                              <span>Biaya Tambahan:</span>
+                              <span>+ Rp {extraNum.toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm font-extrabold border-t pt-2 text-zinc-900">
+                            <span>Total Ditagihkan ke Pengguna:</span>
+                            <span className="text-zinc-950">Rp {finalPelunasan.toLocaleString('id-ID')}</span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex justify-between text-sm font-bold border-t pt-2 text-zinc-900">
-                        <span>Total Tagihan Pelunasan:</span>
-                        <span>Rp {((selectedBooking.totalPrice - selectedBooking.dpAmount) + calculatePenaltyPreview(selectedBooking, actualReturnDate)).toLocaleString('id-ID')}</span>
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                     <div className="flex gap-2 justify-end pt-2">
                       <button
@@ -1264,25 +1394,32 @@ export default function AdminDashboard() {
                     Tutup
                   </button>
 
-                  {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && !showRejectForm && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowRejectForm(true)}
-                        className="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-sm border border-rose-200 transition-all"
-                      >
-                        Tolak DP
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isVerifying}
-                        onClick={() => handleVerify('APPROVE')}
-                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all"
-                      >
-                        {isVerifying ? 'Memproses...' : 'Konfirmasi & Setujui DP'}
-                      </button>
-                    </>
-                  )}
+                  {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && !showRejectForm && (() => {
+                    const isMidtrans = selectedBooking.paymentMethod === 'MIDTRANS' ||
+                      ['QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(selectedBooking.paymentMethod) ||
+                      selectedBooking.payments?.some((p: any) => ['MIDTRANS', 'QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(p.method));
+
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowRejectForm(true)}
+                          className="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-sm border border-rose-200 transition-all cursor-pointer"
+                        >
+                          Tolak DP
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isVerifying}
+                          onClick={() => handleVerify('APPROVE')}
+                          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all cursor-pointer"
+                          title={isMidtrans ? 'Perhatian: Transaksi ini menggunakan Midtrans Gateway otomatis.' : undefined}
+                        >
+                          {isVerifying ? 'Memproses...' : (isMidtrans ? 'Konfirmasi Manual (Bypass Midtrans)' : 'Konfirmasi & Setujui DP')}
+                        </button>
+                      </>
+                    );
+                  })()}
 
                   {selectedBooking.status === 'DP_CONFIRMED' && (
                     <button
@@ -1299,7 +1436,12 @@ export default function AdminDashboard() {
                     <button
                       type="button"
                       onClick={() => {
-                        setActualReturnDate(new Date().toISOString().slice(0, 16));
+                        const localIsoNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                        setActualReturnDate(localIsoNow);
+                        const autoPenalty = calculatePenaltyPreview(selectedBooking, localIsoNow);
+                        setPenaltyInput(autoPenalty);
+                        setExtraCostInput(0);
+                        setReturnNotes('');
                         setShowReturnForm(true);
                       }}
                       className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all"

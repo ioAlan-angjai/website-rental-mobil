@@ -7,7 +7,7 @@ import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import {
   Users, Zap, Fuel, ArrowLeft, ArrowRight, CalendarDays, Car, Shield, MapPin, Star,
-  CheckCircle2, Sparkles
+  CheckCircle2, Sparkles, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -241,13 +241,29 @@ export default function CarDetailPage() {
                   </div>
 
                   {/* Booking CTA */}
-                  <Link href={`/booking?carId=${car.id}`} className="block">
-                    <button className="w-full flex items-center justify-center gap-1.5 sm:gap-2 h-10 sm:h-12 text-xs sm:text-sm font-bold rounded-xl bg-foreground hover:bg-foreground/90 text-background transition-all shadow-xs cursor-pointer focus:outline-none">
-                      <CalendarDays size={15} />
-                      <span>Lanjutkan ke Pemesanan</span>
-                      <ArrowRight size={15} />
-                    </button>
-                  </Link>
+                  {car.status === 'AVAILABLE' ? (
+                    <Link href={`/booking?carId=${car.id}`} className="block">
+                      <button className="w-full flex items-center justify-center gap-1.5 sm:gap-2 h-10 sm:h-12 text-xs sm:text-sm font-bold rounded-xl bg-foreground hover:bg-foreground/90 text-background transition-all shadow-xs cursor-pointer focus:outline-none">
+                        <CalendarDays size={15} />
+                        <span>Lanjutkan ke Pemesanan</span>
+                        <ArrowRight size={15} />
+                      </button>
+                    </Link>
+                  ) : (
+                    <div className="w-full space-y-2">
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full flex items-center justify-center gap-2 h-10 sm:h-12 text-xs sm:text-sm font-bold rounded-xl bg-secondary text-foreground/50 border border-border cursor-not-allowed opacity-75"
+                      >
+                        <AlertCircle size={15} className="text-amber-500" />
+                        <span>{car.status === 'BOOKED' ? 'Unit Sedang Disewa' : 'Sedang Dalam Perawatan'}</span>
+                      </button>
+                      <p className="text-[11px] text-center text-foreground/60 leading-relaxed">
+                        Mobil ini saat ini sedang aktif disewa dan tidak dapat dibooking hingga unit dikembalikan.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Keunggulan Card */}

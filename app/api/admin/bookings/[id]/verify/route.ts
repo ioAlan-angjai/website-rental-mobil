@@ -84,7 +84,10 @@ export async function PATCH(
         where: { bookingId, status: "VERIFIED" },
       });
       const totalVerified = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
-      const totalBill = booking.totalPrice + (booking.penaltyAmount || 0);
+      const totalBill =
+        booking.totalPrice +
+        (booking.penaltyAmount || 0) +
+        (booking.extraCost || 0);
       const remainingAmount = Math.max(0, totalBill - totalVerified);
       const isFullyPaid = remainingAmount <= 0;
 

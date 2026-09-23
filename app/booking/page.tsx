@@ -186,6 +186,12 @@ function BookingForm() {
     amount: number;
     carName: string;
   } | null>(null);
+  const [lastCreatedBooking, setLastCreatedBooking] = useState<{
+    bookingId: string;
+    amount: number;
+    carName: string;
+    isGateway: boolean;
+  } | null>(null);
 
   // Auto-fill user identity when session resolves
   useEffect(() => {
@@ -394,14 +400,26 @@ function BookingForm() {
       // If INSTANT mode with Midtrans, open Custom Payment Modal
       if (paymentMode === 'INSTANT' && data.booking?.id) {
         const carObj = dbCars.find((c) => c.id === formData.carId);
-        setActivePaymentBooking({
-          isOpen: true,
+        const bookingInfo = {
           bookingId: data.booking.id,
           amount: data.booking.dpAmount || Math.floor(data.booking.totalPrice * 0.5),
           carName: carObj?.name || 'Rental Mobil',
+          isGateway: true,
+        };
+        setLastCreatedBooking(bookingInfo);
+        setActivePaymentBooking({
+          isOpen: true,
+          ...bookingInfo,
         });
         return;
       }
+
+      setLastCreatedBooking({
+        bookingId: data.booking?.id,
+        amount: data.booking?.dpAmount || Math.floor((data.booking?.totalPrice || 0) * 0.5),
+        carName: selectedCarDetails?.name || 'Rental Mobil',
+        isGateway: false,
+      });
 
       // Upload proof image if uploadedPreview exists (manual mode)
       if (uploadedPreview && data.booking && data.booking.id) {
@@ -433,7 +451,7 @@ function BookingForm() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return !!formData.serviceType && !!formData.carId && !!date && !!endDate;
+      case 1: return !!formData.serviceType && !!formData.carId && !!selectedCarDetails && !!date && !!endDate;
       case 2: return true;
       case 3: return true;
       case 4: return !!formData.name && !!formData.phone;
@@ -614,32 +632,91 @@ function BookingForm() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card border border-border rounded-3xl shadow-xs p-8 sm:p-12 text-center relative z-10"
+            className="bg-card border border-border rounded-3xl shadow-xs p-6 sm:p-12 text-center relative z-10 max-w-xl mx-auto"
           >
-            <div className="flex justify-center mb-5">
-              <div className="w-16 h-16 rounded-full bg-secondary/70 flex items-center justify-center text-foreground">
-                <CheckCircle2 size={36} />
-              </div>
-            </div>
-            <h2 className="text-2xl font-extrabold text-foreground mb-2">Booking Berhasil Dikirim!</h2>
-            <p className="text-foreground/70 mb-1 text-xs sm:text-sm">
-              Pesanan armada <strong>{selectedCarDetails?.name}</strong> telah berhasil didaftarkan.
-            </p>
-            <p className="text-foreground/50 text-xs sm:text-sm mb-8">
-              Tim kami akan memverifikasi pembayaran DP dan menghubungi Anda via WhatsApp secepatnya.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/riwayat-booking">
-                <Button className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl text-xs shadow-xs">
-                  Lihat Riwayat Booking
-                </Button>
-              </Link>
-              <Link href="/armada">
-                <Button variant="outline" className="border-border text-foreground hover:bg-secondary font-bold px-6 h-11 rounded-xl text-xs">
-                  Lihat Armada Lain
-                </Button>
-              </Link>
-            </div>
+            {lastCreatedBooking?.isGateway ? (
+              <>
+                <div className="flex justify-center mb-4 sm:mb-5">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+                    <Clock size={32} />
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 mb-3">
+                  <Clock size={12} /> Menunggu Pembayaran DP (Midtrans)
+                </div>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-foreground mb-1.5">Booking Berhasil Didaftarkan!</h2>
+                <p className="text-foreground/70 mb-4 text-xs sm:text-sm">
+                  Pesanan armada <strong>{selectedCarDetails?.name || lastCreatedBooking.carName}</strong> telah tercatat di sistem kami.
+                </p>
+
+                <div className="bg-secondary/40 border border-border rounded-2xl p-4 sm:p-5 my-4 text-left space-y-2.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-foreground/60">Nominal DP (50%):</span>
+                    <span className="font-extrabold text-foreground text-sm">
+                      Rp {lastCreatedBooking.amount.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs border-t border-border pt-2">
+                    <span className="text-foreground/60">Metode Pembayaran:</span>
+                    <span className="font-bold text-foreground">Midtrans Gateway (QRIS / VA)</span>
+                  </div>
+                  <p className="text-[11px] text-foreground/50 pt-1 leading-relaxed border-t border-border">
+                    <strong className="text-foreground/70">Penting:</strong> Pesanan armada belum terkonfirmasi aktif sebelum pembayaran DP diselesaikan melalui gateway. Anda dapat membayar sekarang atau kapan saja melalui Riwayat Booking.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (lastCreatedBooking) {
+                        setActivePaymentBooking({
+                          isOpen: true,
+                          bookingId: lastCreatedBooking.bookingId,
+                          amount: lastCreatedBooking.amount,
+                          carName: lastCreatedBooking.carName,
+                        });
+                      }
+                    }}
+                    className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl text-xs shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <CreditCard size={14} /> Bayar DP Sekarang (Midtrans)
+                  </Button>
+                  <Link href="/riwayat-booking">
+                    <Button variant="outline" className="w-full sm:w-auto border-border text-foreground hover:bg-secondary font-bold px-6 h-11 rounded-xl text-xs cursor-pointer">
+                      Lihat Riwayat Booking
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-center mb-5">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center border border-emerald-500/20">
+                    <CheckCircle2 size={36} />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-extrabold text-foreground mb-2">Booking &amp; Bukti Transfer Terkirim!</h2>
+                <p className="text-foreground/70 mb-1 text-xs sm:text-sm">
+                  Pesanan armada <strong>{selectedCarDetails?.name}</strong> telah berhasil didaftarkan.
+                </p>
+                <p className="text-foreground/50 text-xs sm:text-sm mb-8">
+                  Tim kami akan memverifikasi bukti transfer pembayaran DP Anda dalam waktu maksimal 1×24 jam.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/riwayat-booking">
+                    <Button className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl text-xs shadow-xs">
+                      Lihat Riwayat Booking
+                    </Button>
+                  </Link>
+                  <Link href="/armada">
+                    <Button variant="outline" className="border-border text-foreground hover:bg-secondary font-bold px-6 h-11 rounded-xl text-xs">
+                      Lihat Armada Lain
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            )}
           </motion.div>
         ) : (
           <Card className="bg-card border border-border rounded-3xl overflow-hidden shadow-xs relative z-10">
@@ -675,6 +752,14 @@ function BookingForm() {
                    ═══════════════════════════════════════════════════════ */}
                 {step === 1 && (
                   <StepWrapper step={step}>
+                    {/* Warning if URL requested a car that is currently BOOKED / unavailable */}
+                    {carIdParam && !loadingCars && !selectedCarDetails && (
+                      <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2.5 text-xs text-amber-700 dark:text-amber-400">
+                        <AlertCircle size={16} className="shrink-0" />
+                        <span>Mobil yang Anda tuju saat ini <strong>sedang disewa penyewa lain</strong> atau tidak tersedia. Silakan pilih armada lain yang tersedia di bawah.</span>
+                      </div>
+                    )}
+
                     {/* Service Type */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
