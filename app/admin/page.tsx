@@ -1469,29 +1469,29 @@ export default function AdminDashboard() {
         {/* Modal Create Driver */}
         <AnimatePresence>
           {isCreatingDriver && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl text-zinc-950"
+                className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-zinc-200 shadow-xl text-zinc-950 max-h-[88vh] overflow-y-auto"
               >
-                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                   <div>
-                    <h3 className="text-lg font-bold text-zinc-950">Tambah Driver Baru</h3>
-                    <p className="text-xs text-zinc-500">Daftarkan pengemudi operasional baru ke sistem</p>
+                    <h3 className="text-base font-bold text-zinc-950">Tambah Driver Baru</h3>
+                    <p className="text-[11px] text-zinc-500">Daftarkan pengemudi operasional baru ke sistem</p>
                   </div>
                   <button
                     onClick={() => setIsCreatingDriver(false)}
-                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
+                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer"
                   >
                     <X size={18} />
                   </button>
                 </div>
 
-                <form onSubmit={handleSaveNewDriver} className="space-y-4">
+                <form onSubmit={handleSaveNewDriver} className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">
+                    <label className="block text-[11px] font-bold text-zinc-700">
                       Nama Driver <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1500,12 +1500,12 @@ export default function AdminDashboard() {
                       value={newDriverFormData.name}
                       onChange={(e) => setNewDriverFormData({ ...newDriverFormData, name: e.target.value })}
                       placeholder="Contoh: Budi Santoso"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">
+                    <label className="block text-[11px] font-bold text-zinc-700">
                       Nomor WhatsApp / Phone <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1514,23 +1514,23 @@ export default function AdminDashboard() {
                       value={newDriverFormData.phone}
                       onChange={(e) => setNewDriverFormData({ ...newDriverFormData, phone: e.target.value })}
                       placeholder="Contoh: 081234567890"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">Alamat Lengkap Driver</label>
+                    <label className="block text-[11px] font-bold text-zinc-700">Alamat Lengkap Driver</label>
                     <textarea
                       rows={2}
                       value={newDriverFormData.address}
                       onChange={(e) => setNewDriverFormData({ ...newDriverFormData, address: e.target.value })}
                       placeholder="Contoh: Jl. Malioboro No. 45, Sleman, Yogyakarta"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 resize-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">
+                    <label className="block text-[11px] font-bold text-zinc-700">
                       Pengalaman Awal Saat Ini (Tahun) <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -1540,33 +1540,33 @@ export default function AdminDashboard() {
                         value={newDriverFormData.initialExperience}
                         onChange={(e) => setNewDriverFormData({ ...newDriverFormData, initialExperience: e.target.value })}
                         placeholder="0"
-                        className="w-full p-2.5 pr-14 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full h-9 px-3 pr-14 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-400 pointer-events-none select-none">Tahun</span>
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-400 pointer-events-none select-none">Tahun</span>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 space-y-1">
+                  <div className="p-2.5 bg-blue-50/80 border border-blue-100 rounded-xl text-[11px] text-blue-800 space-y-0.5">
                     <p className="font-bold flex items-center gap-1.5">
-                      <AlertCircle size={14} className="text-blue-600" /> Perhitungan Otomatis
+                      <AlertCircle size={13} className="text-blue-600" /> Perhitungan Otomatis
                     </p>
-                    <p className="text-blue-700 leading-relaxed">
+                    <p className="text-blue-700 leading-snug">
                       Pengalaman driver ini akan bertambah +1 tahun secara otomatis oleh sistem setiap kali genap 1 tahun terlewati dari tanggal pendaftarannya hari ini.
                     </p>
                   </div>
 
-                  <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
+                  <div className="flex gap-2.5 pt-3 border-t border-zinc-100 justify-end">
                     <button
                       type="button"
                       onClick={() => setIsCreatingDriver(false)}
-                      className="px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
+                      className="px-4 py-2 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all cursor-pointer"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
                       disabled={isSavingDriver}
-                      className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {isSavingDriver ? 'Menyimpan...' : 'Tambah Driver'}
                     </button>
@@ -1580,29 +1580,29 @@ export default function AdminDashboard() {
         {/* Modal Edit Driver */}
         <AnimatePresence>
           {editingDriver && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 space-y-6 border border-zinc-200 shadow-xl text-zinc-950"
+                className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-zinc-200 shadow-xl text-zinc-950 max-h-[88vh] overflow-y-auto"
               >
-                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                   <div>
-                    <h3 className="text-lg font-bold text-zinc-950">Edit Data Driver</h3>
-                    <p className="text-xs text-zinc-500">Perbarui informasi pengemudi (ID: {editingDriver.id})</p>
+                    <h3 className="text-base font-bold text-zinc-950">Edit Data Driver</h3>
+                    <p className="text-[11px] text-zinc-500">Perbarui informasi pengemudi (ID: {editingDriver.id})</p>
                   </div>
                   <button
                     onClick={() => setEditingDriver(null)}
-                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"
+                    className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer"
                   >
                     <X size={18} />
                   </button>
                 </div>
 
-                <form onSubmit={handleSaveEditDriver} className="space-y-4">
+                <form onSubmit={handleSaveEditDriver} className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">
+                    <label className="block text-[11px] font-bold text-zinc-700">
                       Nama Driver <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1611,12 +1611,12 @@ export default function AdminDashboard() {
                       value={editDriverFormData.name}
                       onChange={(e) => setEditDriverFormData({ ...editDriverFormData, name: e.target.value })}
                       placeholder="Contoh: Budi Santoso"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-bold"
+                      className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-bold"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">
+                    <label className="block text-[11px] font-bold text-zinc-700">
                       Nomor WhatsApp / Phone <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1625,38 +1625,38 @@ export default function AdminDashboard() {
                       value={editDriverFormData.phone}
                       onChange={(e) => setEditDriverFormData({ ...editDriverFormData, phone: e.target.value })}
                       placeholder="Contoh: 081234567890"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-mono"
+                      className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-mono"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-700">Alamat Lengkap Driver</label>
+                    <label className="block text-[11px] font-bold text-zinc-700">Alamat Lengkap Driver</label>
                     <textarea
                       rows={2}
                       value={editDriverFormData.address}
                       onChange={(e) => setEditDriverFormData({ ...editDriverFormData, address: e.target.value })}
                       placeholder="Contoh: Jl. Malioboro No. 45, Sleman, Yogyakarta"
-                      className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
+                      className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 resize-none"
                     />
                   </div>
 
-                  <div className="p-3 bg-zinc-100 rounded-xl text-xs text-zinc-600 flex items-center justify-between">
-                    <span>Pengalaman Terhitung Otomatis Saat Ini:</span>
-                    <span className="font-bold text-zinc-900">{editingDriver.experience || `${editingDriver.initialExperience || 0} Tahun`}</span>
+                  <div className="p-2.5 bg-zinc-100 rounded-xl text-xs text-zinc-600 flex items-center justify-between">
+                    <span className="text-[11px]">Pengalaman Terhitung Otomatis:</span>
+                    <span className="font-bold text-zinc-900 text-xs">{editingDriver.experience || `${editingDriver.initialExperience || 0} Tahun`}</span>
                   </div>
 
-                  <div className="flex gap-3 pt-4 border-t border-zinc-100 justify-end">
+                  <div className="flex gap-2.5 pt-3 border-t border-zinc-100 justify-end">
                     <button
                       type="button"
                       onClick={() => setEditingDriver(null)}
-                      className="px-5 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all"
+                      className="px-4 py-2 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 transition-all cursor-pointer"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
                       disabled={isSavingDriver}
-                      className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50"
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {isSavingDriver ? 'Memproses...' : 'Simpan Perubahan'}
                     </button>

@@ -79,8 +79,10 @@ export default function RiwayatBookingPage() {
     carName: string;
   } | null>(null);
 
-  const fetchBookings = () => {
-    setLoading(true);
+  const fetchBookings = (showFullSpinner = false) => {
+    if (showFullSpinner || bookings.length === 0) {
+      setLoading(true);
+    }
     setError('');
     fetch('/api/booking')
       .then((r) => r.json())
@@ -114,8 +116,10 @@ export default function RiwayatBookingPage() {
   };
 
   useEffect(() => {
-    if (session) fetchBookings();
-  }, [session]);
+    if (status === 'authenticated') {
+      fetchBookings(true);
+    }
+  }, [status]);
 
   if (status === 'loading') {
     return (
@@ -234,7 +238,7 @@ export default function RiwayatBookingPage() {
           </div>
 
           <button
-            onClick={fetchBookings}
+            onClick={() => fetchBookings(true)}
             disabled={loading}
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-foreground bg-card border border-border hover:bg-secondary active:scale-95 transition-all rounded-xl self-start md:self-auto cursor-pointer shadow-xs"
           >
@@ -308,7 +312,7 @@ export default function RiwayatBookingPage() {
                 <h4 className="font-bold text-foreground text-sm">Gagal Mengambil Data</h4>
                 <p className="text-xs text-foreground/60 mt-0.5">{error}</p>
                 <button
-                  onClick={fetchBookings}
+                  onClick={() => fetchBookings(true)}
                   className="mt-2 text-xs font-bold text-foreground hover:underline transition-colors cursor-pointer"
                 >
                   Coba Lagi →

@@ -15,8 +15,10 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Auto update bookings to IN_PROGRESS if pickup time has reached/passed
-    await updateInProgressBookings();
+    // Auto update status secara asynchronous di background agar tidak memblokir respon query user
+    updateInProgressBookings().catch((err) =>
+      console.error("Background updateInProgressBookings error:", err)
+    );
 
     const userId = (session.user as any).id;
 

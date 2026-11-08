@@ -69,10 +69,47 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers,
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! }
+          });
+
+          if (!existingUser) {
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name || "",
+                role: "USER",
+                emailVerified: new Date(),
+              }
+            });
+          }
+          return true;
+        } catch (error) {
+          console.error("Google sign in error:", error);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || "USER";
+      } else if (token.email) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email }
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+          }
+        } catch (error) {
+          console.error("JWT callback error:", error);
+        }
       }
       return token;
     },
