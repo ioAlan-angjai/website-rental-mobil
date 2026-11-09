@@ -80,6 +80,17 @@ export function AuthCard({ initialMode = 'login' }: AuthCardProps) {
       setError('Nama, email, dan password wajib diisi.');
       return;
     }
+
+    if (!/^[a-zA-Z\s.'-]+$/.test(registerData.name)) {
+      setError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.');
+      return;
+    }
+
+    if (registerData.phone && !/^(\+62|62|0)[0-9]{9,13}$/.test(registerData.phone.replace(/[\s-]/g, ''))) {
+      setError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).');
+      return;
+    }
+
     if (registerData.password.length < 8) {
       setError('Password minimal 8 karakter.');
       return;
@@ -365,10 +376,14 @@ export function AuthCard({ initialMode = 'login' }: AuthCardProps) {
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-zinc-700">Nomor WhatsApp</label>
                       <input
-                        type="text"
+                        type="tel"
                         value={registerData.phone}
-                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9+]/g, '');
+                          setRegisterData({ ...registerData, phone: value });
+                        }}
                         placeholder="081234567890"
+                        maxLength={15}
                         className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all"
                       />
                     </div>

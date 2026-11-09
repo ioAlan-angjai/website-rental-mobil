@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 
 import { updateInProgressBookings } from "@/lib/booking-utils";
 import { saveBase64Image } from "@/lib/upload";
+import { ApiResponseBuilder } from "@/lib/api-response";
+import { logError, createApiError } from "@/lib/error-handler";
 
 // GET: Ambil semua booking milik user yang sedang login
 export async function GET(_req: NextRequest) {
@@ -12,12 +14,11 @@ export async function GET(_req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || !(session.user as any).id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiResponseBuilder.unauthorized('Silakan login terlebih dahulu untuk melihat riwayat booking');
     }
 
-    // Auto update status secara asynchronous di background agar tidak memblokir respon query user
     updateInProgressBookings().catch((err) =>
-      console.error("Background updateInProgressBookings error:", err)
+      logError(createApiError('INTERNAL_ERROR', 'Background update failed'), 'Background updateInProgressBookings')
     );
 
     const userId = (session.user as any).id;
@@ -43,7 +44,6 @@ export async function GET(_req: NextRequest) {
     });
 
     const mappedBookings = bookings.map((b) => {
-      // paymentProof HANYA untuk bukti transfer manual, jangan ambil URL QR/Midtrans
       const proofPayment = b.payments?.find(
         (p: any) => p.proofImage && !p.proofImage.includes("midtrans.com")
       );
@@ -53,13 +53,10 @@ export async function GET(_req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, data: mappedBookings });
+    return ApiResponseBuilder.success(mappedBookings);
   } catch (error) {
-    console.error("Get bookings error:", error);
-    return NextResponse.json(
-      { error: "Terjadi kesalahan saat mengambil data booking" },
-      { status: 500 }
-    );
+    logError(createApiError('DATABASE_ERROR'), 'GET /api/booking');
+    return ApiResponseBuilder.databaseError(error);
   }
 }
 
@@ -69,10 +66,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Anda harus login terlebih dahulu untuk melakukan reservasi mobil." },
-        { status: 401 }
-      );
+      return ApiResponseBuilder.unauthorized('Anda harus login terlebih dahulu untuk melakukan reservasi mobil');
     }
 
     const body = await req.json();
@@ -93,82 +87,63 @@ export async function POST(req: NextRequest) {
       simBookingImage,
     } = body;
 
-    // Validasi input
     if (!carId || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: "Data mobil, tanggal mulai, dan tanggal selesai harus diisi" },
-        { status: 400 }
+      return ApiResponseBuilder.validationError(
+        'Data mobil, tanggal mulai, dan tanggal selesai harus diisi',
+        { carId: !carId ? 'Mobil harus dipilih' : '', startDate: !startDate ? 'Tanggal mulai harus diisi' : '', endDate: !endDate ? 'Tanggal selesai harus diisi' : '' }
       );
     }
 
-    // Parse dates
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return NextResponse.json(
-        { error: "Format tanggal tidak valid" },
-        { status: 400 }
-      );
+      return ApiResponseBuilder.validationError('Format tanggal tidak valid. Gunakan format ISO 8601');
     }
 
     if (start >= end) {
-      return NextResponse.json(
-        { error: "Waktu pengembalian harus setelah waktu pengambilan" },
-        { status: 400 }
-      );
+      return ApiResponseBuilder.validationError('Waktu pengembalian harus setelah waktu pengambilan');
     }
 
-    // Hitung durasi dalam menit (presisi, mendukung booking beberapa jam / 1 hari / beberapa hari)
     const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
     const durationHours = durationMinutes / 60;
 
-    // Get car details dari database
     const car = await prisma.car.findUnique({ where: { id: carId } });
 
     if (!car) {
-      return NextResponse.json(
-        { error: "Mobil tidak ditemukan" },
-        { status: 404 }
-      );
+      return ApiResponseBuilder.notFound('Mobil');
     }
 
     if (car.status !== "AVAILABLE") {
-      return NextResponse.json(
-        { error: "Mobil sedang tidak tersedia untuk disewa" },
-        { status: 400 }
-      );
+      return ApiResponseBuilder.error('CONFLICT', 'Mobil sedang tidak tersedia untuk disewa. Silakan pilih mobil lain atau waktu lain');
     }
 
-    // Cek ketersediaan: overlap interval [start, end) dengan booking aktif
-    // Status yang dianggap aktif: PENDING, WAITING_DP, DP_CONFIRMED, IN_PROGRESS, WAITING_RETURN
     const existingBookings = await prisma.booking.findMany({
       where: {
         carId,
         status: { in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS", "WAITING_RETURN"] },
-        // Konflik jika existing.start < requested.end AND existing.end > requested.start
         startDateTime: { lt: end },
         endDateTime: { gt: start },
       },
     });
 
     if (existingBookings.length > 0) {
-      return NextResponse.json(
-        { error: "Mobil sudah dipesan pada waktu tersebut. Silakan pilih waktu lain." },
-        { status: 400 }
-      );
+      return ApiResponseBuilder.error('CONFLICT', 'Mobil sudah dipesan pada waktu tersebut. Silakan pilih waktu lain');
     }
 
-    // Ambil tarif driver harian dari database Setting (default 150.000 jika belum di-set)
     let driverFeePerDay = 0;
     if (serviceType === "DENGAN_DRIVER") {
-      const driverSetting = await prisma.setting.findUnique({
-        where: { key: "DRIVER_FEE_PER_DAY" },
-      });
-      driverFeePerDay = driverSetting ? parseInt(driverSetting.value, 10) : 150000;
+      try {
+        const driverSetting = await prisma.setting.findUnique({
+          where: { key: "DRIVER_FEE_PER_DAY" },
+        });
+        driverFeePerDay = driverSetting ? parseInt(driverSetting.value, 10) : 150000;
+      } catch (err) {
+        logError(createApiError('DATABASE_ERROR', 'Failed to fetch driver fee'), 'Booking - Driver Fee');
+        driverFeePerDay = 150000;
+      }
     }
 
-    // Perhitungan sewa dihitung per hari (24 jam atau kurang terhitung 1 hari)
     const diffMs = end.getTime() - start.getTime();
     const rentalDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
     const dailyRate = car.pricePerDay + driverFeePerDay;
@@ -177,7 +152,6 @@ export async function POST(req: NextRequest) {
     const dpAmount = Math.floor(basePrice * 0.5);
     const totalPrice = basePrice - discountAmount;
 
-    // Siapkan data booking
     const bookingData: any = {
       car: { connect: { id: carId } },
       startDateTime: start,
@@ -202,7 +176,6 @@ export async function POST(req: NextRequest) {
       simBookingImage: await saveBase64Image(simBookingImage, "documents"),
     };
 
-    // Hubungkan ke user (deteksi ID atau via Email)
     let userIdToConnect = (session?.user as any)?.id;
     if (!userIdToConnect && session?.user?.email) {
       const dbUser = await prisma.user.findUnique({
@@ -213,15 +186,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!userIdToConnect) {
-      return NextResponse.json(
-        { error: "Akun pengguna tidak ditemukan. Silakan login ulang." },
-        { status: 401 }
-      );
+      return ApiResponseBuilder.unauthorized('Akun pengguna tidak ditemukan. Silakan login ulang');
     }
 
     bookingData.user = { connect: { id: userIdToConnect } };
 
-    // Buat booking + update car.status dalam 1 transaksi
     const [booking] = await prisma.$transaction([
       prisma.booking.create({
         data: bookingData,
@@ -233,7 +202,6 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    // Buat payment record untuk DP jika ada paymentMethod
     if (paymentMethod) {
       await prisma.payment.create({
         data: {
@@ -246,7 +214,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Notifikasi ke ADMIN: booking baru masuk (safely wrapped)
     try {
       const adminUsers = await prisma.user.findMany({
         where: { role: "ADMIN" },
@@ -271,7 +238,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Notifikasi ke USER: booking berhasil dibuat
       if (booking.userId) {
         const isGateway = booking.paymentMethod === "MIDTRANS";
         const messageText = isGateway
@@ -288,7 +254,7 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (notifErr) {
-      console.error("Non-fatal notification creation error:", notifErr);
+      logError(createApiError('INTERNAL_ERROR', 'Notification creation failed'), 'Booking - Notifications');
     }
 
     return NextResponse.json(
@@ -315,10 +281,16 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("Booking error details:", error);
-    return NextResponse.json(
-      { error: error?.message || "Terjadi kesalahan saat membuat booking" },
-      { status: 500 }
-    );
+    logError(createApiError('BOOKING_ERROR', error?.message), 'POST /api/booking');
+    
+    if (error?.code === 'P2002') {
+      return ApiResponseBuilder.error('CONFLICT', 'Booking dengan data yang sama sudah ada');
+    }
+    
+    if (error?.code?.startsWith('P')) {
+      return ApiResponseBuilder.databaseError(error);
+    }
+    
+    return ApiResponseBuilder.internalError(error, 'Booking Creation');
   }
 }

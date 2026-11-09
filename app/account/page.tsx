@@ -47,6 +47,29 @@ export default function AccountPage() {
   }, [sessionStatus, router, fetchProfile]);
 
   const handleSave = async () => {
+    let validationError = '';
+
+    if (formData.name && !/^[a-zA-Z\s.'-]+$/.test(formData.name)) {
+      validationError = 'Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.';
+    }
+
+    if (formData.phone && !/^(\+62|62|0)[0-9]{9,13}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
+      validationError = 'Nomor telepon tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).';
+    }
+
+    if (formData.address && formData.address.length < 5) {
+      validationError = 'Alamat minimal 5 karakter.';
+    }
+
+    if (formData.postalCode && !/^\d{5,6}$/.test(formData.postalCode)) {
+      validationError = 'Kode pos harus 5-6 digit angka.';
+    }
+
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch('/api/user/profile', {
@@ -151,23 +174,38 @@ export default function AccountPage() {
               { label: 'Provinsi', name: 'province' },
               { label: 'Kode Pos', name: 'postalCode' },
             ].map((field) => (
-              <div key={field.name} className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">
-                  {field.icon && <field.icon size={11} className="inline mr-1 text-foreground/50" />}
-                  {field.label}
-                </Label>
-                {editing ? (
-                  <Input
-                    value={(formData as any)[field.name]}
-                    onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                    className="bg-background border-border text-foreground placeholder:text-foreground/30 rounded-xl h-9 sm:h-10 text-xs sm:text-sm focus:border-foreground/50"
-                  />
-                ) : (
-                  <p className="text-xs sm:text-sm font-semibold text-foreground h-9 sm:h-10 px-3 py-2 bg-background rounded-xl border border-border flex items-center truncate">
-                    {profile?.[field.name] || <span className="text-foreground/30 font-normal">Belum diisi</span>}
-                  </p>
-                )}
-              </div>
+           <div key={field.name} className="space-y-1.5">
+                 <Label className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">
+                   {field.icon && <field.icon size={11} className="inline mr-1 text-foreground/50" />}
+                   {field.label}
+                 </Label>
+                 {editing ? (
+                   <Input
+                     value={(formData as any)[field.name]}
+                     onChange={(e) => {
+                       let value = e.target.value;
+                       if (field.name === 'phone') {
+                         value = value.replace(/[^0-9+]/g, '').slice(0, 15);
+                       } else if (field.name === 'name') {
+                         value = value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
+                       } else if (field.name === 'postalCode') {
+                         value = value.replace(/[^0-9]/g, '').slice(0, 6);
+                       } else if (field.name === 'address') {
+                         value = value.slice(0, 150);
+                       } else if (field.name === 'city' || field.name === 'province') {
+                         value = value.slice(0, 50);
+                       }
+                       setFormData({ ...formData, [field.name]: value });
+                     }}
+                     maxLength={field.name === 'postalCode' ? 6 : field.name === 'address' ? 150 : field.name === 'phone' ? 15 : 100}
+                     className="bg-background border-border text-foreground placeholder:text-foreground/30 rounded-xl h-9 sm:h-10 text-xs sm:text-sm focus:border-foreground/50"
+                   />
+                 ) : (
+                   <p className="text-xs sm:text-sm font-semibold text-foreground h-9 sm:h-10 px-3 py-2 bg-background rounded-xl border border-border flex items-center truncate">
+                     {profile?.[field.name] || <span className="text-foreground/30 font-normal">Belum diisi</span>}
+                   </p>
+                 )}
+               </div>
             ))}
           </div>
         </div>

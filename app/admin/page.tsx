@@ -471,6 +471,22 @@ export default function AdminDashboard() {
       alert('Nama dan nomor WhatsApp driver wajib diisi.');
       return;
     }
+
+    if (!/^[a-zA-Z\s.'-]+$/.test(newDriverFormData.name)) {
+      alert('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.');
+      return;
+    }
+
+    if (!/^(\+62|62|0)[0-9]{9,13}$/.test(newDriverFormData.phone.replace(/[\s-]/g, ''))) {
+      alert('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).');
+      return;
+    }
+
+    if (newDriverFormData.address && newDriverFormData.address.trim().length < 5) {
+      alert('Alamat minimal 5 karakter.');
+      return;
+    }
+
     setIsSavingDriver(true);
     try {
       const res = await fetch('/api/admin/drivers', {
@@ -504,6 +520,22 @@ export default function AdminDashboard() {
       alert('Nama dan nomor WhatsApp driver wajib diisi.');
       return;
     }
+
+    if (!/^[a-zA-Z\s.'-]+$/.test(editDriverFormData.name)) {
+      alert('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.');
+      return;
+    }
+
+    if (!/^(\+62|62|0)[0-9]{9,13}$/.test(editDriverFormData.phone.replace(/[\s-]/g, ''))) {
+      alert('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).');
+      return;
+    }
+
+    if (editDriverFormData.address && editDriverFormData.address.trim().length < 5) {
+      alert('Alamat minimal 5 karakter.');
+      return;
+    }
+
     setIsSavingDriver(true);
     try {
       const res = await fetch(`/api/admin/drivers/${editingDriver.id}`, {
@@ -1498,8 +1530,12 @@ export default function AdminDashboard() {
                       type="text"
                       required
                       value={newDriverFormData.name}
-                      onChange={(e) => setNewDriverFormData({ ...newDriverFormData, name: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
+                        setNewDriverFormData({ ...newDriverFormData, name: value });
+                      }}
                       placeholder="Contoh: Budi Santoso"
+                      maxLength={100}
                       className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                     />
                   </div>
@@ -1509,11 +1545,15 @@ export default function AdminDashboard() {
                       Nomor WhatsApp / Phone <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="tel"
                       required
                       value={newDriverFormData.phone}
-                      onChange={(e) => setNewDriverFormData({ ...newDriverFormData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9+]/g, '').slice(0, 15);
+                        setNewDriverFormData({ ...newDriverFormData, phone: value });
+                      }}
                       placeholder="Contoh: 081234567890"
+                      maxLength={15}
                       className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900"
                     />
                   </div>
@@ -1523,8 +1563,12 @@ export default function AdminDashboard() {
                     <textarea
                       rows={2}
                       value={newDriverFormData.address}
-                      onChange={(e) => setNewDriverFormData({ ...newDriverFormData, address: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 150);
+                        setNewDriverFormData({ ...newDriverFormData, address: value });
+                      }}
                       placeholder="Contoh: Jl. Malioboro No. 45, Sleman, Yogyakarta"
+                      maxLength={150}
                       className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 resize-none"
                     />
                   </div>
@@ -1609,8 +1653,12 @@ export default function AdminDashboard() {
                       type="text"
                       required
                       value={editDriverFormData.name}
-                      onChange={(e) => setEditDriverFormData({ ...editDriverFormData, name: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
+                        setEditDriverFormData({ ...editDriverFormData, name: value });
+                      }}
                       placeholder="Contoh: Budi Santoso"
+                      maxLength={100}
                       className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-bold"
                     />
                   </div>
@@ -1620,11 +1668,15 @@ export default function AdminDashboard() {
                       Nomor WhatsApp / Phone <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="tel"
                       required
                       value={editDriverFormData.phone}
-                      onChange={(e) => setEditDriverFormData({ ...editDriverFormData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9+]/g, '').slice(0, 15);
+                        setEditDriverFormData({ ...editDriverFormData, phone: value });
+                      }}
                       placeholder="Contoh: 081234567890"
+                      maxLength={15}
                       className="w-full h-9 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 font-mono"
                     />
                   </div>
@@ -1634,8 +1686,12 @@ export default function AdminDashboard() {
                     <textarea
                       rows={2}
                       value={editDriverFormData.address}
-                      onChange={(e) => setEditDriverFormData({ ...editDriverFormData, address: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 150);
+                        setEditDriverFormData({ ...editDriverFormData, address: value });
+                      }}
                       placeholder="Contoh: Jl. Malioboro No. 45, Sleman, Yogyakarta"
+                      maxLength={150}
                       className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 text-zinc-900 resize-none"
                     />
                   </div>

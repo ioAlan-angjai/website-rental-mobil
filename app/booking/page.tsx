@@ -25,6 +25,9 @@ import { BcaLogo } from '@/components/ui/bca-logo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CustomPaymentModal } from '@/components/payment/CustomPaymentModal';
+import { toast } from '@/lib/toast';
+import { getErrorMessage } from '@/lib/fetch-helper';
+import { ErrorDisplay } from '@/components/ui/error-display';
 
 // Bank info
 const BANK_ACCOUNTS = [
@@ -144,15 +147,33 @@ function BookingForm() {
   // Fetch cars from database
   const [dbCars, setDbCars] = useState<any[]>([]);
   const [loadingCars, setLoadingCars] = useState(true);
+  const [carsError, setCarsError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/cars?status=AVAILABLE')
-      .then(r => r.json())
-      .then(res => {
-        if (res.data) setDbCars(res.data);
-      })
-      .catch(console.error)
-      .finally(() => setLoadingCars(false));
+    const fetchCars = async () => {
+      try {
+        setCarsError(null);
+        const response = await fetch('/api/cars?status=AVAILABLE');
+        const res = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(res.error?.message || 'Gagal memuat daftar armada');
+        }
+        
+        if (res.data && Array.isArray(res.data)) {
+          setDbCars(res.data);
+        } else {
+          throw new Error('Format data armada tidak valid');
+        }
+      } catch (err) {
+        setCarsError(getErrorMessage(err));
+        console.error('Fetch cars error:', err);
+      } finally {
+        setLoadingCars(false);
+      }
+    };
+
+    fetchCars();
   }, []);
 
   const [step, setStep] = useState(1);
@@ -225,10 +246,19 @@ function BookingForm() {
     }
   }, [date, endDate, formData.pickupTime, formData.returnTime]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (submitError) setSubmitError('');
-  };
+   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+     const { name, value } = e.target;
+     let processedValue = value;
+
+     if (name === 'phone') {
+       processedValue = value.replace(/[^0-9+]/g, '').slice(0, 15);
+     } else if (name === 'name') {
+       processedValue = value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
+     }
+
+     setFormData({ ...formData, [name]: processedValue });
+     if (submitError) setSubmitError('');
+   };
 
   // Clear submitError when dates change
   useEffect(() => {
@@ -264,12 +294,20 @@ function BookingForm() {
   // Fetch driver fee from API
   const [driverFeePerDay, setDriverFeePerDay] = useState(150000);
   useEffect(() => {
-    fetch('/api/driver-fee')
-      .then(r => r.json())
-      .then(res => {
-        if (res.driverFeePerDay) setDriverFeePerDay(res.driverFeePerDay);
-      })
-      .catch(console.error);
+    const fetchDriverFee = async () => {
+      try {
+        const response = await fetch('/api/driver-fee');
+        const res = await response.json();
+        
+        if (response.ok && res.driverFeePerDay) {
+          setDriverFeePerDay(res.driverFeePerDay);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch driver fee, using default:', err);
+      }
+    };
+
+    fetchDriverFee();
   }, []);
 
   const selectedCarDetails = dbCars.find(c => c.id === formData.carId);
@@ -350,54 +388,86 @@ function BookingForm() {
     input.click();
   };
 
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      const apiPaymentMethod = paymentMode === 'INSTANT' ? 'MIDTRANS' : (selectedBank ? `${selectedBank}_TRANSFER` : null);
+   const handleSubmit = async () => {
+     setSubmitting(true);
+     setSubmitError('');
+     
+     try {
+       if (!formData.name || !/^[a-zA-Z\s.'-]+$/.test(formData.name)) {
+         setSubmitError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.');
+         setSubmitting(false);
+         return;
+       }
 
-      let startDateTime: Date | null = null;
-      if (date) {
-        startDateTime = new Date(date);
-        const [hours, minutes] = (formData.pickupTime || '09:00').split(':');
-        startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      }
+       if (!formData.phone || !/^(\+62|62|0)[0-9]{9,13}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
+         setSubmitError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).');
+         setSubmitting(false);
+         return;
+       }
 
-      let endDateTime: Date | null = null;
-      if (endDate) {
-        endDateTime = new Date(endDate);
-        const [hours, minutes] = (formData.returnTime || '18:00').split(':');
-        endDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      }
+       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+         setSubmitError('Format email tidak valid.');
+         setSubmitting(false);
+         return;
+       }
 
-      const payload: any = {
-        carId: formData.carId,
-        startDate: startDateTime?.toISOString(),
-        endDate: endDateTime?.toISOString(),
-        serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
-        pickupLocation: formData.pickupLocation || null,
-        paymentMethod: apiPaymentMethod,
-        guestName: formData.name,
-        guestEmail: formData.email || null,
-        guestPhone: formData.phone,
-        ktpBookingImage: ktpPreview || null,
-        simBookingImage: simPreview || null,
-      };
+       if (!formData.pickupLocation || formData.pickupLocation.trim().length < 5) {
+         setSubmitError('Alamat penjemputan harus diisi minimal 5 karakter.');
+         setSubmitting(false);
+         return;
+       }
 
-      const res = await fetch('/api/booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+       if (!ktpFile || !simFile) {
+         setSubmitError('KTP dan SIM harus diunggah.');
+         setSubmitting(false);
+         return;
+       }
 
-      const data = await res.json();
+       const apiPaymentMethod = paymentMode === 'INSTANT' ? 'MIDTRANS' : (selectedBank ? `${selectedBank}_TRANSFER` : null);
 
-      if (!res.ok) {
-        setSubmitError(data.error || 'Terjadi kesalahan saat membuat booking.');
-        return;
-      }
+       let startDateTime: Date | null = null;
+       if (date) {
+         startDateTime = new Date(date);
+         const [hours, minutes] = (formData.pickupTime || '09:00').split(':');
+         startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+       }
 
-      // If INSTANT mode with Midtrans, open Custom Payment Modal
+       let endDateTime: Date | null = null;
+       if (endDate) {
+         endDateTime = new Date(endDate);
+         const [hours, minutes] = (formData.returnTime || '18:00').split(':');
+         endDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+       }
+
+       const payload: any = {
+         carId: formData.carId,
+         startDate: startDateTime?.toISOString(),
+         endDate: endDateTime?.toISOString(),
+         serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
+         pickupLocation: formData.pickupLocation || null,
+         paymentMethod: apiPaymentMethod,
+         guestName: formData.name,
+         guestEmail: formData.email || null,
+         guestPhone: formData.phone,
+         ktpBookingImage: ktpPreview || null,
+         simBookingImage: simPreview || null,
+       };
+
+       const res = await fetch('/api/booking', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(payload),
+       });
+
+       const data = await res.json();
+
+       if (!res.ok) {
+         const errorMessage = data.error?.message || data.error || 'Terjadi kesalahan saat membuat booking.';
+         setSubmitError(errorMessage);
+         toast.error(errorMessage);
+         return;
+       }
+
       if (paymentMode === 'INSTANT' && data.booking?.id) {
         const carObj = dbCars.find((c) => c.id === formData.carId);
         const bookingInfo = {
@@ -411,6 +481,7 @@ function BookingForm() {
           isOpen: true,
           ...bookingInfo,
         });
+        toast.success('Booking berhasil dibuat!');
         return;
       }
 
@@ -421,33 +492,46 @@ function BookingForm() {
         isGateway: false,
       });
 
-      // Upload proof image if uploadedPreview exists (manual mode)
-      if (uploadedPreview && data.booking && data.booking.id) {
-        const formDataPayload = new FormData();
-        formDataPayload.append('proofImage', uploadedPreview);
-        if (apiPaymentMethod) {
-          formDataPayload.append('paymentMethod', apiPaymentMethod);
-        }
+       if (uploadedPreview && data.booking && data.booking.id) {
+         const formDataPayload = new FormData();
+         formDataPayload.append('proofImage', uploadedPreview);
+         if (apiPaymentMethod) {
+           formDataPayload.append('paymentMethod', apiPaymentMethod);
+         }
 
-        const paymentRes = await fetch(`/api/booking/${data.booking.id}/payment`, {
-          method: 'POST',
-          body: formDataPayload,
-        });
+         try {
+           const paymentRes = await fetch(`/api/booking/${data.booking.id}/payment`, {
+             method: 'POST',
+             body: formDataPayload,
+           });
 
-        const paymentData = await paymentRes.json();
-        if (!paymentRes.ok) {
-          setSubmitError(paymentData.error || 'Booking berhasil dibuat, tetapi gagal mengupload bukti pembayaran.');
-          return;
-        }
-      }
+           const paymentData = await paymentRes.json();
+           if (!paymentRes.ok) {
+             const errorMsg = paymentData.error?.message || paymentData.error || 'Booking berhasil dibuat, tetapi gagal mengupload bukti pembayaran.';
+             setSubmitError(errorMsg);
+             toast.warning(errorMsg);
+             return;
+           }
+         } catch (uploadErr) {
+           console.error('Payment proof upload error:', uploadErr);
+           const errorMsg = 'Booking berhasil dibuat, tetapi gagal mengunggah bukti pembayaran. Silakan upload melalui riwayat booking.';
+           setSubmitError(errorMsg);
+           toast.warning(errorMsg);
+           return;
+         }
+       }
 
-      setBookingSuccess(true);
-    } catch {
-      setSubmitError('Gagal terhubung ke server. Silakan coba lagi.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+       setBookingSuccess(true);
+       toast.success('Booking dan bukti pembayaran berhasil dikirim!');
+     } catch (err) {
+       console.error('Booking submission error:', err);
+       const errorMsg = getErrorMessage(err) || 'Gagal terhubung ke server. Silakan periksa koneksi internet dan coba lagi.';
+       setSubmitError(errorMsg);
+       toast.error(errorMsg);
+     } finally {
+       setSubmitting(false);
+     }
+   };
 
   const canProceed = () => {
     switch (step) {
@@ -821,13 +905,32 @@ function BookingForm() {
                       <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
                         <Search size={13} className="text-foreground/70" /> Pilih Unit Mobil <span className="text-red-600">*</span>
                       </label>
+                      
+                      {carsError && (
+                        <ErrorDisplay 
+                          error={carsError} 
+                          compact 
+                          onRetry={() => {
+                            setCarsError(null);
+                            setLoadingCars(true);
+                            fetch('/api/cars?status=AVAILABLE')
+                              .then(r => r.json())
+                              .then(res => {
+                                if (res.data) setDbCars(res.data);
+                              })
+                              .catch(err => setCarsError(getErrorMessage(err)))
+                              .finally(() => setLoadingCars(false));
+                          }}
+                        />
+                      )}
+                      
                       <select
                         name="carId" value={formData.carId} onChange={handleInputChange}
                         className="w-full h-9 sm:h-11 px-3 sm:px-3.5 bg-background border border-border text-foreground text-xs sm:text-sm rounded-xl focus:border-foreground/50 focus:outline-none appearance-none cursor-pointer"
-                        disabled={loadingCars}
+                        disabled={loadingCars || !!carsError}
                       >
                         <option value="">
-                          {loadingCars ? 'Memuat daftar armada...' : 'Pilih mobil yang Anda inginkan'}
+                          {loadingCars ? 'Memuat daftar armada...' : carsError ? 'Gagal memuat armada' : 'Pilih mobil yang Anda inginkan'}
                         </option>
                         {dbCars.map((car) => (
                           <option key={car.id} value={car.id}>

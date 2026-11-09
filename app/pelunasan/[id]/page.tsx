@@ -114,22 +114,29 @@ export default function PelunasanPage() {
     setSubmitting(true);
     setSubmitError('');
 
-    // Manual Mode
-    if (!selectedBank) { setSubmitError('Pilih rekening tujuan terlebih dahulu.'); setSubmitting(false); return; }
-    if (!uploadedFile && !uploadedPreview) { setSubmitError('Upload bukti transfer terlebih dahulu.'); setSubmitting(false); return; }
+    if (paymentMode === 'MANUAL') {
+      if (!selectedBank) { setSubmitError('Pilih rekening tujuan terlebih dahulu.'); setSubmitting(false); return; }
+      if (!uploadedFile && !uploadedPreview) { setSubmitError('Upload bukti transfer terlebih dahulu.'); setSubmitting(false); return; }
+    }
 
     try {
       let paymentProofUrl = uploadedPreview;
-      if (uploadedFile) {
+      if (uploadedFile && paymentMode === 'MANUAL') {
         const formData = new FormData();
         formData.append('file', uploadedFile);
+        formData.append('subfolder', 'payments');
         try {
           const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
           if (uploadRes.ok) {
             const uploadData = await uploadRes.json();
             paymentProofUrl = uploadData?.url || uploadedPreview;
+          } else {
+            const errorData = await uploadRes.json();
+            console.error('Upload error:', errorData);
           }
-        } catch { /* use base64 preview as fallback */ }
+        } catch (err) {
+          console.error('Upload request failed:', err);
+        }
       }
 
       const res = await fetch(`/api/booking/${bookingId}/pelunasan`, {
@@ -140,7 +147,10 @@ export default function PelunasanPage() {
       const data = await res.json();
       if (res.ok && data.success) setSubmitted(true);
       else setSubmitError(data.error || 'Gagal memproses pelunasan. Silakan coba lagi.');
-    } catch { setSubmitError('Terjadi kesalahan koneksi. Silakan coba lagi.'); }
+    } catch (err) { 
+      console.error('Submit error:', err);
+      setSubmitError('Terjadi kesalahan koneksi. Silakan coba lagi.'); 
+    }
     finally { setSubmitting(false); }
   };
 

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { saveBase64Image } from "@/lib/upload";
+import { ApiResponseBuilder } from "@/lib/api-response";
+import { logError, createApiError } from "@/lib/error-handler";
 
 export async function POST(
   req: NextRequest,
@@ -16,40 +18,29 @@ export async function POST(
     const proofImage = formData.get('proofImage') as string;
     const paymentMethod = formData.get('paymentMethod') as string;
 
-    // Validasi
     if (!proofImage) {
-      return NextResponse.json(
-        { error: "Bukti pembayaran harus diupload" },
-        { status: 400 }
-      );
+      return ApiResponseBuilder.validationError('Bukti pembayaran harus diupload', { proofImage: 'File bukti transfer harus dipilih' });
     }
 
-    // Convert Base64 if needed into physical file
     const savedProofUrl = await saveBase64Image(proofImage, "payments");
 
-    // Validate payment method
     const validMethods = ['QRIS', 'BCA_TRANSFER', 'BNI_TRANSFER', 'MANDIRI_TRANSFER'];
     if (paymentMethod && !validMethods.includes(paymentMethod)) {
-      return NextResponse.json(
-        { error: "Metode pembayaran tidak valid" },
-        { status: 400 }
+      return ApiResponseBuilder.validationError(
+        'Metode pembayaran tidak valid',
+        { paymentMethod: `Harus salah satu dari: ${validMethods.join(', ')}` }
       );
     }
 
-    // Get booking
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: { car: true }
     });
 
     if (!booking) {
-      return NextResponse.json(
-        { error: "Booking tidak ditemukan" },
-        { status: 404 }
-      );
+      return ApiResponseBuilder.notFound('Booking');
     }
 
-    // Check ownership (jika user login dan booking memiliki userId terikat)
     let currentUserId = (session?.user as any)?.id;
     if (!currentUserId && session?.user?.email) {
       const dbUser = await prisma.user.findUnique({
@@ -68,21 +59,17 @@ export async function POST(
       currentUserId &&
       booking.userId !== currentUserId
     ) {
-      return NextResponse.json(
-        { error: "Anda tidak memiliki akses ke booking ini" },
-        { status: 403 }
-      );
+      return ApiResponseBuilder.forbidden('Anda tidak memiliki akses ke booking ini');
     }
 
-    // Check status — allow upload ulang setelah REJECTED balik ke WAITING_DP
     if (booking.status !== "PENDING" && booking.status !== "WAITING_DP") {
-      return NextResponse.json(
-        { error: "Booking sudah diproses atau dibatalkan" },
-        { status: 400 }
+      return ApiResponseBuilder.error(
+        'CONFLICT',
+        'Booking sudah diproses atau dibatalkan. Upload bukti pembayaran tidak dapat dilakukan',
+        { status: booking.status }
       );
     }
 
-    // Create or update payment record
     const existingPayment = await prisma.payment.findFirst({
       where: {
         bookingId,
@@ -91,7 +78,6 @@ export async function POST(
     });
 
     if (existingPayment) {
-      // Update existing payment
       await prisma.payment.update({
         where: { id: existingPayment.id },
         data: {
@@ -102,7 +88,6 @@ export async function POST(
         }
       });
     } else {
-      // Create new payment
       await prisma.payment.create({
         data: {
           bookingId,
@@ -116,7 +101,6 @@ export async function POST(
       });
     }
 
-    // Update booking status — paymentProof sudah dihapus dari schema, simpan di Payment saja
     await prisma.booking.update({
       where: { id: bookingId },
       data: {
@@ -125,24 +109,26 @@ export async function POST(
       }
     });
 
-    // Create notification untuk admin
-    const adminUsers = await prisma.user.findMany({
-      where: { role: "ADMIN" }
-    });
-
-    for (const admin of adminUsers) {
-      await prisma.notification.create({
-        data: {
-          userId: admin.id,
-          title: "Bukti Pembayaran Baru",
-          message: `Booking ${bookingId} telah mengupload bukti pembayaran DP`,
-          type: "PAYMENT_RECEIVED"
-        }
+    try {
+      const adminUsers = await prisma.user.findMany({
+        where: { role: "ADMIN" }
       });
+
+      for (const admin of adminUsers) {
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            title: "Bukti Pembayaran Baru",
+            message: `Booking ${bookingId} telah mengupload bukti pembayaran DP`,
+            type: "PAYMENT_RECEIVED"
+          }
+        });
+      }
+    } catch (notifErr) {
+      logError(createApiError('INTERNAL_ERROR', 'Notification creation failed'), 'Payment - Notification');
     }
 
-    return NextResponse.json({
-      success: true,
+    return ApiResponseBuilder.success({
       message: "Bukti pembayaran berhasil diupload. Menunggu verifikasi admin.",
       booking: {
         ...booking,
@@ -151,10 +137,12 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error("Payment upload error:", error);
-    return NextResponse.json(
-      { error: "Terjadi kesalahan saat mengupload bukti pembayaran" },
-      { status: 500 }
-    );
+    logError(createApiError('PAYMENT_ERROR'), 'POST /api/booking/[id]/payment');
+    
+    if (error instanceof Error && error.message.includes('Prisma')) {
+      return ApiResponseBuilder.databaseError(error);
+    }
+    
+    return ApiResponseBuilder.error('PAYMENT_ERROR', 'Terjadi kesalahan saat mengupload bukti pembayaran', undefined, 'Payment Upload');
   }
 }

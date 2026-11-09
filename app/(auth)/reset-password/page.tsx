@@ -24,6 +24,10 @@ function ResetPasswordForm() {
     setError('');
     if (!password || !confirmPassword) { setError('Semua kolom wajib diisi.'); return; }
     if (password.length < 8) { setError('Password minimal 8 karakter.'); return; }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)|(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])|(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])|(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(password) && password.length < 12) {
+      setError('Password harus mengandung kombinasi huruf besar, huruf kecil, angka, atau karakter khusus, atau minimal 12 karakter.');
+      return;
+    }
     if (password !== confirmPassword) { setError('Konfirmasi password tidak cocok.'); return; }
     if (!token) { setError('Token reset tidak valid.'); return; }
     setLoading(true);
