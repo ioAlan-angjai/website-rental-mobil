@@ -201,6 +201,9 @@ function BookingForm() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [activePaymentBooking, setActivePaymentBooking] = useState<{
     isOpen: boolean;
     bookingId: string;
@@ -252,8 +255,31 @@ function BookingForm() {
 
      if (name === 'phone') {
        processedValue = value.replace(/[^0-9+]/g, '').slice(0, 15);
+       
+       // Real-time validation for phone
+       if (processedValue && !/^(\+62|62|0)[0-9]{9,13}$/.test(processedValue.replace(/[\s-]/g, ''))) {
+         setPhoneError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
+       } else {
+         setPhoneError('');
+       }
      } else if (name === 'name') {
        processedValue = value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
+       
+       // Real-time validation for name
+       if (processedValue && !/^[a-zA-Z\s.'-]+$/.test(processedValue)) {
+         setNameError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
+       } else if (processedValue && processedValue.length < 3) {
+         setNameError('Nama minimal 3 karakter');
+       } else {
+         setNameError('');
+       }
+     } else if (name === 'email') {
+       // Real-time validation for email
+       if (processedValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(processedValue)) {
+         setEmailError('Format email tidak valid');
+       } else {
+         setEmailError('');
+       }
      }
 
      setFormData({ ...formData, [name]: processedValue });
@@ -283,6 +309,40 @@ function BookingForm() {
       }
       setSubmitError('');
     }
+    
+    // Validasi step 4 (Data Penyewa) sebelum lanjut
+    if (step === 4) {
+      if (!formData.name || formData.name.length < 3) {
+        setNameError('Nama minimal 3 karakter');
+        toast.error('Nama minimal 3 karakter');
+        return;
+      }
+      if (!/^[a-zA-Z\s.'-]+$/.test(formData.name)) {
+        setNameError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
+        toast.error('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
+        return;
+      }
+      if (!formData.phone) {
+        setPhoneError('Nomor WhatsApp harus diisi');
+        toast.error('Nomor WhatsApp harus diisi');
+        return;
+      }
+      if (!/^(\+62|62|0)[0-9]{9,13}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
+        setPhoneError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
+        toast.error('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
+        return;
+      }
+      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        setEmailError('Format email tidak valid');
+        toast.error('Format email tidak valid');
+        return;
+      }
+      // Clear all errors if validation passes
+      setNameError('');
+      setPhoneError('');
+      setEmailError('');
+    }
+    
     if (step < 7) setStep(step + 1);
   };
 
@@ -1170,8 +1230,17 @@ function BookingForm() {
                         type="text" name="name"
                         placeholder="Contoh: Ahmad Fauzi"
                         value={formData.name} onChange={handleInputChange}
-                        className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
+                        className={cn(
+                          "bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm",
+                          nameError && "border-red-500 focus:border-red-500"
+                        )}
                       />
+                      {nameError && (
+                        <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1">
+                          <AlertCircle size={12} />
+                          {nameError}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
@@ -1183,8 +1252,17 @@ function BookingForm() {
                           type="tel" name="phone"
                           placeholder="08123456789"
                           value={formData.phone} onChange={handleInputChange}
-                          className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
+                          className={cn(
+                            "bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm",
+                            phoneError && "border-red-500 focus:border-red-500"
+                          )}
                         />
+                        {phoneError && (
+                          <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1">
+                            <AlertCircle size={12} />
+                            {phoneError}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1.5 sm:space-y-2">
                         <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
@@ -1194,8 +1272,17 @@ function BookingForm() {
                           type="email" name="email"
                           placeholder="email@example.com"
                           value={formData.email} onChange={handleInputChange}
-                          className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
+                          className={cn(
+                            "bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm",
+                            emailError && "border-red-500 focus:border-red-500"
+                          )}
                         />
+                        {emailError && (
+                          <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1">
+                            <AlertCircle size={12} />
+                            {emailError}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1392,10 +1479,10 @@ function BookingForm() {
                     {/* DP Banner */}
                     <div className="bg-foreground text-background rounded-xl sm:rounded-2xl p-4 sm:p-6 flex items-center justify-between shadow-xs">
                       <div>
-                        <p className="text-[9px] sm:text-[10px] text-background/60 uppercase tracking-widest font-bold mb-0.5">Kewajiban DP (50%)</p>
-                        <p className="text-xl sm:text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
+                        <p className="text-[9px] sm:text-[10px] text-white uppercase tracking-widest font-bold mb-0.5">Kewajiban DP (50%)</p>
+                        <p className="text-xl sm:text-3xl font-black text-white">Rp {dpAmount.toLocaleString('id-ID')}</p>
                       </div>
-                      <CheckCircle2 className="w-7 h-7 sm:w-9 sm:h-9 text-background/80" />
+                      <CheckCircle2 className="w-7 h-7 sm:w-9 sm:h-9 text-white" />
                     </div>
                   </StepWrapper>
                 )}
@@ -1408,14 +1495,14 @@ function BookingForm() {
                     {/* DP Amount Banner */}
                     <div className="bg-foreground text-background rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 shadow-xs">
                       <div>
-                        <p className="text-[9px] sm:text-[10px] text-background/60 uppercase tracking-widest font-bold mb-0.5">Nominal Pembayaran DP</p>
-                        <p className="text-xl sm:text-3xl font-black">Rp {dpAmount.toLocaleString('id-ID')}</p>
-                        <p className="text-[10px] sm:text-xs text-background/70 mt-0.5">50% dari total tagihan Rp {totalPrice.toLocaleString('id-ID')}</p>
+                        <p className="text-[9px] sm:text-[10px] text-white uppercase tracking-widest font-bold mb-0.5">Nominal Pembayaran DP</p>
+                        <p className="text-xl sm:text-3xl font-black text-white">Rp {dpAmount.toLocaleString('id-ID')}</p>
+                        <p className="text-[10px] sm:text-xs text-white mt-0.5">50% dari total tagihan Rp {totalPrice.toLocaleString('id-ID')}</p>
                       </div>
                       <div className="text-left sm:text-right">
-                        <p className="text-[9px] sm:text-[10px] text-background/60 uppercase font-bold">Unit Terpilih</p>
-                        <p className="font-bold text-xs sm:text-sm truncate">{selectedCarDetails?.name}</p>
-                        <p className="text-[10px] sm:text-xs text-background/70">{formatDuration(parseInt(formData.duration))}</p>
+                        <p className="text-[9px] sm:text-[10px] text-white uppercase font-bold">Unit Terpilih</p>
+                        <p className="font-bold text-xs sm:text-sm truncate text-white">{selectedCarDetails?.name}</p>
+                        <p className="text-[10px] sm:text-xs text-white">{formatDuration(parseInt(formData.duration))}</p>
                       </div>
                     </div>
 
