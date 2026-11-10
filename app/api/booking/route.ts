@@ -164,8 +164,16 @@ export async function POST(req: NextRequest) {
        return ApiResponseBuilder.unauthorized('Akun pengguna tidak ditemukan. Silakan login ulang');
      }
 
-     const ktpImage = await saveBase64Image(ktpBookingImage, "documents");
-     const simImage = await saveBase64Image(simBookingImage, "documents");
+      let ktpImage = null;
+      let simImage = null;
+
+      if (process.env.NODE_ENV === 'production') {
+        ktpImage = ktpBookingImage || null;
+        simImage = simBookingImage || null;
+      } else {
+        ktpImage = await saveBase64Image(ktpBookingImage, "documents");
+        simImage = await saveBase64Image(simBookingImage, "documents");
+      }
 
      const booking = await prisma.$transaction(async (tx) => {
        const existingBookings = await tx.$queryRaw<Array<{id: string}>>`
