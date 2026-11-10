@@ -76,7 +76,7 @@ function ArmadaContent() {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['cars', selectedCategory, selectedTransmission, searchQuery, priceRange],
+    queryKey: ['cars', 12, selectedCategory, selectedTransmission, searchQuery, priceRange[0], priceRange[1], 'AVAILABLE'],
     queryFn: async ({ pageParam = 1 }) => {
       const params = new URLSearchParams();
       params.append('page', String(pageParam));
@@ -99,7 +99,10 @@ function ArmadaContent() {
       }
       return undefined;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const allCars = useMemo(() => {

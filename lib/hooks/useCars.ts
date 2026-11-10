@@ -35,7 +35,7 @@ export interface CarsResponse {
 }
 
 export function useCars(filters: CarsFilter = {}) {
-  const queryKey = ['cars', filters];
+  const queryKey = ['cars', filters.page, filters.limit, filters.category, filters.transmission, filters.search, filters.status, filters.minPrice, filters.maxPrice];
 
   return useQuery<CarsResponse>({
     queryKey,
@@ -54,7 +54,9 @@ export function useCars(filters: CarsFilter = {}) {
       if (!response.ok) throw new Error('Failed to fetch cars');
       return response.json();
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
