@@ -55,8 +55,12 @@ export const toast = {
     sonnerToast.dismiss(toastId);
   },
 
-  custom: (component: React.ReactNode, options?: ToastOptions) => {
-    sonnerToast.custom(component, {
+  custom: (component: React.ReactNode | ((id: string | number) => React.ReactElement), options?: ToastOptions) => {
+    const renderFn = typeof component === 'function' 
+      ? component 
+      : () => component as React.ReactElement;
+    
+    sonnerToast.custom(renderFn, {
       duration: options?.duration || 5000,
       dismissible: options?.dismissible !== false,
     });
