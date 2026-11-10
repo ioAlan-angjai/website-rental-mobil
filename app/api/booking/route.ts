@@ -7,6 +7,13 @@ import { updateInProgressBookings } from "@/lib/booking-utils";
 import { saveBase64Image } from "@/lib/upload";
 import { ApiResponseBuilder } from "@/lib/api-response";
 import { logError, createApiError } from "@/lib/error-handler";
+import { createRateLimiter } from "@/lib/rate-limit";
+
+const bookingRateLimiter = createRateLimiter({
+  interval: 60000,
+  maxRequests: 5,
+  keyGenerator: (req) => req.ip || 'anonymous',
+});
 
 // GET: Ambil semua booking milik user yang sedang login
 export async function GET(_req: NextRequest) {
@@ -62,6 +69,11 @@ export async function GET(_req: NextRequest) {
 
 // POST: Buat booking baru
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = bookingRateLimiter(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -118,89 +130,94 @@ export async function POST(req: NextRequest) {
       return ApiResponseBuilder.error('CONFLICT', 'Mobil sedang tidak tersedia untuk disewa. Silakan pilih mobil lain atau waktu lain');
     }
 
-    const existingBookings = await prisma.booking.findMany({
-      where: {
-        carId,
-        status: { in: ["PENDING", "WAITING_DP", "DP_CONFIRMED", "IN_PROGRESS", "WAITING_RETURN"] },
-        startDateTime: { lt: end },
-        endDateTime: { gt: start },
-      },
-    });
+     let driverFeePerDay = 0;
+     if (serviceType === "DENGAN_DRIVER") {
+       try {
+         const driverSetting = await prisma.setting.findUnique({
+           where: { key: "DRIVER_FEE_PER_DAY" },
+         });
+         driverFeePerDay = driverSetting ? parseInt(driverSetting.value, 10) : 150000;
+       } catch (err) {
+         logError(createApiError('DATABASE_ERROR', 'Failed to fetch driver fee'), 'Booking - Driver Fee');
+         driverFeePerDay = 150000;
+       }
+     }
 
-    if (existingBookings.length > 0) {
-      return ApiResponseBuilder.error('CONFLICT', 'Mobil sudah dipesan pada waktu tersebut. Silakan pilih waktu lain');
-    }
+     const diffMs = end.getTime() - start.getTime();
+     const rentalDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+     const dailyRate = car.pricePerDay + driverFeePerDay;
+     const basePrice = rentalDays * dailyRate;
+     const discountAmount = 0;
+     const dpAmount = Math.floor(basePrice * 0.5);
+     const totalPrice = basePrice - discountAmount;
 
-    let driverFeePerDay = 0;
-    if (serviceType === "DENGAN_DRIVER") {
-      try {
-        const driverSetting = await prisma.setting.findUnique({
-          where: { key: "DRIVER_FEE_PER_DAY" },
-        });
-        driverFeePerDay = driverSetting ? parseInt(driverSetting.value, 10) : 150000;
-      } catch (err) {
-        logError(createApiError('DATABASE_ERROR', 'Failed to fetch driver fee'), 'Booking - Driver Fee');
-        driverFeePerDay = 150000;
-      }
-    }
+     let userIdToConnect = (session?.user as any)?.id;
+     if (!userIdToConnect && session?.user?.email) {
+       const dbUser = await prisma.user.findUnique({
+         where: { email: session.user.email },
+         select: { id: true },
+       });
+       if (dbUser) userIdToConnect = dbUser.id;
+     }
 
-    const diffMs = end.getTime() - start.getTime();
-    const rentalDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    const dailyRate = car.pricePerDay + driverFeePerDay;
-    const basePrice = rentalDays * dailyRate;
-    const discountAmount = 0;
-    const dpAmount = Math.floor(basePrice * 0.5);
-    const totalPrice = basePrice - discountAmount;
+     if (!userIdToConnect) {
+       return ApiResponseBuilder.unauthorized('Akun pengguna tidak ditemukan. Silakan login ulang');
+     }
 
-    const bookingData: any = {
-      car: { connect: { id: carId } },
-      startDateTime: start,
-      endDateTime: end,
-      durationMinutes: durationMinutes,
-      serviceType: serviceType as string,
-      pickupLocation,
-      returnLocation,
-      basePrice,
-      discountAmount,
-      totalPrice,
-      dpAmount,
-      dpPaid: false,
-      fullPaid: false,
-      status: "PENDING",
-      paymentMethod: paymentMethod ? (paymentMethod as string) : null,
-      notes,
-      guestName,
-      guestEmail,
-      guestPhone,
-      ktpBookingImage: await saveBase64Image(ktpBookingImage, "documents"),
-      simBookingImage: await saveBase64Image(simBookingImage, "documents"),
-    };
+     const ktpImage = await saveBase64Image(ktpBookingImage, "documents");
+     const simImage = await saveBase64Image(simBookingImage, "documents");
 
-    let userIdToConnect = (session?.user as any)?.id;
-    if (!userIdToConnect && session?.user?.email) {
-      const dbUser = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { id: true },
-      });
-      if (dbUser) userIdToConnect = dbUser.id;
-    }
+     const booking = await prisma.$transaction(async (tx) => {
+       const existingBookings = await tx.$queryRaw<Array<{id: string}>>`
+         SELECT id FROM "Booking"
+         WHERE "carId" = ${carId}
+         AND "status" IN ('PENDING', 'WAITING_DP', 'DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_RETURN')
+         AND "startDateTime" < ${end}
+         AND "endDateTime" > ${start}
+         FOR UPDATE
+       `;
 
-    if (!userIdToConnect) {
-      return ApiResponseBuilder.unauthorized('Akun pengguna tidak ditemukan. Silakan login ulang');
-    }
+       if (existingBookings.length > 0) {
+         throw new Error('DOUBLE_BOOKING');
+       }
 
-    bookingData.user = { connect: { id: userIdToConnect } };
+       const bookingData: any = {
+         car: { connect: { id: carId } },
+         user: { connect: { id: userIdToConnect } },
+         startDateTime: start,
+         endDateTime: end,
+         durationMinutes: durationMinutes,
+         serviceType: serviceType as string,
+         pickupLocation,
+         returnLocation,
+         basePrice,
+         discountAmount,
+         totalPrice,
+         dpAmount,
+         dpPaid: false,
+         fullPaid: false,
+         status: "PENDING",
+         paymentMethod: paymentMethod ? (paymentMethod as string) : null,
+         notes,
+         guestName,
+         guestEmail,
+         guestPhone,
+         ktpBookingImage: ktpImage,
+         simBookingImage: simImage,
+       };
 
-    const [booking] = await prisma.$transaction([
-      prisma.booking.create({
-        data: bookingData,
-        include: { car: true, user: { select: { name: true, email: true } } },
-      }),
-      prisma.car.update({
-        where: { id: carId },
-        data: { status: "BOOKED" },
-      }),
-    ]);
+       const createdBooking = await tx.booking.create({
+         data: bookingData,
+         include: { car: true, user: { select: { name: true, email: true } } },
+       });
+
+       await tx.car.update({
+         where: { id: carId },
+         data: { status: "BOOKED" },
+       });
+
+       return createdBooking;
+     });
 
     if (paymentMethod) {
       await prisma.payment.create({
@@ -280,17 +297,21 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
-    logError(createApiError('BOOKING_ERROR', error?.message), 'POST /api/booking');
-    
-    if (error?.code === 'P2002') {
-      return ApiResponseBuilder.error('CONFLICT', 'Booking dengan data yang sama sudah ada');
-    }
-    
-    if (error?.code?.startsWith('P')) {
-      return ApiResponseBuilder.databaseError(error);
-    }
-    
-    return ApiResponseBuilder.internalError(error, 'Booking Creation');
-  }
+   } catch (error: any) {
+     if (error?.message === 'DOUBLE_BOOKING') {
+       return ApiResponseBuilder.error('CONFLICT', 'Mobil sudah dipesan pada waktu tersebut. Silakan pilih waktu lain');
+     }
+
+     logError(createApiError('BOOKING_ERROR', error?.message), 'POST /api/booking');
+     
+     if (error?.code === 'P2002') {
+       return ApiResponseBuilder.error('CONFLICT', 'Booking dengan data yang sama sudah ada');
+     }
+     
+     if (error?.code?.startsWith('P')) {
+       return ApiResponseBuilder.databaseError(error);
+     }
+     
+     return ApiResponseBuilder.internalError(error, 'Booking Creation');
+   }
 }

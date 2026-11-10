@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import * as crypto from "crypto";
+import { getEndpointLimiter } from "@/lib/middleware-rate-limit";
+
+const registerLimiter = getEndpointLimiter('POST /api/auth/register', { maxRequests: 3 });
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = registerLimiter(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await req.json();
     const { name, email, password, phone } = body;

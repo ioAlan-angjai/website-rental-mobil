@@ -7,13 +7,17 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     
-    // Get query parameters
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(20, parseInt(searchParams.get('limit') || '12'));
+    const skip = (page - 1) * limit;
+    
     const category = searchParams.get('category');
     const transmission = searchParams.get('transmission');
     const search = searchParams.get('search');
     const status = searchParams.get('status') || 'AVAILABLE';
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
 
-    // Build where clause
     const where: any = {};
     
     if (status && status !== 'all') {
@@ -35,18 +39,46 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Get cars with filters
-    const cars = await prisma.car.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    if (minPrice || maxPrice) {
+      where.pricePerDay = {};
+      if (minPrice) where.pricePerDay.gte = parseInt(minPrice);
+      if (maxPrice) where.pricePerDay.lte = parseInt(maxPrice);
+    }
+
+    const [cars, total] = await Promise.all([
+      prisma.car.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          brand: true,
+          category: true,
+          year: true,
+          transmission: true,
+          fuelType: true,
+          seats: true,
+          pricePerDay: true,
+          images: true,
+          status: true,
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.car.count({ where }),
+    ]);
 
     return NextResponse.json({
       success: true,
       data: cars,
-      total: cars.length
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      }
     });
 
   } catch (error) {

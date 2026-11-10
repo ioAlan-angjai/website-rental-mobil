@@ -125,6 +125,11 @@ model Car {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([status])
+  @@index([category])
+  @@index([transmission])
+  @@index([pricePerDay])
+  @@index([createdAt])
   @@map("cars")
 }
 
@@ -189,6 +194,12 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([carId])
+  @@index([userId])
+  @@index([status])
+  @@index([startDateTime])
+  @@index([endDateTime])
+  @@index([carId, status, startDateTime, endDateTime])
   @@map("bookings")
 }
 

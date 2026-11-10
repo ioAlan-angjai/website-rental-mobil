@@ -4,11 +4,19 @@ import { authOptions } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/upload";
 import { ApiResponseBuilder } from "@/lib/api-response";
 import { logError, createApiError } from "@/lib/error-handler";
+import { getEndpointLimiter } from "@/lib/middleware-rate-limit";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+const uploadLimiter = getEndpointLimiter('POST /api/upload', { maxRequests: 20 });
+
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = uploadLimiter(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

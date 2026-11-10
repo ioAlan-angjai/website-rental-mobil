@@ -3,8 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { createMidtransTransaction, isMidtransConfigured } from "@/lib/payment-gateway";
+import { getEndpointLimiter } from "@/lib/middleware-rate-limit";
+
+const paymentLimiter = getEndpointLimiter('POST /api/payment/create-transaction', { maxRequests: 10 });
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = paymentLimiter(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
