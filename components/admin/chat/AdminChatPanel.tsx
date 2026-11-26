@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MessageSquare, Send, Search, User, Phone, Mail, Clock, CheckCheck,
-  Loader2, RefreshCw, ExternalLink, ShieldCheck, Headset
+  Loader2, RefreshCw, ExternalLink, ShieldCheck, Headset, Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -39,6 +39,7 @@ export function AdminChatPanel() {
   const [loadingActiveChat, setLoadingActiveChat] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [switchingHandler, setSwitchingHandler] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +136,27 @@ export function AdminChatPanel() {
       alert('Terjadi kesalahan saat mengirim balasan.');
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  // Toggle Chat Handler (AI <-> ADMIN)
+  const handleSwitchHandler = async (targetMode: 'AI' | 'ADMIN') => {
+    if (!selectedChatId || switchingHandler) return;
+    setSwitchingHandler(true);
+    try {
+      const res = await fetch(`/api/admin/chat/${selectedChatId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handledBy: targetMode }),
+      });
+      if (res.ok) {
+        await fetchActiveChat(selectedChatId, false);
+        await fetchChats(false);
+      }
+    } catch (err) {
+      console.error('Switch handler error:', err);
+    } finally {
+      setSwitchingHandler(false);
     }
   };
 
@@ -255,9 +277,26 @@ export function AdminChatPanel() {
                       </div>
 
                       <p className={`text-xs truncate ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                        {chat.lastMessage?.senderType === 'ADMIN' ? 'Anda: ' : ''}
+                        {chat.lastMessage?.senderType === 'ADMIN'
+                          ? 'Anda: '
+                          : chat.lastMessage?.senderType === 'AI'
+                          ? 'AI: '
+                          : ''}
                         {lastMsgText}
                       </p>
+                      <span
+                        className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          chat.handledBy === 'AI'
+                            ? isSelected
+                              ? 'bg-zinc-800 text-emerald-300'
+                              : 'bg-emerald-50 text-emerald-700'
+                            : isSelected
+                            ? 'bg-zinc-800 text-amber-300'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {chat.handledBy === 'AI' ? 'Bot AI' : 'Admin CS'}
+                      </span>
                     </div>
 
                     {/* Unread Badge */}
@@ -286,10 +325,17 @@ export function AdminChatPanel() {
                   <div>
                     <h3 className="text-sm font-bold text-zinc-950 flex items-center gap-2">
                       {activeChat.user?.name || 'Pelanggan'}
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Aktif
-                      </span>
+                      {activeChat.handledBy === 'AI' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <Bot size={11} />
+                          Ditangani AI
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <Headset size={11} />
+                          Admin CS
+                        </span>
+                      )}
                     </h3>
                     <p className="text-[11px] text-zinc-500 flex items-center gap-3 mt-0.5">
                       {activeChat.user?.email && (
@@ -306,18 +352,38 @@ export function AdminChatPanel() {
                   </div>
                 </div>
 
-                {activeChat.user?.phone && (
-                  <a
-                    href={`https://wa.me/${activeChat.user.phone.replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={switchingHandler}
+                    onClick={() =>
+                      handleSwitchHandler(activeChat.handledBy === 'AI' ? 'ADMIN' : 'AI')
+                    }
+                    className="px-3 py-1.5 bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
                   >
-                    <Phone size={13} />
-                    WhatsApp
-                    <ExternalLink size={11} />
-                  </a>
-                )}
+                    {activeChat.handledBy === 'AI' ? (
+                      <>
+                        <Headset size={13} /> Ambil Alih
+                      </>
+                    ) : (
+                      <>
+                        <Bot size={13} /> Serahkan ke AI
+                      </>
+                    )}
+                  </button>
+                  {activeChat.user?.phone && (
+                    <a
+                      href={`https://wa.me/${activeChat.user.phone.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
+                    >
+                      <Phone size={13} />
+                      WhatsApp
+                      <ExternalLink size={11} />
+                    </a>
+                  )}
+                </div>
               </div>
 
               {/* Messages Feed */}
@@ -336,10 +402,16 @@ export function AdminChatPanel() {
 
                     if (isAI) {
                       return (
-                        <div key={msg.id} className="flex justify-center my-2">
-                          <div className="bg-zinc-100 border border-dashed border-zinc-300 text-zinc-600 rounded-2xl px-4 py-2 text-xs text-center max-w-[85%] italic">
-                            <span className="font-bold not-italic block mb-0.5 text-zinc-700">Pesan Otomatis Sistem:</span>
-                            {msg.message}
+                        <div key={msg.id} className="flex flex-col items-end">
+                          <div className="flex items-center gap-1.5 mb-1 text-[11px] text-zinc-400 font-medium">
+                            <span className="font-bold text-emerald-700 flex items-center gap-1">
+                              <Bot size={12} /> Asisten AI
+                            </span>
+                            <span>•</span>
+                            <span>{timeStr}</span>
+                          </div>
+                          <div className="max-w-[75%] rounded-2xl rounded-br-none px-4 py-3 text-xs leading-relaxed bg-emerald-50 border border-emerald-200 text-zinc-900 shadow-xs">
+                            <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.message}</p>
                           </div>
                         </div>
                       );

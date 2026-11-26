@@ -165,11 +165,11 @@ function BookingForm() {
         setCarsError(null);
         const response = await fetch('/api/cars?status=AVAILABLE');
         const res = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(res.error?.message || 'Gagal memuat daftar armada');
         }
-        
+
         if (res.data && Array.isArray(res.data)) {
           setDbCars(res.data);
         } else {
@@ -268,52 +268,52 @@ function BookingForm() {
     }
   }, [date, endDate, formData.pickupTime, formData.returnTime]);
 
-   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-     const { name, value } = e.target;
-     let processedValue = value;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let processedValue = value;
 
-     if (name === 'carId') {
-       if (value) setCarError('');
-     } else if (name === 'pickupLocation') {
-       if (value.trim().length > 0 && value.trim().length < 5) {
-         setPickupLocationError("Lokasi penjemputan minimal 5 karakter (atau tulis 'Ambil di Garasi').");
-       } else {
-         setPickupLocationError('');
-       }
-     } else if (name === 'pickupTime' || name === 'returnTime') {
-       setTimeError('');
-     } else if (name === 'phone') {
-       processedValue = value.replace(/[^0-9+]/g, '').slice(0, 15);
-       
-       // Real-time validation for phone
-       if (processedValue && !/^(\+62|62|0)[0-9]{9,13}$/.test(processedValue.replace(/[\s-]/g, ''))) {
-         setPhoneError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
-       } else {
-         setPhoneError('');
-       }
-     } else if (name === 'name') {
-       processedValue = value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
-       
-       // Real-time validation for name
-       if (processedValue && !/^[a-zA-Z\s.'-]+$/.test(processedValue)) {
-         setNameError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
-       } else if (processedValue && processedValue.length < 3) {
-         setNameError('Nama minimal 3 karakter');
-       } else {
-         setNameError('');
-       }
-     } else if (name === 'email') {
-       // Real-time validation for email
-       if (processedValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(processedValue)) {
-         setEmailError('Format email tidak valid');
-       } else {
-         setEmailError('');
-       }
-     }
+    if (name === 'carId') {
+      if (value) setCarError('');
+    } else if (name === 'pickupLocation') {
+      if (value.trim().length > 0 && value.trim().length < 5) {
+        setPickupLocationError("Lokasi penjemputan minimal 5 karakter (atau tulis 'Ambil di Garasi').");
+      } else {
+        setPickupLocationError('');
+      }
+    } else if (name === 'pickupTime' || name === 'returnTime') {
+      setTimeError('');
+    } else if (name === 'phone') {
+      processedValue = value.replace(/[^0-9+]/g, '').slice(0, 15);
 
-     setFormData({ ...formData, [name]: processedValue });
-     if (submitError) setSubmitError('');
-   };
+      // Real-time validation for phone
+      if (processedValue && !/^(\+62|62|0)[0-9]{9,13}$/.test(processedValue.replace(/[\s-]/g, ''))) {
+        setPhoneError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
+      } else {
+        setPhoneError('');
+      }
+    } else if (name === 'name') {
+      processedValue = value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 100);
+
+      // Real-time validation for name
+      if (processedValue && !/^[a-zA-Z\s.'-]+$/.test(processedValue)) {
+        setNameError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
+      } else if (processedValue && processedValue.length < 3) {
+        setNameError('Nama minimal 3 karakter');
+      } else {
+        setNameError('');
+      }
+    } else if (name === 'email') {
+      // Real-time validation for email
+      if (processedValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(processedValue)) {
+        setEmailError('Format email tidak valid');
+      } else {
+        setEmailError('');
+      }
+    }
+
+    setFormData({ ...formData, [name]: processedValue });
+    if (submitError) setSubmitError('');
+  };
 
   // Clear or update date/time errors when dates or times change
   useEffect(() => {
@@ -513,7 +513,7 @@ function BookingForm() {
       try {
         const response = await fetch('/api/driver-fee');
         const res = await response.json();
-        
+
         if (response.ok && res.driverFeePerDay) {
           setDriverFeePerDay(res.driverFeePerDay);
         }
@@ -610,63 +610,63 @@ function BookingForm() {
     input.click();
   };
 
-   const handleSubmit = async () => {
-     setSubmitting(true);
-     setSubmitError('');
-     
-     try {
-       for (const s of [1, 2, 4, 5, 7]) {
-         if (!validateStep(s)) {
-           if (s !== step) setStep(s);
-           setSubmitting(false);
-           return;
-         }
-       }
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError('');
 
-       const apiPaymentMethod = paymentMode === 'INSTANT' ? 'MIDTRANS' : (selectedBank ? `${selectedBank}_TRANSFER` : null);
+    try {
+      for (const s of [1, 2, 4, 5, 7]) {
+        if (!validateStep(s)) {
+          if (s !== step) setStep(s);
+          setSubmitting(false);
+          return;
+        }
+      }
 
-       let startDateTime: Date | null = null;
-       if (date) {
-         startDateTime = new Date(date);
-         const [hours, minutes] = (formData.pickupTime || '09:00').split(':');
-         startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-       }
+      const apiPaymentMethod = paymentMode === 'INSTANT' ? 'MIDTRANS' : (selectedBank ? `${selectedBank}_TRANSFER` : null);
 
-       let endDateTime: Date | null = null;
-       if (endDate) {
-         endDateTime = new Date(endDate);
-         const [hours, minutes] = (formData.returnTime || '18:00').split(':');
-         endDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-       }
+      let startDateTime: Date | null = null;
+      if (date) {
+        startDateTime = new Date(date);
+        const [hours, minutes] = (formData.pickupTime || '09:00').split(':');
+        startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
 
-       const payload: any = {
-         carId: formData.carId,
-         startDate: startDateTime?.toISOString(),
-         endDate: endDateTime?.toISOString(),
-         serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
-         pickupLocation: formData.pickupLocation || null,
-         paymentMethod: apiPaymentMethod,
-         guestName: formData.name,
-         guestEmail: formData.email || null,
-         guestPhone: formData.phone,
-         ktpBookingImage: ktpPreview || null,
-         simBookingImage: simPreview || null,
-       };
+      let endDateTime: Date | null = null;
+      if (endDate) {
+        endDateTime = new Date(endDate);
+        const [hours, minutes] = (formData.returnTime || '18:00').split(':');
+        endDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
 
-       const res = await fetch('/api/booking', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(payload),
-       });
+      const payload: any = {
+        carId: formData.carId,
+        startDate: startDateTime?.toISOString(),
+        endDate: endDateTime?.toISOString(),
+        serviceType: formData.serviceType === 'lepas-kunci' ? 'LEPAS_KUNCI' : 'DENGAN_DRIVER',
+        pickupLocation: formData.pickupLocation || null,
+        paymentMethod: apiPaymentMethod,
+        guestName: formData.name,
+        guestEmail: formData.email || null,
+        guestPhone: formData.phone,
+        ktpBookingImage: ktpPreview || null,
+        simBookingImage: simPreview || null,
+      };
 
-       const data = await res.json();
+      const res = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-       if (!res.ok) {
-         const errorMessage = data.error?.message || data.error || 'Terjadi kesalahan saat membuat booking.';
-         setSubmitError(errorMessage);
-         toast.error(errorMessage);
-         return;
-       }
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errorMessage = data.error?.message || data.error || 'Terjadi kesalahan saat membuat booking.';
+        setSubmitError(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
 
       if (paymentMode === 'INSTANT' && data.booking?.id) {
         const carObj = dbCars.find((c) => c.id === formData.carId);
@@ -692,46 +692,46 @@ function BookingForm() {
         isGateway: false,
       });
 
-       if (uploadedPreview && data.booking && data.booking.id) {
-         const formDataPayload = new FormData();
-         formDataPayload.append('proofImage', uploadedPreview);
-         if (apiPaymentMethod) {
-           formDataPayload.append('paymentMethod', apiPaymentMethod);
-         }
+      if (uploadedPreview && data.booking && data.booking.id) {
+        const formDataPayload = new FormData();
+        formDataPayload.append('proofImage', uploadedPreview);
+        if (apiPaymentMethod) {
+          formDataPayload.append('paymentMethod', apiPaymentMethod);
+        }
 
-         try {
-           const paymentRes = await fetch(`/api/booking/${data.booking.id}/payment`, {
-             method: 'POST',
-             body: formDataPayload,
-           });
+        try {
+          const paymentRes = await fetch(`/api/booking/${data.booking.id}/payment`, {
+            method: 'POST',
+            body: formDataPayload,
+          });
 
-           const paymentData = await paymentRes.json();
-           if (!paymentRes.ok) {
-             const errorMsg = paymentData.error?.message || paymentData.error || 'Booking berhasil dibuat, tetapi gagal mengupload bukti pembayaran.';
-             setSubmitError(errorMsg);
-             toast.warning(errorMsg);
-             return;
-           }
-         } catch (uploadErr) {
-           console.error('Payment proof upload error:', uploadErr);
-           const errorMsg = 'Booking berhasil dibuat, tetapi gagal mengunggah bukti pembayaran. Silakan upload melalui riwayat booking.';
-           setSubmitError(errorMsg);
-           toast.warning(errorMsg);
-           return;
-         }
-       }
+          const paymentData = await paymentRes.json();
+          if (!paymentRes.ok) {
+            const errorMsg = paymentData.error?.message || paymentData.error || 'Booking berhasil dibuat, tetapi gagal mengupload bukti pembayaran.';
+            setSubmitError(errorMsg);
+            toast.warning(errorMsg);
+            return;
+          }
+        } catch (uploadErr) {
+          console.error('Payment proof upload error:', uploadErr);
+          const errorMsg = 'Booking berhasil dibuat, tetapi gagal mengunggah bukti pembayaran. Silakan upload melalui riwayat booking.';
+          setSubmitError(errorMsg);
+          toast.warning(errorMsg);
+          return;
+        }
+      }
 
-       setBookingSuccess(true);
-       toast.success('Booking dan bukti pembayaran berhasil dikirim!');
-     } catch (err) {
-       console.error('Booking submission error:', err);
-       const errorMsg = getErrorMessage(err) || 'Gagal terhubung ke server. Silakan periksa koneksi internet dan coba lagi.';
-       setSubmitError(errorMsg);
-       toast.error(errorMsg);
-     } finally {
-       setSubmitting(false);
-     }
-   };
+      setBookingSuccess(true);
+      toast.success('Booking dan bukti pembayaran berhasil dikirim!');
+    } catch (err) {
+      console.error('Booking submission error:', err);
+      const errorMsg = getErrorMessage(err) || 'Gagal terhubung ke server. Silakan periksa koneksi internet dan coba lagi.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (status === 'loading') {
     return (
@@ -825,8 +825,8 @@ function BookingForm() {
                     isCompleted
                       ? 'bg-foreground border-foreground text-background shadow-xs'
                       : isCurrent
-                      ? 'bg-background border-foreground text-foreground ring-4 ring-foreground/15 shadow-xs'
-                      : 'bg-card border-border text-foreground/40'
+                        ? 'bg-background border-foreground text-foreground ring-4 ring-foreground/15 shadow-xs'
+                        : 'bg-card border-border text-foreground/40'
                   )}>
                     {isCompleted ? (
                       <CheckCircle2 size={16} />
@@ -1052,8 +1052,8 @@ function BookingForm() {
                                 selected
                                   ? 'border-foreground bg-secondary/40 ring-1 ring-foreground/20 shadow-xs'
                                   : serviceTypeError
-                                  ? 'border-red-400 bg-background hover:border-red-500'
-                                  : 'border-border bg-background hover:border-foreground/30'
+                                    ? 'border-red-400 bg-background hover:border-red-500'
+                                    : 'border-border bg-background hover:border-foreground/30'
                               )}
                             >
                               <div className="flex items-center justify-between w-full sm:w-auto">
@@ -1094,11 +1094,11 @@ function BookingForm() {
                       <label className="text-xs font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
                         <Search size={13} className="text-foreground/70" /> Pilih Unit Mobil <span className="text-red-600">*</span>
                       </label>
-                      
+
                       {carsError && (
-                        <ErrorDisplay 
-                          error={carsError} 
-                          compact 
+                        <ErrorDisplay
+                          error={carsError}
+                          compact
                           onRetry={() => {
                             setCarsError(null);
                             setLoadingCars(true);
@@ -1112,7 +1112,7 @@ function BookingForm() {
                           }}
                         />
                       )}
-                      
+
                       <select
                         name="carId" value={formData.carId} onChange={handleInputChange}
                         className={cn(

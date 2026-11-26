@@ -118,3 +118,48 @@ export async function POST(
     return NextResponse.json({ error: "Gagal mengirim balasan pesan" }, { status: 500 });
   }
 }
+
+// PATCH: Ubah penanggung jawab chat (AI <-> ADMIN) dari dashboard admin
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const adminUserId = (session.user as any).id;
+    const chatId = params.id;
+    const body = await req.json();
+    const targetMode = body?.handledBy === "AI" ? "AI" : body?.handledBy === "ADMIN" ? "ADMIN" : null;
+
+    if (!targetMode) {
+      return NextResponse.json({ error: "Mode penanganan tidak valid" }, { status: 400 });
+    }
+
+    const chat = await prisma.chat.findUnique({ where: { id: chatId } });
+    if (!chat) {
+      return NextResponse.json({ error: "Sesi chat tidak ditemukan" }, { status: 404 });
+    }
+
+    const updated = await prisma.chat.update({
+      where: { id: chatId },
+      data: {
+        handledBy: targetMode,
+        assignedToId: targetMode === "ADMIN" ? adminUserId : null,
+        assignedAt: targetMode === "ADMIN" ? new Date() : null,
+        updatedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Admin switch chat handler error:", error);
+    return NextResponse.json({ error: "Gagal mengubah mode chat" }, { status: 500 });
+  }
+}
