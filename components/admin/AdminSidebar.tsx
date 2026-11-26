@@ -213,7 +213,7 @@ export function AdminSidebar({ activeTab, onNavigate }: AdminSidebarProps) {
             <>
               <div className="flex items-center gap-3 p-2 rounded-xl bg-zinc-50 border border-zinc-100">
                 <Avatar className="h-9 w-9 border border-zinc-200">
-                  <AvatarImage src="/placeholder-avatar.jpg" alt="Admin" />
+                  <AvatarImage src="" alt="Admin" />
                   <AvatarFallback className="bg-zinc-900 text-white font-bold text-xs">AD</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col min-w-0 flex-1">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Car, CalendarCheck,
@@ -122,17 +123,21 @@ export default function AdminDashboard() {
     address: '',
   });
 
-  const fetchBookings = () => {
+  const fetchBookings = async () => {
     setLoadingBookings(true);
-    fetch('/api/admin/bookings')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.data) {
-          setBookings(res.data);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoadingBookings(false));
+    try {
+      const res = await fetch('/api/admin/bookings');
+      const data = await res.json();
+      console.log('[fetchBookings] Response:', data);
+      if (data.data && Array.isArray(data.data)) {
+        setBookings(data.data);
+        console.log(`[fetchBookings] Updated ${data.data.length} bookings`);
+      }
+    } catch (err) {
+      console.error('[fetchBookings] Error:', err);
+    } finally {
+      setLoadingBookings(false);
+    }
   };
 
   const fetchCars = () => {
@@ -230,6 +235,9 @@ export default function AdminDashboard() {
     }
 
     setIsVerifying(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch(`/api/admin/bookings/${selectedBooking.id}/verify`, {
         method: 'PATCH',
@@ -239,22 +247,38 @@ export default function AdminDashboard() {
           paymentType,
           rejectReason: action === 'REJECT' ? rejectReason : undefined,
         }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
+      console.log(`[handleVerify] ${action} response:`, data, 'Status:', res.status);
+      
       if (!res.ok) {
-        alert(data.error || 'Terjadi kesalahan saat memproses verifikasi.');
+        toast.error(data.error || 'Terjadi kesalahan saat memproses verifikasi.');
+        setIsVerifying(false);
         return;
       }
 
+      const actionMsg = action === 'REJECT' 
+        ? `DP ${paymentType === 'DP' ? 'pengajuan' : 'pelunasan'} ditolak` 
+        : `DP ${paymentType === 'DP' ? 'disetujui' : 'pelunasan disetujui'}`;
+      toast.success(actionMsg);
+      
+      console.log('[handleVerify] Action successful, refreshing bookings...');
       setSelectedBooking(null);
       setRejectReason('');
       setShowRejectForm(false);
-      fetchBookings();
-    } catch (err) {
-      console.error(err);
-      alert('Gagal menghubungi server.');
+      await fetchBookings();
+      console.log('[handleVerify] Bookings refreshed');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        toast.error('Request timeout. Silakan coba lagi.');
+      } else {
+        console.error('Verify error:', err);
+        toast.error(err.message || 'Gagal menghubungi server.');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setIsVerifying(false);
     }
   };
@@ -1141,10 +1165,32 @@ export default function AdminDashboard() {
                     <div className="pt-2 border-t mt-2 text-sm">
                       <p><span className="text-zinc-500">Metode Bayar DP:</span> <span className="font-bold">{selectedBooking.paymentMethod.replace('_', ' ')}</span></p>
                     </div>
-                  )}
-                </div>
+                   )}
+                 </div>
 
-                {/* Bukti Pembayaran DP */}
+                 {/* Info DP Ditolak */}
+                 {(() => {
+                   const dpPayment = selectedBooking.payments?.find((p: any) => p.type === 'DP');
+                   if (dpPayment?.status === 'REJECTED') {
+                     return (
+                       <div className="p-4 bg-red-50 border border-red-200 rounded-2xl space-y-2">
+                         <div className="flex items-center gap-2">
+                           <AlertCircle size={18} className="text-red-600" />
+                           <h4 className="font-bold text-red-900">Pembayaran DP Ditolak</h4>
+                         </div>
+                         <p className="text-sm text-red-800">
+                           <span className="font-medium">Alasan:</span> {selectedBooking.rejectReason || 'Tidak ada alasan'}
+                         </p>
+                         <p className="text-xs text-red-700">
+                           Admin telah menolak pengajuan DP. Pelanggan dapat melakukan pembayaran ulang atau menghubungi customer service.
+                         </p>
+                       </div>
+                     );
+                   }
+                   return null;
+                 })()}
+
+                 {/* Bukti Pembayaran DP */}
                 {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && (() => {
                   const isMidtrans = selectedBooking.paymentMethod === 'MIDTRANS' ||
                     ['QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(selectedBooking.paymentMethod) ||
@@ -1427,6 +1473,15 @@ export default function AdminDashboard() {
                   </button>
 
                   {(selectedBooking.status === 'WAITING_DP' || selectedBooking.status === 'PENDING') && !showRejectForm && (() => {
+                    // Cek apakah payment DP sudah REJECTED
+                    const dpPayment = selectedBooking.payments?.find((p: any) => p.type === 'DP');
+                    const isDpRejected = dpPayment?.status === 'REJECTED';
+                    
+                    // Jangan tampilkan tombol jika DP sudah ditolak
+                    if (isDpRejected) {
+                      return null;
+                    }
+
                     const isMidtrans = selectedBooking.paymentMethod === 'MIDTRANS' ||
                       ['QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(selectedBooking.paymentMethod) ||
                       selectedBooking.payments?.some((p: any) => ['MIDTRANS', 'QRIS', 'BCA_VA', 'BNI_VA', 'BRI_VA', 'MANDIRI_BILL'].includes(p.method));
@@ -1435,8 +1490,12 @@ export default function AdminDashboard() {
                       <>
                         <button
                           type="button"
-                          onClick={() => setShowRejectForm(true)}
-                          className="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-sm border border-rose-200 transition-all cursor-pointer"
+                          onClick={() => {
+                            if (confirm('Apakah Anda yakin ingin menolak pengajuan DP booking ini?')) {
+                              setShowRejectForm(true);
+                            }
+                          }}
+                          className="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-sm border border-rose-200 transition-all cursor-pointer disabled:opacity-50"
                         >
                           Tolak DP
                         </button>
@@ -1444,7 +1503,7 @@ export default function AdminDashboard() {
                           type="button"
                           disabled={isVerifying}
                           onClick={() => handleVerify('APPROVE')}
-                          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all cursor-pointer"
+                          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all cursor-pointer disabled:opacity-50"
                           title={isMidtrans ? 'Perhatian: Transaksi ini menggunakan Midtrans Gateway otomatis.' : undefined}
                         >
                           {isVerifying ? 'Memproses...' : (isMidtrans ? 'Konfirmasi Manual (Bypass Midtrans)' : 'Konfirmasi & Setujui DP')}

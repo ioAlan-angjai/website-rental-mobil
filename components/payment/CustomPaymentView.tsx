@@ -295,7 +295,7 @@ export function CustomPaymentView({
           </div>
 
           {/* Payment Methods Grid — 2-Column Responsive Layout */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {PAYMENT_METHODS.map((method) => {
               const isSelected = selectedMethod === method.id;
 
@@ -313,8 +313,12 @@ export function CustomPaymentView({
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground shrink-0">
-                        {method.id === 'QRIS' ? <QrCode size={14} /> : <Building2 size={14} />}
+                      <div className="w-7 h-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground shrink-0 overflow-hidden">
+                        <img
+                          src={`/images/logoBank/${method.icon}.png`}
+                          alt={method.shortName}
+                          className="w-full h-full object-contain p-0.5"
+                        />
                       </div>
                       <span className="text-xs font-bold text-foreground truncate">
                         {method.shortName}

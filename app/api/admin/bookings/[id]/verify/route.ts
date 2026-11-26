@@ -52,6 +52,14 @@ export async function PATCH(
     });
 
     if (action === "APPROVE") {
+      // Cek apakah payment sudah REJECTED sebelumnya
+      if (payment?.status === "REJECTED") {
+        return NextResponse.json(
+          { error: "Pembayaran DP sudah ditolak sebelumnya. Tidak dapat dikonfirmasi kembali. Silakan buat pembayaran baru." },
+          { status: 400 }
+        );
+      }
+
       if (payment) {
         await prisma.payment.update({
           where: { id: payment.id },
@@ -176,7 +184,7 @@ export async function PATCH(
         }
       }
     } else {
-      // REJECT
+      // REJECT — bisa dilakukan apakah ada payment record atau tidak
       if (!rejectReason) {
         return NextResponse.json(
           { error: "Alasan penolakan harus diisi" },
@@ -184,50 +192,71 @@ export async function PATCH(
         );
       }
 
+      console.log(`[REJECT] Start: Booking ${bookingId}, Type: ${targetType}, Reason: ${rejectReason}`);
+
+      // Jika ada payment record, reject-nya
       if (payment) {
-        await prisma.payment.update({
+        const updateResult = await prisma.payment.update({
           where: { id: payment.id },
           data: {
             status: "REJECTED",
             rejectReason
           }
         });
+        console.log(`[REJECT] Payment ${payment.id} updated:`, updateResult);
+      } else if (targetType === "DP") {
+        // Jika tidak ada payment record (pelanggan belum bayar), buat payment record REJECTED
+        const createResult = await prisma.payment.create({
+          data: {
+            bookingId,
+            amount: booking.dpAmount || 0,
+            type: "DP",
+            method: booking.paymentMethod || "MANUAL",
+            status: "REJECTED",
+            rejectReason
+          }
+        });
+        console.log(`[REJECT] Payment created:`, createResult.id);
       }
 
       if (targetType === "DP") {
-        // Reject DP → kembali ke PENDING agar user bisa upload ulang
-        // (bukan REJECTED — yang berarti pembatalan total)
-        await prisma.booking.update({
+        // Reject DP → PENDING (agar user bisa resubmit atau upload bukti baru)
+        const updateBookingResult = await prisma.booking.update({
           where: { id: bookingId },
           data: {
             status: "PENDING",
-            rejectReason: rejectReason, // simpan alasan penolakan
+            rejectReason: rejectReason,
+            dpPaid: false,
           }
         });
-        // Mobil tetap BOOKED — booking masih aktif, hanya menunggu bukti baru
+        console.log(`[REJECT] Booking ${bookingId} updated to PENDING:`, updateBookingResult);
+        
+        // Send notification async (fire-and-forget)
         if (booking.userId) {
-          await prisma.notification.create({
+          prisma.notification.create({
             data: {
               userId: booking.userId,
-              title: "Bukti DP Ditolak — Upload Ulang",
-              message: `Bukti pembayaran DP Anda ditolak. Alasan: ${rejectReason}. Silakan upload bukti transfer yang valid.`,
+              title: "Bukti DP Ditolak — Silakan Upload Ulang",
+              message: `Pengajuan DP Anda ditolak. Alasan: ${rejectReason}. Silakan lakukan pembayaran atau upload bukti transfer yang valid.`,
               type: "BOOKING_REJECTED"
             }
-          });
+          }).catch(err => console.error("Notification error:", err));
         }
       } else {
-        // Reject FULL_PAYMENT → tetap WAITING_PAYMENT, user upload ulang
+        // Reject FULL_PAYMENT
         if (booking.userId) {
-          await prisma.notification.create({
+          prisma.notification.create({
             data: {
               userId: booking.userId,
               title: "Bukti Pelunasan Ditolak",
               message: `Bukti pelunasan ditolak: ${rejectReason}. Silakan upload bukti baru.`,
               type: "PAYMENT_REJECTED"
             }
-          });
+          }).catch(err => console.error("Notification error:", err));
         }
       }
+
+      console.log(`[REJECT] Success: Booking ${bookingId} rejected`);
     }
 
     return NextResponse.json({

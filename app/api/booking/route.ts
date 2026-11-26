@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
 
      const booking = await prisma.$transaction(async (tx) => {
        const existingBookings = await tx.$queryRaw<Array<{id: string}>>`
-         SELECT id FROM "Booking"
+          SELECT id FROM "bookings"
          WHERE "carId" = ${carId}
          AND "status" IN ('PENDING', 'WAITING_DP', 'DP_CONFIRMED', 'IN_PROGRESS', 'WAITING_RETURN')
          AND "startDateTime" < ${end}

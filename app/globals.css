@@ -100,13 +100,13 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans), 'Plus Jakarta Sans', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-sans, 'Plus Jakarta Sans'), 'Plus Jakarta Sans', 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display), 'Manrope', 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-family: var(--font-display, 'Manrope'), 'Manrope', 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
     color: hsl(var(--text-heading));
     font-weight: 800;
     letter-spacing: -0.02em;

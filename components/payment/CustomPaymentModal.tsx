@@ -34,7 +34,7 @@ export function CustomPaymentModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-2xl my-auto"
+          className="relative w-full max-w-2xl my-auto bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 p-5 sm:p-6"
         >
           {/* Close button */}
           <button

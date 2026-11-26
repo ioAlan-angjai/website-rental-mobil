@@ -56,12 +56,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" suppressHydrationWarning className={cn(plusJakarta.variable, manrope.variable, "font-sans")}>
+    <html lang="id" suppressHydrationWarning className={cn(plusJakarta.variable, manrope.variable)}>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased font-sans">
+      <body className={cn(plusJakarta.className, "min-h-screen bg-background text-foreground antialiased")}>
         <Providers>
           {children}
           <ChatWidget />

@@ -102,9 +102,9 @@ const config = {
 
       /* ═══ Typography ═══ */
       fontFamily: {
-        sans: ["var(--font-sans)", "Plus Jakarta Sans", "Manrope", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Manrope", "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
-        heading: ["var(--font-display)", "Manrope", "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans, ui-sans-serif)", "Plus Jakarta Sans", "Manrope", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-display, ui-sans-serif)", "Manrope", "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
+        heading: ["var(--font-display, ui-sans-serif)", "Manrope", "Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
         manrope: ["var(--font-display)", "Manrope", "sans-serif"],
         jakarta: ["var(--font-sans)", "Plus Jakarta Sans", "sans-serif"],
         inter: ["Inter", "sans-serif"],

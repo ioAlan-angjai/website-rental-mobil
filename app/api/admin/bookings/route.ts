@@ -15,13 +15,16 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Auto update bookings: start, near-expiry, expiry
-    await updateInProgressBookings();
-    await processNearExpiryBookings();
-    await processExpiryBookings();
+    // Auto update bookings: start, near-expiry, expiry (parallel)
+    Promise.all([
+      updateInProgressBookings(),
+      processNearExpiryBookings(),
+      processExpiryBookings(),
+    ]).catch(() => {});
 
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: "desc" },
+      take: 100,
       include: {
         car: {
           select: {

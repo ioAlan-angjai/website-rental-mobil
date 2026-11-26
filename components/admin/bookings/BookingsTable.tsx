@@ -58,8 +58,19 @@ export function BookingsTable({ bookings, searchQuery, onView, onEdit }: Booking
       case 'IN_PROGRESS': return 'Sedang Jalan';
       case 'COMPLETED': return 'Selesai';
       case 'CANCELLED': return 'Dibatalkan';
+      case 'DP_REJECTED': return 'DP Ditolak';
       default: return 'Semua Status';
     }
+  };
+
+  const getDisplayStatus = (booking: any) => {
+    // Cek apakah payment DP REJECTED - jika ya, prioritaskan tampilkan DP_REJECTED
+    const dpPayment = booking.payments?.find((p: any) => p.type === 'DP');
+    if (dpPayment?.status === 'REJECTED') {
+      return 'DP_REJECTED';
+    }
+    // Jika tidak, gunakan booking status
+    return booking.status;
   };
 
   const getServiceLabel = (val: string) => {
@@ -89,13 +100,17 @@ export function BookingsTable({ bookings, searchQuery, onView, onEdit }: Booking
       const query = localSearch.trim().toLowerCase();
       
       const matchesSearch = !query || customer.includes(query) || carName.includes(query) || bookingId.includes(query) || paymentMethod.includes(query);
-      const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
+      const displayStatus = getDisplayStatus(b);
+      const matchesStatus = statusFilter === 'ALL' || displayStatus === statusFilter;
       const matchesService = serviceFilter === 'ALL' || b.serviceType === serviceFilter;
       
       let matchesPayment = true;
       if (paymentFilter === 'FULL_PAID') matchesPayment = b.fullPaid;
       if (paymentFilter === 'DP_PAID') matchesPayment = b.dpPaid && !b.fullPaid;
-      if (paymentFilter === 'UNPAID') matchesPayment = !b.dpPaid && !b.fullPaid;
+      if (paymentFilter === 'UNPAID') {
+        const dpPayment = b.payments?.find((p: any) => p.type === 'DP');
+        matchesPayment = !b.dpPaid && !b.fullPaid && dpPayment?.status !== 'REJECTED';
+      }
 
       return matchesSearch && matchesStatus && matchesService && matchesPayment;
     });
@@ -113,6 +128,8 @@ export function BookingsTable({ bookings, searchQuery, onView, onEdit }: Booking
         return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 whitespace-nowrap">Sedang Jalan</span>;
       case 'COMPLETED': 
         return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 whitespace-nowrap">Selesai</span>;
+      case 'DP_REJECTED':
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200 whitespace-nowrap">DP Ditolak</span>;
       case 'CANCELLED': 
       case 'REJECTED': 
         return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200 whitespace-nowrap">Dibatalkan</span>;
@@ -124,8 +141,16 @@ export function BookingsTable({ bookings, searchQuery, onView, onEdit }: Booking
   const getPaymentBadge = (booking: any) => {
     if (booking.fullPaid) 
       return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">Lunas</span>;
+    
+    // Cek apakah DP ditolak dari payments array
+    const dpPayment = booking.payments?.find((p: any) => p.type === 'DP');
+    if (dpPayment?.status === 'REJECTED') {
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 whitespace-nowrap">DP Ditolak</span>;
+    }
+    
     if (booking.dpPaid) 
       return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">DP Terbayar</span>;
+    
     return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 whitespace-nowrap">Belum Bayar</span>;
   };
 
@@ -164,15 +189,16 @@ export function BookingsTable({ bookings, searchQuery, onView, onEdit }: Booking
               <SelectTrigger className="h-9 w-full bg-zinc-50 border-zinc-200 text-xs rounded-xl">
                 <span className="truncate">{getStatusLabel(statusFilter)}</span>
               </SelectTrigger>
-              <SelectContent className="rounded-xl shadow-lg">
-                <SelectItem value="ALL">Semua Status</SelectItem>
-                <SelectItem value="PENDING">Menunggu Konfirmasi</SelectItem>
-                <SelectItem value="WAITING_DP">Menunggu DP</SelectItem>
-                <SelectItem value="DP_CONFIRMED">DP Diverifikasi</SelectItem>
-                <SelectItem value="IN_PROGRESS">Sedang Jalan</SelectItem>
-                <SelectItem value="COMPLETED">Selesai</SelectItem>
-                <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
-              </SelectContent>
+               <SelectContent className="rounded-xl shadow-lg">
+                 <SelectItem value="ALL">Semua Status</SelectItem>
+                 <SelectItem value="PENDING">Menunggu Konfirmasi</SelectItem>
+                 <SelectItem value="WAITING_DP">Menunggu DP</SelectItem>
+                 <SelectItem value="DP_REJECTED">DP Ditolak</SelectItem>
+                 <SelectItem value="DP_CONFIRMED">DP Diverifikasi</SelectItem>
+                 <SelectItem value="IN_PROGRESS">Sedang Jalan</SelectItem>
+                 <SelectItem value="COMPLETED">Selesai</SelectItem>
+                 <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
+               </SelectContent>
             </Select>
           </div>
 
@@ -287,7 +313,7 @@ export function BookingsTable({ bookings, searchQuery, onView, onEdit }: Booking
                     </TableCell>
 
                     {/* Status */}
-                    <TableCell className="py-2.5 px-2.5">{getStatusBadge(b.status)}</TableCell>
+                    <TableCell className="py-2.5 px-2.5">{getStatusBadge(getDisplayStatus(b))}</TableCell>
 
                     {/* Pembayaran */}
                     <TableCell className="py-2.5 px-2.5">{getPaymentBadge(b)}</TableCell>
