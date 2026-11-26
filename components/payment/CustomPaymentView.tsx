@@ -286,7 +286,7 @@ export function CustomPaymentView({
                 <Sparkles size={13} className="text-foreground/70" /> Pilih Channel Pembayaran Instan
               </p>
               <p className="text-[11px] text-foreground/60">
-                Terhubung otomatis dengan Midtrans Sandbox Core API
+                Pembayaran aman &amp; terverifikasi otomatis oleh Midtrans
               </p>
             </div>
             <span className="text-xs font-black text-foreground bg-secondary px-2.5 py-1 rounded-lg border border-border">
@@ -371,8 +371,8 @@ export function CustomPaymentView({
       {status === 'CHARGING' && (
         <div className="py-10 text-center space-y-3 bg-card border border-border rounded-2xl p-6 shadow-xs">
           <RefreshCw className="w-7 h-7 mx-auto animate-spin text-foreground" />
-          <h3 className="text-xs sm:text-sm font-bold text-foreground">Menyiapkan Transaksi Midtrans Sandbox...</h3>
-          <p className="text-[11px] text-foreground/60">Mohon tunggu beberapa detik...</p>
+          <h3 className="text-xs sm:text-sm font-bold text-foreground">Menyiapkan Halaman Pembayaran...</h3>
+          <p className="text-[11px] text-foreground/60">Mohon tunggu sebentar, transaksi Anda sedang dibuat...</p>
         </div>
       )}
 

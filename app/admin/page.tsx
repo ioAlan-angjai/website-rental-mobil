@@ -1504,9 +1504,9 @@ export default function AdminDashboard() {
                           disabled={isVerifying}
                           onClick={() => handleVerify('APPROVE')}
                           className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all cursor-pointer disabled:opacity-50"
-                          title={isMidtrans ? 'Perhatian: Transaksi ini menggunakan Midtrans Gateway otomatis.' : undefined}
+                          title={isMidtrans ? 'Konfirmasi pembayaran DP secara manual apabila status gateway belum tersinkron.' : undefined}
                         >
-                          {isVerifying ? 'Memproses...' : (isMidtrans ? 'Konfirmasi Manual (Bypass Midtrans)' : 'Konfirmasi & Setujui DP')}
+                          {isVerifying ? 'Memproses...' : (isMidtrans ? 'Konfirmasi DP Manual' : 'Konfirmasi & Setujui DP')}
                         </button>
                       </>
                     );

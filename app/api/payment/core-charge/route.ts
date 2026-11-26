@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: false,
         isGatewayActive: false,
-        message: "Payment Gateway Sandbox belum dikonfigurasi. Silakan tambahkan MIDTRANS_SERVER_KEY di server.",
+        message: "Layanan pembayaran otomatis sedang tidak tersedia. Silakan gunakan metode Transfer Bank Manual atau hubungi admin.",
       });
     }
 

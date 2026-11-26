@@ -622,7 +622,7 @@ export default function PelunasanPage() {
                     </div>
                   </div>
                   <p className="text-xs sm:text-sm font-bold text-foreground leading-tight">QRIS &amp; Virtual Account</p>
-                  <p className="text-[10px] text-foreground/60 mt-0.5">Otomatis via Midtrans Sandbox.</p>
+                  <p className="text-[10px] text-foreground/60 mt-0.5">Verifikasi otomatis via Midtrans.</p>
                 </button>
 
                 <button

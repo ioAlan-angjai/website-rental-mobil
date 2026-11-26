@@ -115,6 +115,16 @@ function SectionDivider() {
   return <div className="border-t border-border my-6" />;
 }
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1 font-medium">
+      <AlertCircle size={12} className="shrink-0" />
+      <span>{message}</span>
+    </p>
+  );
+}
+
 // Form booking
 function BookingForm() {
   const router = useRouter();
@@ -201,9 +211,18 @@ function BookingForm() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [serviceTypeError, setServiceTypeError] = useState('');
+  const [carError, setCarError] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [timeError, setTimeError] = useState('');
+  const [pickupLocationError, setPickupLocationError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [ktpError, setKtpError] = useState('');
+  const [simError, setSimError] = useState('');
+  const [bankError, setBankError] = useState('');
+  const [paymentProofError, setPaymentProofError] = useState('');
   const [activePaymentBooking, setActivePaymentBooking] = useState<{
     isOpen: boolean;
     bookingId: string;
@@ -253,7 +272,17 @@ function BookingForm() {
      const { name, value } = e.target;
      let processedValue = value;
 
-     if (name === 'phone') {
+     if (name === 'carId') {
+       if (value) setCarError('');
+     } else if (name === 'pickupLocation') {
+       if (value.trim().length > 0 && value.trim().length < 5) {
+         setPickupLocationError("Lokasi penjemputan minimal 5 karakter (atau tulis 'Ambil di Garasi').");
+       } else {
+         setPickupLocationError('');
+       }
+     } else if (name === 'pickupTime' || name === 'returnTime') {
+       setTimeError('');
+     } else if (name === 'phone') {
        processedValue = value.replace(/[^0-9+]/g, '').slice(0, 15);
        
        // Real-time validation for phone
@@ -286,63 +315,189 @@ function BookingForm() {
      if (submitError) setSubmitError('');
    };
 
-  // Clear submitError when dates change
+  // Clear or update date/time errors when dates or times change
   useEffect(() => {
     setSubmitError('');
-  }, [date, endDate]);
-
-  const nextStep = () => {
-    if (step === 2) {
-      if (date && endDate) {
+    if (date && endDate) {
+      if (format(endDate, 'yyyy-MM-dd') < format(date, 'yyyy-MM-dd')) {
+        setDateError('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
+      } else {
+        setDateError('');
+      }
+      if (formData.pickupTime && formData.returnTime) {
         const startDateTime = new Date(date);
-        const [pickupHours, pickupMinutes] = (formData.pickupTime || '09:00').split(':');
+        const [pickupHours, pickupMinutes] = formData.pickupTime.split(':');
         startDateTime.setHours(parseInt(pickupHours), parseInt(pickupMinutes), 0, 0);
 
         const endDateTime = new Date(endDate);
-        const [returnHours, returnMinutes] = (formData.returnTime || '18:00').split(':');
+        const [returnHours, returnMinutes] = formData.returnTime.split(':');
         endDateTime.setHours(parseInt(returnHours), parseInt(returnMinutes), 0, 0);
 
         if (startDateTime >= endDateTime) {
-          setSubmitError('Waktu pengembalian harus setelah waktu pengambilan.');
-          return;
+          setTimeError('Jam pengembalian harus lebih akhir dari jam pengambilan.');
+        } else {
+          setTimeError('');
         }
       }
-      setSubmitError('');
     }
-    
-    // Validasi step 4 (Data Penyewa) sebelum lanjut
-    if (step === 4) {
-      if (!formData.name || formData.name.length < 3) {
-        setNameError('Nama minimal 3 karakter');
-        toast.error('Nama minimal 3 karakter');
-        return;
+  }, [date, endDate, formData.pickupTime, formData.returnTime]);
+
+  const validateStep = (targetStep: number): boolean => {
+    if (targetStep === 1) {
+      let valid = true;
+      if (!formData.serviceType) {
+        setServiceTypeError('Silakan pilih jenis layanan sewa terlebih dahulu.');
+        valid = false;
+      } else {
+        setServiceTypeError('');
       }
-      if (!/^[a-zA-Z\s.'-]+$/.test(formData.name)) {
-        setNameError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
-        toast.error('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung');
-        return;
+
+      const carAvailable = dbCars.some((c) => c.id === formData.carId);
+      if (!formData.carId || !carAvailable) {
+        setCarError('Silakan pilih unit mobil yang tersedia terlebih dahulu.');
+        valid = false;
+      } else {
+        setCarError('');
       }
+
+      if (!date || !endDate) {
+        setDateError('Tanggal mulai dan tanggal selesai sewa wajib dipilih.');
+        valid = false;
+      } else if (format(endDate, 'yyyy-MM-dd') < format(date, 'yyyy-MM-dd')) {
+        setDateError('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
+        valid = false;
+      } else {
+        setDateError('');
+      }
+
+      if (!valid) {
+        toast.error('Mohon lengkapi seluruh pilihan di Langkah 1.');
+      }
+      return valid;
+    }
+
+    if (targetStep === 2) {
+      let valid = true;
+      if (!formData.pickupTime || !formData.returnTime) {
+        setTimeError('Jam pengambilan dan jam pengembalian wajib diisi.');
+        valid = false;
+      } else if (date && endDate) {
+        const startDateTime = new Date(date);
+        const [pickupHours, pickupMinutes] = formData.pickupTime.split(':');
+        startDateTime.setHours(parseInt(pickupHours), parseInt(pickupMinutes), 0, 0);
+
+        const endDateTime = new Date(endDate);
+        const [returnHours, returnMinutes] = formData.returnTime.split(':');
+        endDateTime.setHours(parseInt(returnHours), parseInt(returnMinutes), 0, 0);
+
+        if (startDateTime >= endDateTime) {
+          setTimeError('Waktu pengembalian harus lebih akhir dari waktu pengambilan.');
+          valid = false;
+        } else {
+          setTimeError('');
+        }
+      } else {
+        setTimeError('');
+      }
+
+      if (!formData.pickupLocation || formData.pickupLocation.trim().length < 5) {
+        setPickupLocationError("Lokasi penjemputan wajib diisi minimal 5 karakter (atau tulis 'Ambil di Garasi').");
+        valid = false;
+      } else {
+        setPickupLocationError('');
+      }
+
+      if (!valid) {
+        toast.error('Periksa kembali jam sewa dan lokasi penjemputan.');
+      }
+      return valid;
+    }
+
+    if (targetStep === 4) {
+      let valid = true;
+      if (!formData.name || formData.name.trim().length < 3) {
+        setNameError('Nama lengkap minimal 3 karakter.');
+        valid = false;
+      } else if (!/^[a-zA-Z\s.'-]+$/.test(formData.name)) {
+        setNameError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.');
+        valid = false;
+      } else {
+        setNameError('');
+      }
+
       if (!formData.phone) {
-        setPhoneError('Nomor WhatsApp harus diisi');
-        toast.error('Nomor WhatsApp harus diisi');
-        return;
+        setPhoneError('Nomor WhatsApp wajib diisi.');
+        valid = false;
+      } else if (!/^(\+62|62|0)[0-9]{9,13}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
+        setPhoneError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).');
+        valid = false;
+      } else {
+        setPhoneError('');
       }
-      if (!/^(\+62|62|0)[0-9]{9,13}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
-        setPhoneError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
-        toast.error('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit)');
-        return;
-      }
+
       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        setEmailError('Format email tidak valid');
-        toast.error('Format email tidak valid');
-        return;
+        setEmailError('Format email tidak valid.');
+        valid = false;
+      } else {
+        setEmailError('');
       }
-      // Clear all errors if validation passes
-      setNameError('');
-      setPhoneError('');
-      setEmailError('');
+
+      if (!valid) {
+        toast.error('Mohon perbaiki data penyewa yang belum sesuai.');
+      }
+      return valid;
     }
-    
+
+    if (targetStep === 5) {
+      let valid = true;
+      if (!ktpPreview) {
+        setKtpError('Foto KTP wajib diunggah untuk verifikasi.');
+        valid = false;
+      } else {
+        setKtpError('');
+      }
+
+      if (!simPreview) {
+        setSimError('Foto SIM A wajib diunggah untuk verifikasi.');
+        valid = false;
+      } else {
+        setSimError('');
+      }
+
+      if (!valid) {
+        toast.error('Silakan unggah foto KTP dan SIM A terlebih dahulu.');
+      }
+      return valid;
+    }
+
+    if (targetStep === 7 && paymentMode === 'MANUAL') {
+      let valid = true;
+      if (!selectedBank) {
+        setBankError('Silakan pilih rekening bank tujuan transfer.');
+        valid = false;
+      } else {
+        setBankError('');
+      }
+
+      if (!uploadedPreview) {
+        setPaymentProofError('Bukti transfer DP wajib diunggah untuk metode Transfer Bank.');
+        valid = false;
+      } else {
+        setPaymentProofError('');
+      }
+
+      if (!valid) {
+        toast.error('Pilih bank tujuan dan unggah bukti transfer terlebih dahulu.');
+      }
+      return valid;
+    }
+
+    return true;
+  };
+
+  const nextStep = () => {
+    setSubmitError('');
+    if (!validateStep(step)) return;
     if (step < 7) setStep(step + 1);
   };
 
@@ -381,9 +536,10 @@ function BookingForm() {
     const file = acceptedFiles[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        setSubmitError('Ukuran file bukti transfer maksimal 10MB.');
+        setPaymentProofError('Ukuran file bukti transfer maksimal 10MB.');
         return;
       }
+      setPaymentProofError('');
       setUploadedFile(file);
       const reader = new FileReader();
       reader.onload = (e) => setUploadedPreview(e.target?.result as string);
@@ -399,9 +555,10 @@ function BookingForm() {
       const file = e.target?.files?.[0];
       if (!file) return;
       if (file.size > 10 * 1024 * 1024) {
-        setSubmitError('Ukuran file maksimal 10MB.');
+        setPaymentProofError('Ukuran file bukti transfer maksimal 10MB.');
         return;
       }
+      setPaymentProofError('');
       setUploadedFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => setUploadedPreview(ev.target?.result as string);
@@ -430,7 +587,10 @@ function BookingForm() {
       const file = e.target?.files?.[0];
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) {
-        setSubmitError('Ukuran file maksimal 5MB.');
+        const msg = 'Ukuran file dokumen maksimal 5MB.';
+        if (type === 'ktp') setKtpError(msg);
+        else setSimError(msg);
+        toast.error(msg);
         return;
       }
       const reader = new FileReader();
@@ -438,9 +598,11 @@ function BookingForm() {
         if (type === 'ktp') {
           setKtpFile(file);
           setKtpPreview(ev.target?.result as string);
+          setKtpError('');
         } else {
           setSimFile(file);
           setSimPreview(ev.target?.result as string);
+          setSimError('');
         }
       };
       reader.readAsDataURL(file);
@@ -453,34 +615,12 @@ function BookingForm() {
      setSubmitError('');
      
      try {
-       if (!formData.name || !/^[a-zA-Z\s.'-]+$/.test(formData.name)) {
-         setSubmitError('Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.');
-         setSubmitting(false);
-         return;
-       }
-
-       if (!formData.phone || !/^(\+62|62|0)[0-9]{9,13}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
-         setSubmitError('Nomor WhatsApp tidak valid. Gunakan format Indonesia: 08xx atau +62xx (9-13 digit).');
-         setSubmitting(false);
-         return;
-       }
-
-       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-         setSubmitError('Format email tidak valid.');
-         setSubmitting(false);
-         return;
-       }
-
-       if (!formData.pickupLocation || formData.pickupLocation.trim().length < 5) {
-         setSubmitError('Alamat penjemputan harus diisi minimal 5 karakter.');
-         setSubmitting(false);
-         return;
-       }
-
-       if (!ktpFile || !simFile) {
-         setSubmitError('KTP dan SIM harus diunggah.');
-         setSubmitting(false);
-         return;
+       for (const s of [1, 2, 4, 5, 7]) {
+         if (!validateStep(s)) {
+           if (s !== step) setStep(s);
+           setSubmitting(false);
+           return;
+         }
        }
 
        const apiPaymentMethod = paymentMode === 'INSTANT' ? 'MIDTRANS' : (selectedBank ? `${selectedBank}_TRANSFER` : null);
@@ -592,21 +732,6 @@ function BookingForm() {
        setSubmitting(false);
      }
    };
-
-  const canProceed = () => {
-    switch (step) {
-      case 1: return !!formData.serviceType && !!formData.carId && !!selectedCarDetails && !!date && !!endDate;
-      case 2: return true;
-      case 3: return true;
-      case 4: return !!formData.name && !!formData.phone;
-      case 5: return !!ktpPreview && !!simPreview;
-      case 6: return true;
-      case 7:
-        if (paymentMode === 'INSTANT') return true;
-        return !!selectedBank && !!uploadedPreview;
-      default: return false;
-    }
-  };
 
   if (status === 'loading') {
     return (
@@ -749,9 +874,10 @@ function BookingForm() {
               </div>
             </div>
             <button
+              type="button"
               onClick={nextStep}
-              disabled={!canProceed()}
-              className="p-1.5 rounded-xl bg-foreground text-background disabled:opacity-30 disabled:cursor-not-allowed hover:bg-foreground/90 transition-colors shrink-0"
+              disabled={step >= 7}
+              className="p-1.5 rounded-xl bg-foreground text-background disabled:opacity-30 disabled:cursor-not-allowed hover:bg-foreground/90 transition-colors shrink-0 cursor-pointer"
             >
               <ChevronRight size={16} />
             </button>
@@ -920,11 +1046,13 @@ function BookingForm() {
                             <button
                               key={opt.value}
                               type="button"
-                              onClick={() => { setFormData(prev => ({ ...prev, serviceType: opt.value })); setSubmitError(''); }}
+                              onClick={() => { setFormData(prev => ({ ...prev, serviceType: opt.value })); setServiceTypeError(''); setSubmitError(''); }}
                               className={cn(
                                 'w-full text-left p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row items-start gap-2 sm:gap-3.5 cursor-pointer',
                                 selected
                                   ? 'border-foreground bg-secondary/40 ring-1 ring-foreground/20 shadow-xs'
+                                  : serviceTypeError
+                                  ? 'border-red-400 bg-background hover:border-red-500'
                                   : 'border-border bg-background hover:border-foreground/30'
                               )}
                             >
@@ -956,6 +1084,7 @@ function BookingForm() {
                           );
                         })}
                       </div>
+                      <FieldError message={serviceTypeError} />
                     </div>
 
                     <SectionDivider />
@@ -986,7 +1115,10 @@ function BookingForm() {
                       
                       <select
                         name="carId" value={formData.carId} onChange={handleInputChange}
-                        className="w-full h-9 sm:h-11 px-3 sm:px-3.5 bg-background border border-border text-foreground text-xs sm:text-sm rounded-xl focus:border-foreground/50 focus:outline-none appearance-none cursor-pointer"
+                        className={cn(
+                          "w-full h-9 sm:h-11 px-3 sm:px-3.5 bg-background border text-foreground text-xs sm:text-sm rounded-xl focus:border-foreground/50 focus:outline-none appearance-none cursor-pointer",
+                          carError ? "border-red-500" : "border-border"
+                        )}
                         disabled={loadingCars || !!carsError}
                       >
                         <option value="">
@@ -998,6 +1130,8 @@ function BookingForm() {
                           </option>
                         ))}
                       </select>
+
+                      <FieldError message={carError} />
 
                       {/* Selected car preview */}
                       {selectedCarDetails && (
@@ -1026,55 +1160,60 @@ function BookingForm() {
                     <SectionDivider />
 
                     {/* Date Selection */}
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5">
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
-                          <CalendarIcon size={12} className="text-foreground/70 shrink-0" /> Mulai <span className="text-red-600">*</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger className={cn(
-                            'w-full justify-start text-left font-normal h-9 sm:h-11 rounded-xl border border-border bg-background text-foreground hover:bg-card px-2.5 sm:px-3.5 flex items-center transition-colors text-[11px] sm:text-sm cursor-pointer truncate',
-                            !date && 'text-foreground/40'
-                          )}>
-                            <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 text-foreground/60 shrink-0" />
-                            <span className="truncate">{date ? format(date, 'dd MMM yyyy', { locale: localeId }) : 'Pilih tgl'}</span>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card border border-border shadow-md" align="start">
-                            <Calendar
-                              mode="single" selected={date}
-                              onSelect={(d) => {
-                                setDate(d);
-                                if (endDate && d && endDate < d) setEndDate(undefined);
-                              }}
-                              disabled={(d) => d < todayMidnight}
-                              className="rounded-xl"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2.5 sm:gap-5">
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                            <CalendarIcon size={12} className="text-foreground/70 shrink-0" /> Mulai <span className="text-red-600">*</span>
+                          </label>
+                          <Popover>
+                            <PopoverTrigger className={cn(
+                              'w-full justify-start text-left font-normal h-9 sm:h-11 rounded-xl border bg-background text-foreground hover:bg-card px-2.5 sm:px-3.5 flex items-center transition-colors text-[11px] sm:text-sm cursor-pointer truncate',
+                              dateError && !date ? 'border-red-500' : 'border-border',
+                              !date && 'text-foreground/40'
+                            )}>
+                              <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 text-foreground/60 shrink-0" />
+                              <span className="truncate">{date ? format(date, 'dd MMM yyyy', { locale: localeId }) : 'Pilih tgl'}</span>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-card border border-border shadow-md" align="start">
+                              <Calendar
+                                mode="single" selected={date}
+                                onSelect={(d) => {
+                                  setDate(d);
+                                  if (endDate && d && endDate < d) setEndDate(undefined);
+                                }}
+                                disabled={(d) => d < todayMidnight}
+                                className="rounded-xl"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
 
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
-                          <CalendarIcon size={12} className="text-foreground/70 shrink-0" /> Selesai <span className="text-red-600">*</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger className={cn(
-                            'w-full justify-start text-left font-normal h-9 sm:h-11 rounded-xl border border-border bg-background text-foreground hover:bg-card px-2.5 sm:px-3.5 flex items-center transition-colors text-[11px] sm:text-sm cursor-pointer truncate',
-                            !endDate && 'text-foreground/40'
-                          )}>
-                            <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 text-foreground/60 shrink-0" />
-                            <span className="truncate">{endDate ? format(endDate, 'dd MMM yyyy', { locale: localeId }) : 'Pilih tgl'}</span>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card border border-border shadow-md" align="start">
-                            <Calendar
-                              mode="single" selected={endDate}
-                              onSelect={setEndDate}
-                              disabled={(d) => d < (date ?? todayMidnight)}
-                              className="rounded-xl"
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                            <CalendarIcon size={12} className="text-foreground/70 shrink-0" /> Selesai <span className="text-red-600">*</span>
+                          </label>
+                          <Popover>
+                            <PopoverTrigger className={cn(
+                              'w-full justify-start text-left font-normal h-9 sm:h-11 rounded-xl border bg-background text-foreground hover:bg-card px-2.5 sm:px-3.5 flex items-center transition-colors text-[11px] sm:text-sm cursor-pointer truncate',
+                              dateError && (!endDate || (date && format(endDate, 'yyyy-MM-dd') < format(date, 'yyyy-MM-dd'))) ? 'border-red-500' : 'border-border',
+                              !endDate && 'text-foreground/40'
+                            )}>
+                              <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 text-foreground/60 shrink-0" />
+                              <span className="truncate">{endDate ? format(endDate, 'dd MMM yyyy', { locale: localeId }) : 'Pilih tgl'}</span>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-card border border-border shadow-md" align="start">
+                              <Calendar
+                                mode="single" selected={endDate}
+                                onSelect={setEndDate}
+                                disabled={(d) => d < (date ?? todayMidnight)}
+                                className="rounded-xl"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                       </div>
+                      <FieldError message={dateError} />
                     </div>
 
                     {/* Duration hint */}
@@ -1098,44 +1237,57 @@ function BookingForm() {
                    ═══════════════════════════════════════════════════════ */}
                 {step === 2 && (
                   <StepWrapper step={step}>
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-5">
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
-                          <Clock size={13} className="text-foreground/70 shrink-0" /> Jam Ambil <span className="text-red-600">*</span>
-                        </label>
-                        <Input
-                          type="time" name="pickupTime"
-                          value={formData.pickupTime} onChange={handleInputChange}
-                          className="bg-background border-border text-foreground rounded-xl h-9 sm:h-11 text-xs sm:text-sm px-2.5"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2.5 sm:gap-5">
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                            <Clock size={13} className="text-foreground/70 shrink-0" /> Jam Ambil <span className="text-red-600">*</span>
+                          </label>
+                          <Input
+                            type="time" name="pickupTime"
+                            value={formData.pickupTime} onChange={handleInputChange}
+                            className={cn(
+                              "bg-background border-border text-foreground rounded-xl h-9 sm:h-11 text-xs sm:text-sm px-2.5",
+                              timeError && "border-red-500 focus:border-red-500"
+                            )}
+                          />
+                        </div>
 
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
-                          <Clock size={13} className="text-foreground/70 shrink-0" /> Jam Kembali <span className="text-red-600">*</span>
-                        </label>
-                        <Input
-                          type="time" name="returnTime"
-                          value={formData.returnTime} onChange={handleInputChange}
-                          className="bg-background border-border text-foreground rounded-xl h-9 sm:h-11 text-xs sm:text-sm px-2.5"
-                        />
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-[11px] sm:text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide truncate">
+                            <Clock size={13} className="text-foreground/70 shrink-0" /> Jam Kembali <span className="text-red-600">*</span>
+                          </label>
+                          <Input
+                            type="time" name="returnTime"
+                            value={formData.returnTime} onChange={handleInputChange}
+                            className={cn(
+                              "bg-background border-border text-foreground rounded-xl h-9 sm:h-11 text-xs sm:text-sm px-2.5",
+                              timeError && "border-red-500 focus:border-red-500"
+                            )}
+                          />
+                        </div>
                       </div>
+                      <FieldError message={timeError} />
                     </div>
 
                     <SectionDivider />
 
                     <div className="space-y-1.5 sm:space-y-2">
                       <label className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
-                        <MapPin size={13} className="text-foreground/70 shrink-0" /> Titik Penjemputan / Pengantaran Unit
+                        <MapPin size={13} className="text-foreground/70 shrink-0" /> Titik Penjemputan / Pengantaran Unit <span className="text-red-600">*</span>
                       </label>
                       <Input
                         type="text" name="pickupLocation"
-                        placeholder="Contoh: Bandara YIA / Stasiun Tugu / Hotel"
+                        placeholder="Contoh: Bandara YIA / Stasiun Tugu / Ambil di Garasi"
                         value={formData.pickupLocation} onChange={handleInputChange}
-                        className="bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm"
+                        className={cn(
+                          "bg-background border-border text-foreground placeholder:text-foreground/40 rounded-xl h-9 sm:h-11 text-xs sm:text-sm",
+                          pickupLocationError && "border-red-500 focus:border-red-500"
+                        )}
                       />
+                      <FieldError message={pickupLocationError} />
                       <p className="text-[10px] sm:text-[11px] text-foreground/50 mt-1">
-                        Biarkan kosong jika Anda ingin mengambil langsung di garasi kami.
+                        Wajib diisi minimal 5 karakter (tulis alamat lengkap atau ketik &ldquo;Ambil di Garasi&rdquo;).
                       </p>
                     </div>
 
@@ -1324,7 +1476,10 @@ function BookingForm() {
                           <button
                             type="button"
                             onClick={() => handleDocumentUpload('ktp')}
-                            className="border-2 border-dashed border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-6 text-center cursor-pointer hover:border-foreground/40 bg-background w-full transition-all flex flex-col items-center justify-center min-h-[120px] sm:min-h-[160px]"
+                            className={cn(
+                              "border-2 border-dashed rounded-xl sm:rounded-2xl p-3.5 sm:p-6 text-center cursor-pointer bg-background w-full transition-all flex flex-col items-center justify-center min-h-[120px] sm:min-h-[160px]",
+                              ktpError ? "border-red-500 hover:border-red-600" : "border-border hover:border-foreground/40"
+                            )}
                           >
                             <div className="p-2 sm:p-3 rounded-full bg-secondary text-foreground mb-1.5">
                               <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -1351,6 +1506,7 @@ function BookingForm() {
                             </div>
                           </motion.div>
                         )}
+                        <FieldError message={ktpError} />
                       </div>
 
                       {/* Upload Foto SIM */}
@@ -1366,7 +1522,10 @@ function BookingForm() {
                           <button
                             type="button"
                             onClick={() => handleDocumentUpload('sim')}
-                            className="border-2 border-dashed border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-6 text-center cursor-pointer hover:border-foreground/40 bg-background w-full transition-all flex flex-col items-center justify-center min-h-[120px] sm:min-h-[160px]"
+                            className={cn(
+                              "border-2 border-dashed rounded-xl sm:rounded-2xl p-3.5 sm:p-6 text-center cursor-pointer bg-background w-full transition-all flex flex-col items-center justify-center min-h-[120px] sm:min-h-[160px]",
+                              simError ? "border-red-500 hover:border-red-600" : "border-border hover:border-foreground/40"
+                            )}
                           >
                             <div className="p-2 sm:p-3 rounded-full bg-secondary text-foreground mb-1.5">
                               <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -1393,6 +1552,7 @@ function BookingForm() {
                             </div>
                           </motion.div>
                         )}
+                        <FieldError message={simError} />
                       </div>
                     </div>
                   </StepWrapper>
@@ -1519,7 +1679,7 @@ function BookingForm() {
                       <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <button
                           type="button"
-                          onClick={() => setPaymentMode('INSTANT')}
+                          onClick={() => { setPaymentMode('INSTANT'); setBankError(''); setPaymentProofError(''); setSubmitError(''); }}
                           className={cn(
                             'p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer',
                             paymentMode === 'INSTANT'
@@ -1582,11 +1742,11 @@ function BookingForm() {
                       {paymentMode === 'INSTANT' ? (
                         <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-background border border-border space-y-1.5">
                           <div className="flex items-center gap-2 text-foreground text-xs font-bold">
-                            <CheckCircle2 size={14} />
-                            <span>Gateway Pembayaran Otomatis Aktif</span>
+                            <CheckCircle2 size={14} className="text-emerald-600" />
+                            <span>Pembayaran Instan &amp; Terverifikasi Otomatis</span>
                           </div>
                           <p className="text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
-                            Form pembayaran interaktif Midtrans Sandbox Core API akan terbuka langsung setelah konfirmasi. Anda dapat membayar dengan QRIS (GoPay, BCA, Mandiri, OVO, Dana) atau Virtual Account.
+                            Pembayaran aman dan otomatis melalui Midtrans. Setelah konfirmasi, Anda dapat langsung membayar menggunakan QRIS (GoPay, OVO, Dana, ShopeePay, BCA Mobile) atau Virtual Account.
                           </p>
                         </div>
                       ) : (
@@ -1594,7 +1754,7 @@ function BookingForm() {
                           {/* Pilih Bank */}
                           <div className="space-y-2 pt-1">
                             <h4 className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
-                              Pilih Rekening Tujuan Transfer
+                              Pilih Rekening Tujuan Transfer <span className="text-red-600">*</span>
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               {BANK_ACCOUNTS.map((bank) => (
@@ -1602,7 +1762,7 @@ function BookingForm() {
                                   key={bank.id}
                                   type="button"
                                   id={`bank-${bank.id.toLowerCase()}`}
-                                  onClick={() => setSelectedBank(bank.id)}
+                                  onClick={() => { setSelectedBank(bank.id); setBankError(''); }}
                                   className={cn(
                                     'w-full text-left p-2.5 sm:p-3 rounded-xl border transition-all duration-200 flex items-center gap-2.5 cursor-pointer',
                                     selectedBank === bank.id
@@ -1626,12 +1786,13 @@ function BookingForm() {
                                 </button>
                               ))}
                             </div>
+                            <FieldError message={bankError} />
                           </div>
 
                           {/* Upload Bukti Transfer */}
                           <div className="space-y-2 pt-1">
                             <h4 className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
-                              Upload Bukti Transfer Manual
+                              Upload Bukti Transfer Manual <span className="text-red-600">*</span>
                             </h4>
 
                             {!uploadedPreview ? (
@@ -1639,7 +1800,10 @@ function BookingForm() {
                                 type="button"
                                 id="upload-bukti-transfer"
                                 onClick={handlePaymentProofUpload}
-                                className="border-2 border-dashed border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center cursor-pointer hover:border-foreground/40 bg-background w-full transition-all group"
+                                className={cn(
+                                  "border-2 border-dashed rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center cursor-pointer bg-background w-full transition-all group",
+                                  paymentProofError ? "border-red-500 hover:border-red-600" : "border-border hover:border-foreground/40"
+                                )}
                               >
                                 <div className="flex flex-col items-center gap-1.5">
                                   <div className="p-2 sm:p-3 rounded-full bg-secondary text-foreground">
@@ -1674,6 +1838,7 @@ function BookingForm() {
                                 </div>
                               </div>
                             )}
+                            <FieldError message={paymentProofError} />
                           </div>
                         </>
                       )}
@@ -1684,7 +1849,10 @@ function BookingForm() {
                       <AlertTriangle size={15} className="text-foreground/70 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-[11px] text-foreground/70 leading-relaxed">
-                          <strong className="text-foreground">Penting:</strong> Pastikan nominal transfer sesuai dengan jumlah DP di atas. Tim admin kami akan memverifikasi dan menyetujui pesanan Anda dalam 1×24 jam.
+                          <strong className="text-foreground">Penting:</strong>{' '}
+                          {paymentMode === 'INSTANT'
+                            ? 'Pembayaran DP melalui QRIS atau Virtual Account akan diverifikasi otomatis oleh sistem sesaat setelah transaksi berhasil.'
+                            : 'Pastikan nominal transfer sesuai dengan jumlah DP di atas. Tim admin kami akan memverifikasi bukti transfer Anda dalam 1×24 jam.'}
                         </p>
                       </div>
                     </div>
@@ -1720,8 +1888,7 @@ function BookingForm() {
                   {step < 7 ? (
                     <Button
                       type="button" onClick={nextStep}
-                      disabled={!canProceed()}
-                      className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl flex items-center gap-1.5 ml-auto text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
+                      className="bg-foreground hover:bg-foreground/90 text-background font-bold px-6 h-11 rounded-xl flex items-center gap-1.5 ml-auto text-xs transition-all shadow-xs cursor-pointer"
                     >
                       Lanjut
                       <ChevronRight size={15} />
@@ -1731,7 +1898,7 @@ function BookingForm() {
                       type="button"
                       id="btn-kirim-booking"
                       onClick={handleSubmit}
-                      disabled={!canProceed() || submitting}
+                      disabled={submitting}
                       className="bg-foreground hover:bg-foreground/90 text-background font-bold px-7 h-11 rounded-xl ml-auto flex items-center gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
                     >
                       {submitting ? (
